@@ -64,7 +64,8 @@ export const sendSingleSMS = async (message: string, id: string | number) => {
     if (user?.phone_no) {
       const response = await twilioClient.messages.create({
         body: message,
-        from: process.env.TWILIO_PHONE_NUMBER,
+        // from: process.env.TWILIO_PHONE_NUMBER,
+        messagingServiceSid : process.env.TWILIO_MESSAGING_SERVICE,
         to: user.phone,
       })
 
