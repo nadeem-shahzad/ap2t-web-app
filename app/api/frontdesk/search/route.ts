@@ -66,12 +66,22 @@ WHERE
       s.name ,
       s.start_time,
       s.end_time,
-      s.price,
+      COALESCE(p.amount, s.price) AS price,
+      p.amount AS payment_amount,
+      p.status AS payment_status,
       s.apply_promotion,
       s.promotion_price,
       s.date
     FROM session_players se
     JOIN sessions s ON s.id = se.session_id
+    LEFT JOIN LATERAL (
+      SELECT amount, status
+      FROM payments
+      WHERE session_id = se.session_id
+        AND user_id = se.user_id
+      ORDER BY id DESC
+      LIMIT 1
+    ) p ON true
     WHERE 
       se.user_id = ANY($1::int[])
       AND CURRENT_DATE BETWEEN s.date AND s.end_date

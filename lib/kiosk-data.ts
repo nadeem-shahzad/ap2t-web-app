@@ -20,6 +20,14 @@ export interface Session {
   max_players: number
   total_enrolled: number
   spots_left  : number
+  variants?: SessionVariant[]
+  selectedVariant?: SessionVariant | null
+}
+
+export interface SessionVariant {
+  id: number
+  hour: string | number
+  price: number | string
 }
 
 export interface Booking {

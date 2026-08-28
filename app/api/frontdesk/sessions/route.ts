@@ -7,7 +7,18 @@ export async function GET() {
       `
       SELECT 
         s.*,
-        COUNT(sp.user_id) AS total_enrolled
+        COUNT(sp.user_id) AS total_enrolled,
+        COALESCE(
+          (
+            SELECT json_agg(
+              json_build_object('id', sv.id, 'hour', sv.hour, 'price', sv.price)
+              ORDER BY sv.id
+            )
+            FROM session_variants sv
+            WHERE sv.session_id = s.id
+          ),
+          '[]'::json
+        ) AS variants
       FROM sessions s
       LEFT JOIN session_players sp 
         ON s.id = sp.session_id
@@ -41,9 +52,13 @@ export async function GET() {
           session.apply_promotion &&
           session.promotion_price &&
           session.promotion_end &&
-          session.promotion_start&&
-          moment(session.promotion_end).isBefore(now) &&
-          moment(session.promotion_end).isAfter(now)
+          session.promotion_start &&
+          now.isBetween(
+            moment(session.promotion_start).startOf("day"),
+            moment(session.promotion_end).endOf("day"),
+            undefined,
+            "[]",
+          )
         ) {
           finalPrice = session.promotion_price;
           promotion=true
@@ -63,6 +78,7 @@ export async function GET() {
           price: finalPrice,
           original_price:session.price,
           status: session.status,
+          variants: session.variants,
         };
       })
       .filter(Boolean);

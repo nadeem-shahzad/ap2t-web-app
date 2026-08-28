@@ -8,12 +8,14 @@ import moment from 'moment'
 import { useEffect, useState } from 'react'
 import { Spinner } from '../ui/spinner'
 import BackButton from '../back-button'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog'
 
 export default function SessionSelectPage({ setStep }: { setStep: (val: number) => void }) {
   const { state, setSession } = useKiosk()
   const { player } = state
   const [sessions, setSessions] = useState<Session[] | null>([])
   const [addLoading, setAddLoading] = useState(false)
+  const [sessionForVariant, setSessionForVariant] = useState<Session | null>(null)
 
   useEffect(() => {
     fetchData()
@@ -33,15 +35,33 @@ export default function SessionSelectPage({ setStep }: { setStep: (val: number) 
     const session_id = val?.id
 
     if (!player_id || !session_id) return
+    if (val.variants?.length) {
+      setSessionForVariant(val)
+      return
+    }
+
+    setSession(val)
+    setStep(2)
+
     // try {
     //   setAddLoading(true)
     //   await axios.post(`/frontdesk/sessions?id=${player_id}&sid=${session_id}`)
-      setSession(val)
-      setStep(2)
 
     // } finally {
     //   setAddLoading(false)
     // }
+  }
+
+  function handleVariantSelect(variant: NonNullable<Session['variants']>[number]) {
+    if (!sessionForVariant) return
+
+    setSession({
+      ...sessionForVariant,
+      price: variant.price,
+      selectedVariant: variant,
+    })
+    setSessionForVariant(null)
+    setStep(2)
   }
 
 
@@ -110,6 +130,36 @@ export default function SessionSelectPage({ setStep }: { setStep: (val: number) 
           </div>
         </div>
       </div>
+
+      <Dialog
+        open={!!sessionForVariant}
+        onOpenChange={(open) => {
+          if (!open) setSessionForVariant(null)
+        }}
+      >
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Select a session option</DialogTitle>
+            <DialogDescription>
+              Choose the duration and price for {sessionForVariant?.name}.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            {sessionForVariant?.variants?.map((variant) => (
+              <button
+                key={variant.id}
+                type="button"
+                onClick={() => handleVariantSelect(variant)}
+                className="flex w-full items-center justify-between rounded-lg border border-border bg-secondary p-4 text-left transition-colors hover:bg-secondary/70"
+              >
+                <span className="font-semibold text-foreground">{variant.hour} hour{Number(variant.hour) === 1 ? '' : 's'}</span>
+                <span className="text-xl font-bold text-primary">${variant.price}</span>
+              </button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
 
 
 

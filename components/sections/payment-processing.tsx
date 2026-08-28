@@ -30,7 +30,7 @@ export default function PaymentProcessingPage({ setStep }: { setStep: (val: numb
         setMax(false)
         setIsProcessing(true)
 
-        axios.get(`/frontdesk/checkin/payment?id=${id}&sid=${sid}&price=${session?.price}`)
+        axios.get(`/frontdesk/checkin/payment?id=${id}&sid=${sid}&price=${session?.price}&variant_id=${session?.selectedVariant?.id ?? ''}`)
             .then((response) => {
                 if (!response.data?.success) {
                     toast.error(response.data?.message)
@@ -48,7 +48,7 @@ export default function PaymentProcessingPage({ setStep }: { setStep: (val: numb
             .finally(() => {
                 setIsProcessing(false)
             })
-    }, [session?.price, setStep])
+    }, [session?.price, session?.selectedVariant?.id, setStep])
 
 
 

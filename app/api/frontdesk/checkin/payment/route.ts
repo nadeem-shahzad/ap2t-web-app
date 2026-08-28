@@ -16,6 +16,7 @@ export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
   const user_id = searchParams.get("id");
   const session_id = searchParams.get("sid");
+  const variant_id = searchParams.get("variant_id");
   const price = searchParams.get("price");
   let toSend = false;
   let amount = Number(price);
@@ -34,7 +35,7 @@ export async function GET(req: NextRequest) {
     /* ---------------- SESSION ---------------- */
 
     const sessionResult = await client.query(
-      `SELECT id, price, apply_promotion, promotion_price, comped, max_players, promotion_end
+      `SELECT id, price, apply_promotion, promotion_price, comped, max_players, promotion_start, promotion_end
              FROM sessions
              WHERE id = $1
              FOR UPDATE`,
@@ -79,6 +80,34 @@ export async function GET(req: NextRequest) {
     );
 
     if (playerCheck.rows.length === 0) {
+      const variantsResult = await client.query(
+        `SELECT id, price
+         FROM session_variants
+         WHERE session_id = $1
+         FOR UPDATE`,
+        [session_id],
+      );
+      const variants = variantsResult.rows;
+      const selectedVariant = variants.find(
+        (variant) => variant.id === Number(variant_id),
+      );
+
+      if (variants.length > 0 && !selectedVariant) {
+        await client.query("ROLLBACK");
+        return NextResponse.json(
+          { message: "Please select a session variant" },
+          { status: 400 },
+        );
+      }
+
+      if (variants.length === 0 && variant_id) {
+        await client.query("ROLLBACK");
+        return NextResponse.json(
+          { message: "This session does not support variants" },
+          { status: 400 },
+        );
+      }
+
       const countResult = await client.query(
         `SELECT COUNT(*) FROM session_players WHERE session_id = $1`,
         [session_id],
@@ -100,15 +129,21 @@ export async function GET(req: NextRequest) {
 
       /* ---------------- CALCULATE AMOUNT ---------------- */
 
-      amount = session.price;
+      amount = selectedVariant ? selectedVariant.price : session.price;
       const now = moment();
       if (session.comped) {
         amount = 0;
       } else if (
         session.apply_promotion &&
         session.promotion_price &&
+        session.promotion_start &&
         session.promotion_end &&
-        moment(new Date(session.promotion_end)).isAfter(now)
+        now.isBetween(
+          moment(session.promotion_start).startOf("day"),
+          moment(session.promotion_end).endOf("day"),
+          undefined,
+          "[]",
+        )
       ) {
         amount = session.promotion_price;
       }
@@ -180,7 +215,7 @@ export async function GET(req: NextRequest) {
     }
 
     const paymentResult = await client.query(
-      `SELECT status
+      `SELECT status, amount
              FROM payments
              WHERE session_id = $1 AND user_id = $2 ORDER BY id DESC LIMIT 1`,
       [session_id, user_id],
@@ -191,6 +226,9 @@ export async function GET(req: NextRequest) {
     if (!payment) {
       throw new Error("Payment record missing");
     }
+
+    // Existing enrollments retain the amount recorded when they were booked.
+    amount = Number(payment.amount);
 
     /* ---------------- CHARGE PAYMENT ---------------- */
 
