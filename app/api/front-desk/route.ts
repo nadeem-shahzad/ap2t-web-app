@@ -80,7 +80,7 @@ export async function PUT(req: NextRequest) {
       if (type === "cash" || type === "approval") {
         const user_id = updatingRow?.user_id;
         const session_id = updatingRow?.session_id;
-        let amount = 0;
+        let amount = Number(updatingRow.price);
         let hasSiblingDiscount = false
         let clientReleased = false;
         const client = await pool.connect();
@@ -91,7 +91,7 @@ export async function PUT(req: NextRequest) {
           /* ---------------- SESSION ---------------- */
 
           const sessionResult = await client.query(
-            `SELECT id, price, apply_promotion, promotion_price, comped, max_players, promotion_end
+            `SELECT id, comped, max_players
        FROM sessions
        WHERE id = $1
        FOR UPDATE`,
@@ -152,23 +152,6 @@ export async function PUT(req: NextRequest) {
                 },
                 { status: 409 },
               );
-            }
-
-            /* ---------------- CALCULATE AMOUNT ---------------- */
-
-            amount = session.price;
-            const now = moment();
-            if (session.comped) {
-              amount = 0;
-            } else if (
-              session.apply_promotion &&
-              session.promotion_price &&
-              session.promotion_end &&
-              session.promotion_start &&
-              moment(new Date(session.promotion_start)).isBefore(now) &&
-              moment(new Date(session.promotion_end)).isAfter(now)
-            ) {
-              amount = session.promotion_price;
             }
 
             /* ---------------- SIBLING DISCOUNT ---------------- */

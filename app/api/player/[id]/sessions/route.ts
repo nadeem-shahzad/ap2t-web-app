@@ -16,6 +16,17 @@ const queryParams : (string | number | null)[] = [id]
       u.first_name AS coach_first_name,
       u.last_name  AS coach_last_name,
       u.picture AS coach_picture,
+      COALESCE(
+        (
+          SELECT jsonb_agg(
+            jsonb_build_object('id', sv.id, 'hour', sv.hour, 'price', sv.price)
+            ORDER BY sv.hour
+          )
+          FROM session_variants sv
+          WHERE sv.session_id = s.id
+        ),
+        '[]'::jsonb
+      ) AS variants,
       CASE 
         WHEN sp.user_id IS NOT NULL THEN true
         ELSE false
@@ -32,16 +43,8 @@ const queryParams : (string | number | null)[] = [id]
      queryParams.push(month ? `${month}-01T00:00:00Z` : null)
     query += ` 
     WHERE
-    (
-      s.date >= DATE_TRUNC('month', COALESCE($2::timestamptz, NOW()))
-      AND s.date < DATE_TRUNC('month', COALESCE($2::timestamptz, NOW())) + INTERVAL '1 month'
-    )
-    OR
-    (
-      s.end_date IS NOT NULL
-      AND s.end_date >= DATE_TRUNC('month', COALESCE($2::timestamptz, NOW()))
-      AND s.end_date < DATE_TRUNC('month', COALESCE($2::timestamptz, NOW())) + INTERVAL '1 month'
-    )
+      s.date < DATE_TRUNC('month', COALESCE($2::timestamptz, NOW())) + INTERVAL '1 month'
+      AND COALESCE(s.end_date, s.date) >= DATE_TRUNC('month', COALESCE($2::timestamptz, NOW()))
     `
    
   }

@@ -70,7 +70,8 @@ export default function SessionCalendar({ currentMonth, setCurrentMonth, session
     start_date : startDate,
     price : session?.price,
     promotion:session?.promotion ?? false,
-    original_price:session?.original_price ?? 0
+    original_price:session?.original_price ?? 0,
+    variants: session?.variants ?? []
   }))
 })
 

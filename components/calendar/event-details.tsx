@@ -95,6 +95,7 @@ const EventDetail = ({
                                             <ParticipateButton
                                                 player_id={player_id}
                                                 session_id={event.originalId}
+                                                variants={event.variants ?? []}
                                                 onSuccess={async () => {
                                                     await onSuccess();
                                                     onOpenChange();
@@ -105,6 +106,7 @@ const EventDetail = ({
                                             <AddParticipantDialog
                                                 parent_id={parent_id}
                                                 sessionId={Number(event.originalId)}
+                                                variants={event.variants ?? []}
                                                 onSuccess={async () => {
                                                     await onSuccess();
                                                     onOpenChange();

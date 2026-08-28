@@ -401,7 +401,7 @@ export default function SessionMainPage({ id, back, back_title, admin = false, p
           <Separator />
 
           <TabsContent value="Participants" className="space-y-4 p-4">
-            {data?.status === "upcoming" && allowed && <AddParticipantDialog sessionId={Number(id)} onSuccess={async () => {
+            {data?.status === "upcoming" && allowed && <AddParticipantDialog sessionId={Number(id)} variants={rawSessionData?.variants ?? []} onSuccess={async () => {
               await fetchParticipants()
               await fetchPayments()
             }} />}

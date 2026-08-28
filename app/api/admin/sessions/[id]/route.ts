@@ -14,7 +14,22 @@ export async function GET(
   s.*,
   u.first_name AS coach_first_name,
   u.last_name AS coach_last_name,
-  c.schedule_preference AS coach_schedule_preference
+  c.schedule_preference AS coach_schedule_preference,
+  COALESCE(
+    (
+      SELECT jsonb_agg(
+        jsonb_build_object(
+          'id', sv.id,
+          'hour', sv.hour,
+          'price', sv.price
+        )
+        ORDER BY sv.hour
+      )
+      FROM session_variants sv
+      WHERE sv.session_id = s.id
+    ),
+    '[]'::jsonb
+  ) AS variants
 FROM sessions s
 LEFT JOIN users u ON u.id = s.coach_id
 LEFT JOIN coaches c ON c.user_id = s.coach_id

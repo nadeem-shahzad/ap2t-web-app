@@ -4,10 +4,30 @@ import { sendInAppNotificationBackend } from "@/lib/send-inapp-notification";
 import moment from "moment";
 import { NextRequest, NextResponse } from "next/server";
 
+function timeToMinutes(time: string): number | null {
+  const match = time?.trim().match(/^(\d{1,2}):(\d{2})(?:\s*(AM|PM))?$/i);
+  if (!match) return null;
+
+  let hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  const period = match[3]?.toUpperCase();
+  if (minutes > 59 || hours > 23) return null;
+
+  if (period) {
+    if (hours < 1 || hours > 12) return null;
+    if (period === "PM" && hours !== 12) hours += 12;
+    if (period === "AM" && hours === 12) hours = 0;
+  }
+
+  return hours * 60 + minutes;
+}
+
 export async function POST(req: NextRequest) {
+  const client = await pool.connect();
+  let transactionStarted = false;
   try {
     const body = await req.json();
-    const { byAdmin, ...data } = body;
+    const { byAdmin, pricing_mode = "single", variants = [], ...data } = body;
 
     if (!data || Object.keys(data).length === 0) {
       return NextResponse.json(
@@ -16,17 +36,83 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (pricing_mode !== "single" && pricing_mode !== "variants") {
+      return NextResponse.json({ message: "Invalid pricing mode" }, { status: 400 });
+    }
+
+    if (pricing_mode === "variants" && data.apply_promotion) {
+      return NextResponse.json(
+        { message: "Promotional sessions cannot have variants" },
+        { status: 400 },
+      );
+    }
+
+    if (pricing_mode === "variants") {
+      if (!Array.isArray(variants) || variants.length === 0) {
+        return NextResponse.json({ message: "At least one variant is required" }, { status: 400 });
+      }
+
+      const startMinutes = timeToMinutes(data.start_time);
+      const endMinutes = timeToMinutes(data.end_time);
+      const maximumHours = startMinutes !== null && endMinutes !== null
+        ? Math.floor((endMinutes - startMinutes) / 60)
+        : 0;
+
+      if (maximumHours < 1) {
+        return NextResponse.json({ message: "Session must be at least one hour long" }, { status: 400 });
+      }
+
+      const hours = new Set<number>();
+      for (const variant of variants) {
+        const hour = Number(variant?.hour);
+        const price = Number(variant?.price);
+        if (!Number.isInteger(hour) || hour < 1 || hour > maximumHours) {
+          return NextResponse.json({ message: "Variant hour is outside the session duration" }, { status: 400 });
+        }
+        if (!Number.isFinite(price) || price <= 0) {
+          return NextResponse.json({ message: "Every variant requires a positive price" }, { status: 400 });
+        }
+        if (hours.has(hour)) {
+          return NextResponse.json({ message: "Duplicate variant hours are not allowed" }, { status: 400 });
+        }
+        hours.add(hour);
+      }
+
+      if (hours.size !== maximumHours || Array.from({ length: maximumHours }, (_, index) => index + 1).some((hour) => !hours.has(hour))) {
+        return NextResponse.json({ message: "Every available session duration requires a price" }, { status: 400 });
+      }
+
+      // Maintain sessions.price for existing queries until variant-aware reads are added.
+      data.price = Math.min(...variants.map((variant: { price: number }) => Number(variant.price)));
+    }
+
     const fields = Object.keys(data);
     const values = Object.values(data);
     const placeholders = fields.map((_, i) => `$${i + 1}`).join(", ");
 
-    const res = await pool.query(
+    await client.query("BEGIN");
+    transactionStarted = true;
+
+    const res = await client.query(
       `INSERT INTO sessions (${fields.join(",")})
        VALUES (${placeholders}) RETURNING id
 `,
       values,
     );
     const session_id = res.rows[0].id;
+
+    if (pricing_mode === "variants") {
+      for (const variant of variants) {
+        await client.query(
+          `INSERT INTO session_variants (session_id, hour, price)
+           VALUES ($1, $2, $3)`,
+          [session_id, Number(variant.hour), Number(variant.price)],
+        );
+      }
+    }
+
+    await client.query("COMMIT");
+    transactionStarted = false;
 
     const emailDataRaw = await pool.query(
       `
@@ -87,11 +173,16 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ message: "Data inserted" }, { status: 201 });
   } catch (error: any) {
+    if (transactionStarted) {
+      await client.query("ROLLBACK");
+    }
     console.log("POST /api/parent error:", error);
     return NextResponse.json(
       { message: error?.message || "Server error" },
       { status: 500 },
     );
+  } finally {
+    client.release();
   }
 }
 
@@ -159,12 +250,76 @@ LEFT JOIN session_players sp ON sp.session_id = s.id
 }
 
 export async function PUT(req: NextRequest) {
+  const client = await pool.connect();
+  let transactionStarted = false;
   try {
     const data = await req.json();
-    const { id, byAdmin, ...updates } = data;
+    const { id, byAdmin, pricing_mode, variants, ...updates } = data;
 
     if (!id) {
       return NextResponse.json({ message: "ID is required" }, { status: 400 });
+    }
+
+    if (pricing_mode !== undefined && pricing_mode !== "single" && pricing_mode !== "variants") {
+      return NextResponse.json({ message: "Invalid pricing mode" }, { status: 400 });
+    }
+
+    if (pricing_mode === "variants" && updates.apply_promotion) {
+      return NextResponse.json(
+        { message: "Promotional sessions cannot have variants" },
+        { status: 400 },
+      );
+    }
+
+    if (updates.apply_promotion && pricing_mode !== "single") {
+      const existingVariants = await client.query(
+        `SELECT EXISTS (SELECT 1 FROM session_variants WHERE session_id = $1) AS has_variants`,
+        [id],
+      );
+      if (existingVariants.rows[0]?.has_variants) {
+        return NextResponse.json(
+          { message: "Sessions with variants cannot be made promotional" },
+          { status: 400 },
+        );
+      }
+    }
+
+    if (pricing_mode === "variants") {
+      if (!Array.isArray(variants) || variants.length === 0) {
+        return NextResponse.json({ message: "At least one variant is required" }, { status: 400 });
+      }
+
+      const startMinutes = timeToMinutes(updates.start_time);
+      const endMinutes = timeToMinutes(updates.end_time);
+      const maximumHours = startMinutes !== null && endMinutes !== null
+        ? Math.floor((endMinutes - startMinutes) / 60)
+        : 0;
+      const hours = new Set<number>();
+
+      if (maximumHours < 1) {
+        return NextResponse.json({ message: "Session must be at least one hour long" }, { status: 400 });
+      }
+
+      for (const variant of variants) {
+        const hour = Number(variant?.hour);
+        const price = Number(variant?.price);
+        if (!Number.isInteger(hour) || hour < 1 || hour > maximumHours) {
+          return NextResponse.json({ message: "Variant hour is outside the session duration" }, { status: 400 });
+        }
+        if (!Number.isFinite(price) || price <= 0) {
+          return NextResponse.json({ message: "Every variant requires a positive price" }, { status: 400 });
+        }
+        if (hours.has(hour)) {
+          return NextResponse.json({ message: "Duplicate variant hours are not allowed" }, { status: 400 });
+        }
+        hours.add(hour);
+      }
+
+      if (hours.size !== maximumHours || Array.from({ length: maximumHours }, (_, index) => index + 1).some((hour) => !hours.has(hour))) {
+        return NextResponse.json({ message: "Every available session duration requires a price" }, { status: 400 });
+      }
+
+      updates.price = Math.min(...variants.map((variant: { price: number }) => Number(variant.price)));
     }
 
     const fields: any[] = [];
@@ -191,7 +346,25 @@ export async function PUT(req: NextRequest) {
           WHERE id = $${values.length}
       `;
 
-    await pool.query(query, values);
+    await client.query("BEGIN");
+    transactionStarted = true;
+    await client.query(query, values);
+
+    if (pricing_mode === "single") {
+      await client.query(`DELETE FROM session_variants WHERE session_id = $1`, [id]);
+    } else if (pricing_mode === "variants") {
+      await client.query(`DELETE FROM session_variants WHERE session_id = $1`, [id]);
+      for (const variant of variants) {
+        await client.query(
+          `INSERT INTO session_variants (session_id, hour, price)
+           VALUES ($1, $2, $3)`,
+          [id, Number(variant.hour), Number(variant.price)],
+        );
+      }
+    }
+
+    await client.query("COMMIT");
+    transactionStarted = false;
     const emailDataRaw = await pool.query(`SELECT
        email,
        first_name || ' ' || last_name AS "fullName"
@@ -244,11 +417,16 @@ export async function PUT(req: NextRequest) {
       { status: 200 },
     );
   } catch (error) {
+    if (transactionStarted) {
+      await client.query("ROLLBACK");
+    }
     console.error("Error updating data:", error);
     return NextResponse.json(
       { message: "Internal Server Error" },
       { status: 500 },
     );
+  } finally {
+    client.release();
   }
 }
 export const revalidate = 0;

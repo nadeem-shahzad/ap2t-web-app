@@ -17,7 +17,7 @@ import {
 import moment from "moment";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useFieldArray, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import z from "zod";
 import ConfirmationDialog from "../alert-dialog";
@@ -58,6 +58,7 @@ interface EditSessionDialogProps {
   sessionData?: SessionType & {
     coach_first_name?: string;
     coach_last_name?: string;
+    variants?: Array<{ hour: number; price: number | string }>;
   };
   onSuccess?: () => void;
   coach_id?: string | null;
@@ -210,6 +211,8 @@ export function EditSessionDialog({
       start_time: "",
       end_time: "",
       price: 0,
+      pricing_mode: "single",
+      variants: [],
       max_players: 0,
       apply_promotion: promotion,
       show_storefront: false,
@@ -222,9 +225,42 @@ export function EditSessionDialog({
     },
   });
 
+  const { fields: variantFields, replace: replaceVariants } = useFieldArray({
+    control: form.control,
+    name: "variants",
+  });
+
   const applyPromotion = form.watch("apply_promotion");
   const image = form.watch("image");
   const selectedCoachId = form.watch("coach_id");
+  const startTime = form.watch("start_time");
+  const endTime = form.watch("end_time");
+  const pricingMode = form.watch("pricing_mode");
+
+  useEffect(() => {
+    if (pricingMode !== "variants") return;
+
+    const start = to24Hour(startTime);
+    const end = to24Hour(endTime);
+    if (!start || !end) {
+      replaceVariants([]);
+      return;
+    }
+
+    const [startHour, startMinute] = start.split(":").map(Number);
+    const [endHour, endMinute] = end.split(":").map(Number);
+    const totalHours = Math.floor(
+      (endHour * 60 + endMinute - (startHour * 60 + startMinute)) / 60,
+    );
+    const previousPrices = new Map(
+      form.getValues("variants").map((variant) => [variant.hour, variant.price]),
+    );
+
+    replaceVariants(
+      Array.from({ length: Math.max(0, totalHours) }, (_, index) => index + 1)
+        .map((hour) => ({ hour, price: previousPrices.get(hour) ?? 0 })),
+    );
+  }, [pricingMode, startTime, endTime, form, replaceVariants]);
 
   useEffect(() => {
     if (open && sessionData) {
@@ -242,6 +278,11 @@ export function EditSessionDialog({
         start_time: sessionData.start_time,
         end_time: sessionData.end_time,
         price: Number(sessionData.price),
+        pricing_mode: sessionData.variants?.length ? "variants" : "single",
+        variants: sessionData.variants?.map((variant) => ({
+          hour: Number(variant.hour),
+          price: Number(variant.price),
+        })) ?? [],
         max_players: Number(sessionData.max_players),
         apply_promotion: sessionData.apply_promotion,
         image: sessionData.image,
@@ -692,30 +733,95 @@ export function EditSessionDialog({
                       )}
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Controller
-                      name="price"
-                      control={form.control}
-                      render={({ field, fieldState }) => (
-                        <Field data-invalid={fieldState.invalid}>
-                          <Label className="text-sm text-[#99A1AF]">
-                            Price <RequiredStar />
-                          </Label>
-                          <Input
-                            {...field}
-                            id={field.name}
-                            aria-invalid={fieldState.invalid}
-                            placeholder=""
-                            autoComplete="off"
-                          />
-                          {fieldState.invalid && (
-                            <FieldError errors={[fieldState.error]} />
-                          )}
-                        </Field>
-                      )}
-                    />
-                  </div>
+                  {pricingMode === "single" && (
+                    <div className="space-y-2">
+                      <Controller
+                        name="price"
+                        control={form.control}
+                        render={({ field, fieldState }) => (
+                          <Field data-invalid={fieldState.invalid}>
+                            <Label className="text-sm text-[#99A1AF]">
+                              Price <RequiredStar />
+                            </Label>
+                            <Input
+                              {...field}
+                              id={field.name}
+                              aria-invalid={fieldState.invalid}
+                              placeholder=""
+                              autoComplete="off"
+                            />
+                            {fieldState.invalid && (
+                              <FieldError errors={[fieldState.error]} />
+                            )}
+                          </Field>
+                        )}
+                      />
+                    </div>
+                  )}
                 </div>
+
+                {pricingMode === "single" ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      if (applyPromotion) {
+                        toast.error("Promotional sessions cannot have variants.");
+                        return;
+                      }
+                      form.setValue("pricing_mode", "variants", { shouldValidate: true });
+                    }}
+                    className="mt-2"
+                  >
+                    Convert to variants
+                  </Button>
+                ) : (
+                  <div className="mt-2 space-y-3 rounded-md border border-[#3A3A3A] bg-[#1A1A1A] p-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <p className="text-sm font-medium text-[#F3F4F6]">Session variants</p>
+                        <p className="text-xs text-muted-foreground">Enter a price for every available duration.</p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          form.setValue("pricing_mode", "single", { shouldValidate: true });
+                          replaceVariants([]);
+                          form.clearErrors("variants");
+                        }}
+                      >
+                        Back to single session
+                      </Button>
+                    </div>
+
+                    {!startTime || !endTime ? (
+                      <p className="text-sm text-amber-500">Set the start and end times to generate variants.</p>
+                    ) : variantFields.length === 0 ? (
+                      <p className="text-sm text-red-500">End time must be at least one hour after start time.</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {variantFields.map((variant, index) => (
+                          <Controller
+                            key={variant.id}
+                            name={`variants.${index}.price`}
+                            control={form.control}
+                            render={({ field, fieldState }) => (
+                              <Field data-invalid={fieldState.invalid}>
+                                <Label className="text-sm text-[#99A1AF]">
+                                  {variant.hour} {variant.hour === 1 ? "hour" : "hours"} price <RequiredStar />
+                                </Label>
+                                <Input {...field} type="number" min="0" step="0.01" value={field.value ?? ""} placeholder="0.00" />
+                                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                              </Field>
+                            )}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div className="flex gap-2 text-md ">
                   <Users className="text-primary w-4 w-4" />
@@ -757,9 +863,13 @@ export function EditSessionDialog({
                           </Label>
                           <Select
                             value={String(field.value)}
-                            onValueChange={(val) =>
-                              field.onChange(val === "true")
-                            }
+                            onValueChange={(val) => {
+                              if (val === "true" && pricingMode === "variants") {
+                                toast.error("Sessions with variants cannot be made promotional.");
+                                return;
+                              }
+                              field.onChange(val === "true");
+                            }}
                           >
                             <SelectTrigger className="w-full dark:bg-[#1A1A1A] rounded-sm">
                               <SelectValue placeholder="Select" />

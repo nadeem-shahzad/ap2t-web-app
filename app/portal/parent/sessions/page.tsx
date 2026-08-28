@@ -56,6 +56,7 @@ export default function Page() {
             promotion: promotion,
             status: s?.status || 'upcoming',
             children: s?.children || [],
+            variants: s?.variants || [],
             end_date: s?.end_date ? moment(new Date(s.end_date)).format("YYYY-MM-DD") : null
           })
         });

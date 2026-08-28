@@ -72,6 +72,7 @@ export default function Page() {
             original_price: s.price,
             promotion: promotion,
             children: s?.children || [],
+            variants: s?.variants || [],
             status: s?.status || 'upcoming',
             enrolled: s?.enrolled,
             end_date: s?.end_date ? moment(new Date(s.end_date)).format("YYYY-MM-DD") : null
@@ -121,6 +122,7 @@ export default function Page() {
             original_price: s.price,
             promotion: promotion,
             children: s?.children || [],
+            variants: s?.variants || [],
             status: s?.status || 'upcoming',
             enrolled: s?.enrolled,
             end_date: s?.end_date ? moment(new Date(s.end_date)).format("YYYY-MM-DD") : null,

@@ -1,8 +1,6 @@
 "use client";
 
-import { useAuth } from "@/contexts/auth-context";
 import { useIsMobile } from "@/hooks/use-mobile";
-import axios from "@/lib/axios";
 import { SessionProps } from "@/lib/types";
 import { Scrollbar } from "@radix-ui/react-scroll-area";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -10,6 +8,7 @@ import moment from "moment";
 import { useMemo, useState } from "react";
 import { GoDotFill } from "react-icons/go";
 import CardStatus from "../card-status";
+import ParticipateButton from "../calendar/participate-button";
 import RenderAvatar from "../render-avatar";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
@@ -141,7 +140,7 @@ export default function ReserveComponent({ sessions, onSuccess, loading, player_
                         </div>
                     ) : (
                         selectedSessions.map((session) => (
-                            <RenderEachSession key={session.id} session={session} fetchData={onSuccess} />
+                            <RenderEachSession key={session.id} session={session} fetchData={onSuccess} playerId={player_id} />
                         ))
                     )}
                 </div>
@@ -150,23 +149,11 @@ export default function ReserveComponent({ sessions, onSuccess, loading, player_
     );
 }
 
-const RenderEachSession = ({ session, fetchData }: { session: SessionProps, fetchData: () => Promise<void> }) => {
-    const [loading, setLoading] = useState(false)
-    const { user } = useAuth()
-
-    async function handleEnroll(item: SessionProps) {
-        if (!user?.id || !item.id) return
-        try {
-            setLoading(true)
-            await axios.post(`/admin/sessions/${item.id}/participants`, {
-                player_id: user?.id,
-            });
-            await fetchData();
-
-        } finally {
-            setLoading(false);
-        }
-    }
+const RenderEachSession = ({ session, fetchData, playerId }: {
+    session: SessionProps,
+    fetchData: () => Promise<void>,
+    playerId?: string | null,
+}) => {
 
     return (
         <div
@@ -221,15 +208,13 @@ const RenderEachSession = ({ session, fetchData }: { session: SessionProps, fetc
 
                 </div>
                 {session?.enrolled ? <Badge className="bg-green-500/10 text-green-400">Enrolled</Badge> :
-                    <Button
-                        disabled={loading}
-                        onClick={() => {
-                            handleEnroll(session)
-                        }}
-                        variant="outline"
-                    >
-                        {loading && <Spinner />} Reserve
-                    </Button>
+                    <ParticipateButton
+                        player_id={playerId}
+                        session_id={session.id}
+                        variants={session.variants ?? []}
+                        label="Participate"
+                        onSuccess={fetchData}
+                    />
                 }
             </div>
         </div>

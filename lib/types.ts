@@ -18,6 +18,7 @@ export type CalendarEvent = {
   price: string | number
   original_price: string | number
   promotion: boolean
+  variants?: { id: number; hour: number; price: string | number }[]
 }
 
 export type CustomCalendarProps = {
@@ -276,6 +277,7 @@ export type SessionProps = {
   enrolled :boolean
   children: { user_id: number, last_name: string, first_name: string }[]
   location ?:string
+  variants?: { id: number; hour: number; price: string | number }[]
 }
 
 

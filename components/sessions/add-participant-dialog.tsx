@@ -16,7 +16,8 @@ import { Spinner } from "../ui/spinner";
 interface AddParticipantDialogProps {
   sessionId: number;
   onSuccess: () => Promise<void>;
-  parent_id?: string | null | undefined | number
+  parent_id?: string | null | undefined | number;
+  variants?: Array<{ id: number; hour: number; price: number | string }>;
 }
 
 interface Player {
@@ -27,12 +28,14 @@ interface Player {
   picture: string;
 }
 
-export function AddParticipantDialog({ sessionId, onSuccess, parent_id = null }: AddParticipantDialogProps) {
+export function AddParticipantDialog({ sessionId, onSuccess, parent_id = null, variants = [] }: AddParticipantDialogProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [results, setResults] = useState<Player[]>([]);
   const [loading, setLoading] = useState(false);
   const [addingId, setAddingId] = useState<number | null>(null);
+  const [addingVariantId, setAddingVariantId] = useState<number | null>(null);
+  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const debouncedSearch = useDebounce(search, 300)
 
   useEffect(() => {
@@ -54,17 +57,21 @@ export function AddParticipantDialog({ sessionId, onSuccess, parent_id = null }:
     }
   };
 
-  const addParticipant = async (playerId: number | null) => {
+  const addParticipant = async (playerId: number, variantId?: number) => {
 
     setAddingId(playerId);
+    setAddingVariantId(variantId ?? null);
     try {
       await axios.post(`/admin/sessions/${sessionId}/participants`, {
         player_id: playerId,
+        ...(variantId ? { variant_id: variantId } : {}),
       });
       await onSuccess();
-      setOpen(false)
+      setOpen(false);
+      setSelectedPlayer(null);
     } finally {
       setAddingId(null);
+      setAddingVariantId(null);
     }
   };
 
@@ -76,6 +83,7 @@ export function AddParticipantDialog({ sessionId, onSuccess, parent_id = null }:
       if (!val) {
         setSearch("");
         setResults([]);
+        setSelectedPlayer(null);
       }
     }}>
       <DialogTrigger asChild>
@@ -91,6 +99,39 @@ export function AddParticipantDialog({ sessionId, onSuccess, parent_id = null }:
           </DialogTitle>
         </DialogHeader>
         <div className="p-4 space-y-4">
+          {selectedPlayer ? (
+            <div className="space-y-3">
+              <div>
+                <p className="text-sm font-medium text-[#E5E7EB]">
+                  Select a duration for {selectedPlayer.first_name} {selectedPlayer.last_name}
+                </p>
+                <p className="text-xs text-[#99A1AF]">Choose the session option to charge.</p>
+              </div>
+              {variants.map((variant) => (
+                <Button
+                  key={variant.id}
+                  type="button"
+                  variant="outline"
+                  className="w-full justify-between"
+                  onClick={() => addParticipant(selectedPlayer.id, variant.id)}
+                  disabled={addingId === selectedPlayer.id}
+                >
+                  {addingVariantId === variant.id ? (
+                    <Spinner className="text-white" />
+                  ) : (
+                    <>
+                      <span>{variant.hour} {variant.hour === 1 ? "hour" : "hours"}</span>
+                      <span>${Number(variant.price).toFixed(2)}</span>
+                    </>
+                  )}
+                </Button>
+              ))}
+              <Button type="button" variant="ghost" onClick={() => setSelectedPlayer(null)}>
+                Back to players
+              </Button>
+            </div>
+          ) : (
+            <>
           <div className="space-y-2">
             <Label className="text-sm text-[#99A1AF]">Search Player</Label>
             <div className="relative">
@@ -128,7 +169,7 @@ export function AddParticipantDialog({ sessionId, onSuccess, parent_id = null }:
                       size="sm"
                       variant="ghost"
                       className="h-8 w-8 p-0"
-                      onClick={() => addParticipant(player.id)}
+                      onClick={() => variants.length > 0 ? setSelectedPlayer(player) : addParticipant(player.id)}
                       disabled={addingId === player.id}
                     >
                       {addingId === player.id ? (
@@ -145,6 +186,8 @@ export function AddParticipantDialog({ sessionId, onSuccess, parent_id = null }:
             <div className="text-center py-8 text-[#99A1AF]">
               No players found.
             </div>
+          )}
+            </>
           )}
         </div>
       </DialogContent>

@@ -13,7 +13,7 @@ export async function POST(
   const client = await pool.connect();
 
   try {
-    const { player_id } = await req.json();
+    const { player_id, variant_id } = await req.json();
 
     if (!player_id) {
       return NextResponse.json(
@@ -56,6 +56,42 @@ export async function POST(
       );
     }
 
+    const variantsResult = await client.query(
+      `SELECT id, price
+       FROM session_variants
+       WHERE session_id = $1`,
+      [session_id],
+    );
+    const sessionVariants = variantsResult.rows;
+    let selectedVariant: { id: number; price: string | number } | undefined;
+
+    if (sessionVariants.length > 0) {
+      if (!variant_id) {
+        await client.query("ROLLBACK");
+        return NextResponse.json(
+          { message: "A session variant must be selected" },
+          { status: 400 },
+        );
+      }
+
+      selectedVariant = sessionVariants.find(
+        (variant) => Number(variant.id) === Number(variant_id),
+      );
+      if (!selectedVariant) {
+        await client.query("ROLLBACK");
+        return NextResponse.json(
+          { message: "Selected session variant is invalid" },
+          { status: 400 },
+        );
+      }
+    } else if (variant_id) {
+      await client.query("ROLLBACK");
+      return NextResponse.json(
+        { message: "This session does not have variants" },
+        { status: 400 },
+      );
+    }
+
     const player_in_session = await client.query(
       `SELECT COUNT(*) FROM session_players WHERE session_id = $1`,
       [session_id]
@@ -75,7 +111,7 @@ export async function POST(
     /* ---------------- CALCULATE AMOUNT ---------------- */
 
     const now = moment();
-    let amount = sessionData.price;
+    let amount = selectedVariant ? Number(selectedVariant.price) : sessionData.price;
 
     if (sessionData.comped) {
       amount = 0;

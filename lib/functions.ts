@@ -91,9 +91,17 @@ export const exportToExcel = async (
 export function formatTimeWithAmPm(time: string): string {
   if (!time) return ""
 
-  const [hourStr, minuteStr] = time.split(":")
-  let hour = parseInt(hourStr, 10)
-  const minute = minuteStr || "00"
+  const match = time.trim().match(/^(\d{1,2}):(\d{2})(?:\s*([AaPp][Mm]))?$/)
+  if (!match) return time
+
+  let hour = parseInt(match[1], 10)
+  const minute = match[2]
+  const suppliedAmPm = match[3]?.toUpperCase()
+
+  if (suppliedAmPm) {
+    return `${hour.toString().padStart(2, "0")}:${minute} ${suppliedAmPm}`
+  }
+
   const ampm = hour >= 12 ? "PM" : "AM"
   hour = hour % 12
   if (hour === 0) hour = 12
