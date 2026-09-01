@@ -4,6 +4,7 @@ import { TriggerFirebaseForNotifications } from "./trigger-firebase";
 
 
 export async function sendInAppNotificationBackend(to: number, msg: string, route: string) {
+  if (!to) return
   try {
     const query = `
       INSERT INTO notifications ("to", msg, route, read)

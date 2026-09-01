@@ -7,10 +7,10 @@ import {
   sendPaymentReceiptEmail,
 } from "@/lib/email-templates";
 import { sendInAppNotificationBackend } from "@/lib/send-inapp-notification";
-import { squareClient } from "@/lib/square";
 import { GetSquare } from "@/lib/square-creds";
 import moment from "moment";
 import { NextRequest, NextResponse } from "next/server";
+import { SquareClient, SquareEnvironment } from "square";
 
 export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
     /* ---------------- SESSION ---------------- */
 
     const sessionResult = await client.query(
-      `SELECT id, price, apply_promotion, promotion_price, comped, max_players, promotion_start, promotion_end
+      `SELECT id, price, apply_promotion, promotion_price, comped, max_players, promotion_start, promotion_end, is_daily_payment
              FROM sessions
              WHERE id = $1
              FOR UPDATE`,
@@ -75,8 +75,13 @@ export async function GET(req: NextRequest) {
 
     const playerCheck = await client.query(
       `SELECT 1 FROM session_players
-             WHERE session_id = $1 AND user_id = $2`,
-      [session_id, user_id],
+             WHERE session_id = $1
+               AND user_id = $2
+               AND (
+                 NOT COALESCE($3::boolean, FALSE)
+                 OR DATE(created_at) = CURRENT_DATE
+               )`,
+      [session_id, user_id, session.is_daily_payment],
     );
 
     if (playerCheck.rows.length === 0) {
@@ -109,8 +114,13 @@ export async function GET(req: NextRequest) {
       }
 
       const countResult = await client.query(
-        `SELECT COUNT(*) FROM session_players WHERE session_id = $1`,
-        [session_id],
+        `SELECT COUNT(*) FROM session_players
+         WHERE session_id = $1
+           AND (
+             NOT COALESCE($2::boolean, FALSE)
+             OR DATE(created_at) = CURRENT_DATE
+           )`,
+        [session_id, session.is_daily_payment],
       );
 
       const currentPlayers = Number(countResult.rows[0].count);
@@ -215,7 +225,7 @@ export async function GET(req: NextRequest) {
     }
 
     const paymentResult = await client.query(
-      `SELECT status, amount
+      `SELECT id, status, amount
              FROM payments
              WHERE session_id = $1 AND user_id = $2 ORDER BY id DESC LIMIT 1`,
       [session_id, user_id],
@@ -232,7 +242,7 @@ export async function GET(req: NextRequest) {
 
     /* ---------------- CHARGE PAYMENT ---------------- */
 
-    const { error, location } = await GetSquare();
+    const { error, location, apiKey, mode } = await GetSquare();
 
     if (!error && payment.status !== "paid" && payment.status !== "comped") {
       let square_customer_id = player.square_customer_id;
@@ -268,6 +278,10 @@ export async function GET(req: NextRequest) {
       let charge: any = null;
       if (chargeAmount > 0) {
         try {
+          const squareClient = new SquareClient({
+            token: apiKey,
+            environment: mode ? SquareEnvironment.Sandbox : SquareEnvironment.Production,
+          });
           charge = await squareClient.payments.create({
             sourceId: square_card_id,
             idempotencyKey: crypto.randomUUID(),
@@ -282,8 +296,8 @@ export async function GET(req: NextRequest) {
           await pool.query(
             `UPDATE payments
                  SET status = $1, method = $2
-                 WHERE session_id = $3 AND user_id = $4`,
-            ["failed", "Debit / Credit Card", session_id, user_id],
+                 WHERE id = $3`,
+            ["failed", "Debit / Credit Card", payment.id],
           );
           throw err;
         }
@@ -296,7 +310,7 @@ export async function GET(req: NextRequest) {
                      paid_by = $3,
                      paid_at = $4,
                      method = $5
-                 WHERE session_id = $6 AND user_id = $7`,
+                 WHERE id = $6`,
         [
           chargeAmount > 0
             ? charge?.payment?.id
@@ -305,8 +319,7 @@ export async function GET(req: NextRequest) {
           paid_by,
           new Date(),
           "Debit / Credit Card",
-          session_id,
-          user_id,
+          payment.id,
         ],
       );
       if (charge?.payment?.id) {
@@ -334,8 +347,8 @@ export async function GET(req: NextRequest) {
         s.name AS sessionName
     FROM payments p
     JOIN sessions s ON s.id = p.session_id
-    WHERE p.session_id = $1;`,
-      [session_id],
+    WHERE p.id = $1;`,
+      [payment.id],
     );
 
     const paymentAndsession = paymentInfoAndSessionNameData.rows[0];
@@ -390,13 +403,15 @@ export async function GET(req: NextRequest) {
         `SELECT parent_id FROM players WHERE user_id=$1`,
         [user_id],
       );
-      const parent_id = parentidRaw.rows[0];
-      const parentMsg = `Payment payed for session ${session.sessionName} paid - $${session.amount}.`;
-      sendInAppNotificationBackend(
-        parent_id,
-        parentMsg,
-        `/portal/parent/dashboard`,
-      );
+      const parent_id = parentidRaw.rows[0]?.parent_id;
+      const parentMsg = `Payment paid for session ${paymentAndsession.sessionname} - $${paymentAndsession.amount}.`;
+      if (parent_id) {
+        sendInAppNotificationBackend(
+          parent_id,
+          parentMsg,
+          `/portal/parent/dashboard`,
+        );
+      }
       sendInAppNotificationBackend(Number(user_id), parentMsg, `/portal/parent/dashboard`);
     }
 
@@ -434,14 +449,12 @@ WHERE se.session_id = $1
           ? moment(EmailData.session_end_date).format("YYYY-MM-DD")
           : "";
         const adminEmailPayload = {
-          fullName: `${EmailData?.first_name || ""} ${
-            EmailData?.last_name || ""
-          }`,
+          fullName: `${EmailData?.first_name || ""} ${EmailData?.last_name || ""
+            }`,
           userEmail: EmailData.userEmail,
           sessionName: EmailData.sessionName,
-          coachName: `${EmailData?.coach_first_name || ""} ${
-            EmailData?.coach_last_name || ""
-          }`,
+          coachName: `${EmailData?.coach_first_name || ""} ${EmailData?.coach_last_name || ""
+            }`,
           sessionDate: `${sessionStartDate} - ${sessionEndData}`,
           enrollmentDate: EmailData.enrollmentDate,
         };
@@ -449,12 +462,10 @@ WHERE se.session_id = $1
         await sendAdminSessionEnrollmentEmail(adminEmailPayload);
         const coachEmailPayload = {
           coachEmail: EmailData.coachEmail,
-          coachName: `${EmailData?.coach_first_name || ""} ${
-            EmailData?.coach_last_name || ""
-          }`,
-          playerName: `${EmailData?.first_name || ""} ${
-            EmailData?.last_name || ""
-          }`,
+          coachName: `${EmailData?.coach_first_name || ""} ${EmailData?.coach_last_name || ""
+            }`,
+          playerName: `${EmailData?.first_name || ""} ${EmailData?.last_name || ""
+            }`,
           playerEmail: EmailData.userEmail,
           sessionName: EmailData.sessionName,
           sessionDate: `${sessionStartDate} - ${sessionEndData}`,
