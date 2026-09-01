@@ -2,6 +2,9 @@ import pool from "@/lib/db";
 import { TriggerFirebaseApprovals } from "@/lib/trigger-firebase";
 import { NextRequest, NextResponse } from "next/server";
 
+const isDateOnly = (value: unknown): value is string =>
+    typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
+
 
 export async function POST(req: NextRequest) {
 
@@ -12,9 +15,15 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ message: "Required parameters missing" }, { status: 400 });
         }
 
-        const { session_id, user_id } = data
+        const { session_id, user_id, session_date } = data
 
-        const checkExisting = await pool.query(`SELECT id FROM front_desk_actions WHERE session_id = $1 AND user_id = $2`, [session_id, user_id])
+        const checkExisting = await pool.query(
+          `SELECT id FROM front_desk_actions
+           WHERE session_id = $1 AND user_id = $2
+             AND ($3::date IS NULL OR session_date::date = $3::date)
+           ORDER BY id DESC LIMIT 1`,
+          [session_id, user_id, session_date ?? null]
+        )
         if (checkExisting.rows.length === 0) {
             console.log(1)
             const fields = Object.keys(data);
@@ -74,8 +83,16 @@ export async function GET(req: NextRequest) {
         const searchParams = req.nextUrl.searchParams
         const user_id = searchParams.get(`user_id`)
         const session_id = searchParams.get(`session_id`)
+        const session_date = searchParams.get(`session_date`)
 
-        const query = await pool.query(`SELECT status FROM front_desk_actions WHERE user_id = $1 AND session_id = $2 ORDER BY id DESC LIMIT 1`, [user_id, session_id])
+        const query = await pool.query(
+          `SELECT fda.status FROM front_desk_actions fda
+           JOIN sessions s ON s.id = fda.session_id
+           WHERE fda.user_id = $1 AND fda.session_id = $2
+             AND (NOT COALESCE(s.is_daily_payment, FALSE) OR fda.session_date::date = $3::date)
+           ORDER BY fda.id DESC LIMIT 1`,
+          [user_id, session_id, session_date]
+        )
 
         const res = query.rows?.[0] ?? null
 

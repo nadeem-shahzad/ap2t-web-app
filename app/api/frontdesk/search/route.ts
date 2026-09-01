@@ -82,7 +82,7 @@ WHERE
         AND user_id = se.user_id
         AND (
           NOT COALESCE(s.is_daily_payment, FALSE)
-          OR DATE(session_date) = CURRENT_DATE
+          OR session_date::date = CURRENT_DATE
         )
       ORDER BY id DESC
       LIMIT 1

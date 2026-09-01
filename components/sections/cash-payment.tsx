@@ -33,6 +33,7 @@ export default function CashPaymentPage({ setStep }: { setStep: (val: number) =>
         price: session?.price,
         action: "cash",
         status: "waiting",
+        session_date: currentSession.is_daily_payment ? moment().format("YYYY-MM-DD") : null,
         created_at: new Date()
       })
       setStep(7)

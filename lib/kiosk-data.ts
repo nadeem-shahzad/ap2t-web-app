@@ -20,6 +20,7 @@ export interface Session {
   max_players: number
   total_enrolled: number
   spots_left  : number
+  is_daily_payment?: boolean
   variants?: SessionVariant[]
   selectedVariant?: SessionVariant | null
 }

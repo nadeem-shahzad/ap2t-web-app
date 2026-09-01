@@ -13,7 +13,11 @@ export default function ApprovalWaitingPage({ setStep }: { setStep: (val: number
   const { state, reset } = useKiosk()
   const { player, session, booking, approvalCode } = state
   const currentSession = booking?.session || session
-  const { loading: isWaiting, error } = useApproval(player?.id, currentSession?.id)
+  const { loading: isWaiting, error } = useApproval(
+    player?.id,
+    currentSession?.id,
+    currentSession?.is_daily_payment ? new Date().toISOString().slice(0, 10) : undefined,
+  )
 
 
   if (!player || !currentSession || !approvalCode) {

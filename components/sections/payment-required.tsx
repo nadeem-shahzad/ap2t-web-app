@@ -39,6 +39,7 @@ export default function PaymentRequiredPage({ setStep }: { setStep: (val: number
         price: session?.price,
         action: "approval",
         status: "waiting",
+        session_date: currentSession.is_daily_payment ? new Date().toISOString().slice(0, 10) : null,
         created_at: new Date()
       })
       setStep(8)

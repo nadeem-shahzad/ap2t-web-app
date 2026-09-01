@@ -89,7 +89,7 @@ export async function GET(req: NextRequest) {
            AND user_id = $2
            AND (
              NOT $3::boolean
-             OR DATE(session_date) = CURRENT_DATE
+             OR session_date::date = CURRENT_DATE
            )
          ORDER BY id DESC
          LIMIT 1`,
@@ -129,8 +129,8 @@ export async function GET(req: NextRequest) {
       if (isDailyPayment || playerCheck.rows.length === 0) {
         const countResult = await client.query(
           isDailyPayment
-            ? `SELECT COUNT(*) FROM payments
-               WHERE session_id = $1 AND DATE(session_date) = CURRENT_DATE`
+            ? `SELECT COUNT(DISTINCT user_id) FROM payments
+               WHERE session_id = $1 AND session_date::date = CURRENT_DATE`
             : `SELECT COUNT(*) FROM session_players WHERE session_id = $1`,
           [session_id],
         );
@@ -218,7 +218,7 @@ export async function GET(req: NextRequest) {
         const paymentResult = await client.query(
           `INSERT INTO payments
                      (session_id, user_id, amount, status, paid_at, method, siblings_discount, session_date)
-                     VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_DATE)
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
                      RETURNING id, status, amount`,
           [
             session_id,
@@ -228,6 +228,7 @@ export async function GET(req: NextRequest) {
             new Date(),
             "Nil",
             hasSiblingDiscount,
+            isDailyPayment ? new Date() : null,
           ],
         );
         payment = paymentResult.rows[0];
@@ -235,9 +236,9 @@ export async function GET(req: NextRequest) {
         const paymentResult = await client.query(
           `INSERT INTO payments
                      (session_id, user_id, amount, status, siblings_discount, session_date)
-                     VALUES ($1, $2, $3, $4, $5, CURRENT_DATE)
+                     VALUES ($1, $2, $3, $4, $5, $6)
                      RETURNING id, status, amount`,
-          [session_id, user_id, amount, "pending", hasSiblingDiscount],
+          [session_id, user_id, amount, "pending", hasSiblingDiscount, isDailyPayment ? new Date() : null],
         );
         payment = paymentResult.rows[0];
       }

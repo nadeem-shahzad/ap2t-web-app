@@ -7,7 +7,7 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 
 
-export function useApproval(id: number | undefined, session_id: number | undefined) {
+export function useApproval(id: number | undefined, session_id: number | undefined, sessionDate?: string) {
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -18,7 +18,9 @@ export function useApproval(id: number | undefined, session_id: number | undefin
     setLoading(true)
 
     try {
-      const response = await axios.get(`/frontdesk/actions?user_id=${id}&session_id=${session_id}`)
+      const params = new URLSearchParams({ user_id: String(id), session_id: String(session_id) });
+      if (sessionDate) params.set("session_date", sessionDate);
+      const response = await axios.get(`/frontdesk/actions?${params.toString()}`)
       if (response.data?.status === 'accepted') {
         setLoading(false)
       }
@@ -46,7 +48,7 @@ export function useApproval(id: number | undefined, session_id: number | undefin
       setLoading(true)
     }
 
-  }, [id, session_id]);
+  }, [id, session_id, sessionDate]);
 
   return { loading, error };
 }

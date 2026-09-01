@@ -12,7 +12,7 @@ export async function GET() {
             SELECT COUNT(*)
             FROM payments p
             WHERE p.session_id = s.id
-              AND DATE(p.session_date) = CURRENT_DATE
+              AND p.session_date::date = CURRENT_DATE
           )
           ELSE COUNT(sp.user_id)
         END AS total_enrolled,
@@ -86,6 +86,7 @@ export async function GET() {
           price: finalPrice,
           original_price:session.price,
           status: session.status,
+          is_daily_payment: session.is_daily_payment,
           variants: session.variants,
         };
       })
