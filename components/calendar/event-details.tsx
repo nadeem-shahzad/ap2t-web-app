@@ -50,7 +50,12 @@ const EventDetail = ({
                             </div>
                         </div>
 
-                        {events.map((event) => (
+                        {events.map((event) => {
+                            const enrolledChildren = event.is_daily_payment
+                                ? event.children.filter((child) => event.enrolled_dates_by_player?.[String(child.user_id)]?.includes(event.date))
+                                : event.children;
+
+                            return (
                             <div
                                 key={event.id}
                                 className="rounded-lg border border-[#3A3A3A] bg-[#1E1E1E] p-4 flex flex-col justify-between hover:bg-[#242424] transition gap-4 sm:gap-2"
@@ -67,10 +72,10 @@ const EventDetail = ({
                                             <span>{formatTimeWithAmPm(event.time)} - {formatTimeWithAmPm(event?.end_time)}</span>
                                         </div>
 
-                                        {event?.children?.length > 0 && (
+                                        {enrolledChildren.length > 0 && (
                                             <p className="text-xs">
                                                 <span className="font-medium text-sm">Players enrolled:</span>{" "}
-                                                {event.children.map(child => joinNames([child.first_name, child.last_name])).join(", ")}
+                                                {enrolledChildren.map(child => joinNames([child.first_name, child.last_name])).join(", ")}
                                             </p>
                                         )}
                                     </div>
@@ -95,6 +100,7 @@ const EventDetail = ({
                                             <ParticipateButton
                                                 player_id={player_id}
                                                 session_id={event.originalId}
+                                                session_date={event.is_daily_payment ? event.date : undefined}
                                                 variants={event.variants ?? []}
                                                 onSuccess={async () => {
                                                     await onSuccess();
@@ -106,6 +112,8 @@ const EventDetail = ({
                                             <AddParticipantDialog
                                                 parent_id={parent_id}
                                                 sessionId={Number(event.originalId)}
+                                                session_date={event.is_daily_payment ? event.date : undefined}
+                                                enrolled_player_ids={enrolledChildren.map((child) => child.user_id)}
                                                 variants={event.variants ?? []}
                                                 onSuccess={async () => {
                                                     await onSuccess();
@@ -116,8 +124,8 @@ const EventDetail = ({
                                     </div>
                                 )}
                             </div>
-
-                        ))}
+                            );
+                        })}
                     </div>
                 </ScrollArea>
 

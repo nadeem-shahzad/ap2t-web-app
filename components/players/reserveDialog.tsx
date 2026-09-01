@@ -140,7 +140,7 @@ export default function ReserveComponent({ sessions, onSuccess, loading, player_
                         </div>
                     ) : (
                         selectedSessions.map((session) => (
-                            <RenderEachSession key={session.id} session={session} fetchData={onSuccess} playerId={player_id} />
+                            <RenderEachSession key={session.id} session={session} selectedDate={selectedDate} fetchData={onSuccess} playerId={player_id} />
                         ))
                     )}
                 </div>
@@ -149,11 +149,15 @@ export default function ReserveComponent({ sessions, onSuccess, loading, player_
     );
 }
 
-const RenderEachSession = ({ session, fetchData, playerId }: {
+const RenderEachSession = ({ session, selectedDate, fetchData, playerId }: {
     session: SessionProps,
+    selectedDate: string,
     fetchData: () => Promise<void>,
     playerId?: string | null,
 }) => {
+    const isEnrolledForSelectedDate = session.is_daily_payment
+        ? session.enrolled_dates?.includes(selectedDate) ?? false
+        : session.enrolled;
 
     return (
         <div
@@ -207,10 +211,11 @@ const RenderEachSession = ({ session, fetchData, playerId }: {
                     </div>
 
                 </div>
-                {session?.enrolled ? <Badge className="bg-green-500/10 text-green-400">Enrolled</Badge> :
+                {isEnrolledForSelectedDate ? <Badge className="bg-green-500/10 text-green-400">Enrolled</Badge> :
                     <ParticipateButton
                         player_id={playerId}
                         session_id={session.id}
+                        session_date={session.is_daily_payment ? selectedDate : undefined}
                         variants={session.variants ?? []}
                         label="Participate"
                         onSuccess={fetchData}

@@ -78,6 +78,10 @@ const RenderEachItem = ({ item, fetchData }: { item: PrmotionsType, fetchData: (
 
     const [loading, setLoading] = useState(false)
     const { user } = useAuth()
+    const [selectedDate, setSelectedDate] = useState(item.date)
+    const isEnrolledForSelectedDate = item.is_daily_payment
+        ? item.enrolled_dates?.includes(selectedDate) ?? false
+        : item.enrolled;
 
     async function handleEnroll(item: PrmotionsType) {
 
@@ -87,6 +91,7 @@ const RenderEachItem = ({ item, fetchData }: { item: PrmotionsType, fetchData: (
         try {
             await axios.post(`/admin/sessions/${item.id}/participants`, {
                 player_id: user?.id,
+                ...(item.is_daily_payment ? { session_date: selectedDate } : {}),
             });
             await fetchData();
 
@@ -158,10 +163,24 @@ const RenderEachItem = ({ item, fetchData }: { item: PrmotionsType, fetchData: (
 
                 <Separator />
 
+                {item.is_daily_payment && (
+                    <div className="space-y-2">
+                        <div className="text-xs text-muted-foreground">Booking Date</div>
+                        <input
+                            type="date"
+                            value={selectedDate}
+                            min={item.date}
+                            max={item.end_date || item.date}
+                            onChange={(event) => setSelectedDate(event.target.value)}
+                            className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
+                        />
+                    </div>
+                )}
+
 
 
                 <div className="flex gap-2 mb-4 w-full">
-                    {item?.enrolled ? <Badge className="bg-green-500/10 text-green-400 w-full">Enrolled</Badge> :
+                    {isEnrolledForSelectedDate ? <Badge className="bg-green-500/10 text-green-400 w-full">Enrolled</Badge> :
                         <Button disabled={loading} onClick={() => handleEnroll(item)} variant="outline" className="w-full">
                             {loading && <Spinner />} <Users /> Participate
                         </Button>

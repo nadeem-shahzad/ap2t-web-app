@@ -28,6 +28,7 @@ export async function GET(req : NextRequest, {params} : {params : {id : string}}
     s.promotion_price,
     s.price,
     s.max_players,
+    s.is_daily_payment,
     COUNT(sp.user_id) AS total_enrolled_players,
     (s.max_players - COUNT(sp.user_id)) AS total_left
   FROM sessions s
@@ -54,11 +55,15 @@ export async function POST(
   const { id } = await params;
 
   const defaultPass=12345678
-  let player: any, parent: any;
+  let player: any, parent: any, sessionDate: string | null = null;
+  let isDailyPayment = false;
   try {
     const body = await req.json();
     player = body.player;
     parent = body.parent;
+    sessionDate = typeof body.session_date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.session_date)
+      ? body.session_date
+      : null;
 
     if (!player || !parent) {
       return NextResponse.json(
@@ -94,14 +99,34 @@ export async function POST(
 
   
   try {
+    const sessionType = await pool.query(
+      `SELECT is_daily_payment FROM sessions WHERE id = $1`,
+      [id],
+    );
+    if (sessionType.rows[0]?.is_daily_payment && !sessionDate) {
+      return NextResponse.json({ error: "A session date is required for daily enrollment" }, { status: 400 });
+    }
+
     const session = await pool.query(
-      `SELECT s.id, s.max_players,
-        (max_players - COUNT(sp.user_id)) AS total_left
+      `SELECT s.id, s.max_players, s.is_daily_payment,
+        CASE WHEN s.is_daily_payment THEN
+          s.max_players - (
+            SELECT COUNT(DISTINCT pay.user_id)
+            FROM payments pay
+            WHERE pay.session_id = s.id
+              AND pay.session_date::date = $2::date
+          )
+        ELSE s.max_players - COUNT(sp.user_id)
+        END AS total_left,
+        CASE WHEN s.is_daily_payment THEN
+          $2::date BETWEEN s.date::date
+                        AND COALESCE(s.end_date, s.date)::date
+        ELSE true END AS is_valid_date
        FROM sessions s
        LEFT JOIN session_players sp ON sp.session_id = s.id
        WHERE s.id = $1
        GROUP BY s.id`,
-      [id]
+      [id, sessionDate]
     );
 
     if (session.rows.length === 0) {
@@ -110,6 +135,12 @@ export async function POST(
 
     if (Number(session.rows[0].total_left) <= 0) {
       return NextResponse.json({ error: "Session is full" }, { status: 409 });
+    }
+
+    isDailyPayment = Boolean(session.rows[0].is_daily_payment);
+
+    if (!session.rows[0].is_valid_date) {
+      return NextResponse.json({ error: "Selected date is outside the session period" }, { status: 400 });
     }
   } catch (err: any) {
     console.error("Session check error:", err.message);
@@ -231,9 +262,9 @@ export async function POST(
       [id, playerUserId]
     );
     await client.query(
-  `INSERT INTO payments (session_id, user_id, amount, status)
-   VALUES ($1, $2, $3, $4)`,
-  [id, playerUserId, 0, "pending"]
+  `INSERT INTO payments (session_id, user_id, amount, status, session_date)
+   VALUES ($1, $2, $3, $4, $5)`,
+  [id, playerUserId, 0, "pending", isDailyPayment ? sessionDate : null]
 );
 
     await client.query("COMMIT");

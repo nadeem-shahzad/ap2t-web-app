@@ -65,6 +65,7 @@ export const sessionSchema = z.object({
   start_time: z.string().min(1, "Start time required"),
   end_time: z.string().min(1, "End time required"),
   price: z.coerce.number<number>().optional(),
+  is_daily_payment: z.boolean(),
   pricing_mode: z.enum(["single", "variants"]),
   variants: z.array(z.object({
     hour: z.coerce.number<number>().int().positive(),
@@ -190,6 +191,7 @@ export function CreateSessionDialog({
       start_time: "",
       end_time: "",
       price: 0,
+      is_daily_payment: false,
       pricing_mode: "single",
       variants: [],
       max_players: 1,
@@ -821,6 +823,38 @@ export function CreateSessionDialog({
                       />
                     </div>
                   )}
+                  <Controller
+                    name="is_daily_payment"
+                    control={form.control}
+                    render={({ field, fieldState }) => (
+                      <Field data-invalid={fieldState.invalid}>
+                        <Label className="text-sm text-[#99A1AF]">
+                          Payment Type <RequiredStar />
+                        </Label>
+                        <Select
+                          value={field.value ? "daily" : "one-time"}
+                          onValueChange={(value) => field.onChange(value === "daily")}
+                        >
+                          <SelectTrigger className="w-full dark:bg-[#1A1A1A] rounded-sm">
+                            <SelectValue placeholder="Select payment type" />
+                          </SelectTrigger>
+                          <SelectContent className="!bg-[#1A1A1A]">
+                            <SelectGroup>
+                              <SelectLabel>Payment Type</SelectLabel>
+                              <SelectItem value="one-time">One-time payment</SelectItem>
+                              <SelectItem value="daily">Daily payment</SelectItem>
+                            </SelectGroup>
+                          </SelectContent>
+                        </Select>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {field.value
+                            ? "Players are charged for each attended day."
+                            : "Players are charged once when they enroll."}
+                        </p>
+                        {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                      </Field>
+                    )}
+                  />
                 </div>
 
                 {pricingMode === "single" ? (

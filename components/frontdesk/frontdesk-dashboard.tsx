@@ -66,6 +66,14 @@ export default function FrontdeskDashboard() {
 
 
     {
+      accessorKey: "session_date",
+      header: "BOOKING DATE",
+      cell: ({ row }) => {
+        const bookingDate = row.getValue("session_date") as string | null;
+        return <span className="text-[#D1D5DC]">{bookingDate ? moment(bookingDate).format("YYYY-MM-DD") : "One-time"}</span>;
+      },
+    },
+    {
       id: "date",
       header: ({ column }) => (
         <Button

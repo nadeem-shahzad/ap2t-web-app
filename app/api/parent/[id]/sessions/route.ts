@@ -49,7 +49,22 @@ export async function GET(
           )
         ) FILTER (WHERE c.user_id IS NOT NULL),
         '[]'
-      ) AS children
+      ) AS children,
+      COALESCE(
+        (
+          SELECT jsonb_object_agg(daily_payment.user_id::text, daily_payment.dates)
+          FROM (
+            SELECT p.user_id,
+              jsonb_agg(DISTINCT (p.session_date::date)::text) AS dates
+            FROM payments p
+            WHERE p.session_id = s.id
+              AND p.user_id = ANY($1)
+              AND p.session_date IS NOT NULL
+            GROUP BY p.user_id
+          ) daily_payment
+        ),
+        '{}'::jsonb
+      ) AS enrolled_dates_by_player
     FROM sessions s
     LEFT JOIN users u 
       ON u.id = s.coach_id

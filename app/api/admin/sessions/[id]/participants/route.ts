@@ -13,7 +13,7 @@ export async function POST(
   const client = await pool.connect();
 
   try {
-    const { player_id, variant_id } = await req.json();
+    const { player_id, variant_id, session_date } = await req.json();
 
     if (!player_id) {
       return NextResponse.json(
@@ -24,21 +24,9 @@ export async function POST(
 
     await client.query("BEGIN");
 
-    const check = await client.query(
-      `SELECT * FROM session_players WHERE session_id = $1 AND user_id = $2`,
-      [session_id, player_id]
-    );
-
-    if (check.rows.length > 0) {
-      await client.query("ROLLBACK");
-      return NextResponse.json(
-        { message: "Player already enrolled" },
-        { status: 409 }
-      );
-    }
-
     const sessionResult = await client.query(
-      `SELECT price, apply_promotion, promotion_price, promotion_start, promotion_end, comped, max_players
+      `SELECT price, apply_promotion, promotion_price, promotion_start, promotion_end, comped, max_players,
+              is_daily_payment, date, end_date
        FROM sessions
        WHERE id = $1
        LIMIT 1
@@ -54,6 +42,58 @@ export async function POST(
         { message: "Session not found" },
         { status: 400 }
       );
+    }
+
+    const isDailyPayment = Boolean(sessionData.is_daily_payment);
+    const selectedSessionDate = typeof session_date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(session_date)
+      ? session_date
+      : null;
+
+    if (isDailyPayment && !selectedSessionDate) {
+      await client.query("ROLLBACK");
+      return NextResponse.json(
+        { message: "A session date is required for daily enrollment" },
+        { status: 400 },
+      );
+    }
+
+    if (isDailyPayment) {
+      const validDate = await client.query(
+        `SELECT $2::date BETWEEN date::date
+                              AND COALESCE(end_date, date)::date AS is_valid`,
+        [session_id, selectedSessionDate],
+      );
+      if (!validDate.rows[0]?.is_valid) {
+        await client.query("ROLLBACK");
+        return NextResponse.json({ message: "Selected date is outside the session period" }, { status: 400 });
+      }
+    }
+
+    const check = await client.query(
+      `SELECT 1 FROM session_players WHERE session_id = $1 AND user_id = $2`,
+      [session_id, player_id],
+    );
+    const isOverallEnrollment = check.rows.length > 0;
+
+    if (!isDailyPayment && isOverallEnrollment) {
+      await client.query("ROLLBACK");
+      return NextResponse.json({ message: "Player already enrolled" }, { status: 409 });
+    }
+
+    if (isDailyPayment) {
+      const existingDailyPayment = await client.query(
+        `SELECT 1
+         FROM payments
+         WHERE session_id = $1
+           AND user_id = $2
+           AND session_date::date = $3::date
+         LIMIT 1`,
+        [session_id, player_id, selectedSessionDate],
+      );
+      if (existingDailyPayment.rows.length > 0) {
+        await client.query("ROLLBACK");
+        return NextResponse.json({ message: "Player is already enrolled for this date" }, { status: 409 });
+      }
     }
 
     const variantsResult = await client.query(
@@ -92,10 +132,18 @@ export async function POST(
       );
     }
 
-    const player_in_session = await client.query(
-      `SELECT COUNT(*) FROM session_players WHERE session_id = $1`,
-      [session_id]
-    );
+    const player_in_session = isDailyPayment
+      ? await client.query(
+        `SELECT COUNT(DISTINCT user_id)
+         FROM payments
+         WHERE session_id = $1
+           AND session_date::date = $2::date`,
+        [session_id, selectedSessionDate],
+      )
+      : await client.query(
+        `SELECT COUNT(*) FROM session_players WHERE session_id = $1`,
+        [session_id],
+      );
 
     const currentPlayers = Number(player_in_session.rows[0].count);
     const maxPlayers = Number(sessionData.max_players);
@@ -174,25 +222,29 @@ export async function POST(
 
     /* ---------------- INSERT PLAYER ---------------- */
 
-    await client.query(
-      `INSERT INTO session_players (session_id, user_id)
-       VALUES ($1, $2)`,
-      [session_id, player_id]
-    );
+    if (!isOverallEnrollment) {
+      await client.query(
+        `INSERT INTO session_players (session_id, user_id)
+         VALUES ($1, $2)`,
+        [session_id, player_id],
+      );
+    }
 
     if (sessionData.comped) {
       await client.query(
         `INSERT INTO payments
-         (session_id, user_id, amount, status, paid_at, method, siblings_discount)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        [session_id, player_id, amount, "comped", new Date(), "Nil", hasSiblingDiscount]
+         (session_id, user_id, amount, status, paid_at, method, siblings_discount, session_date)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [session_id, player_id, amount, "comped", new Date(), "Nil", hasSiblingDiscount,
+          isDailyPayment ? selectedSessionDate : null]
       );
     } else {
       await client.query(
         `INSERT INTO payments
-         (session_id, user_id, amount, status, siblings_discount)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [session_id, player_id, amount, "pending", hasSiblingDiscount]
+         (session_id, user_id, amount, status, siblings_discount, session_date)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [session_id, player_id, amount, "pending", hasSiblingDiscount,
+          isDailyPayment ? selectedSessionDate : null]
       );
     }
 
@@ -302,6 +354,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: session_id } = await params;
+  const selectedDate = req.nextUrl.searchParams.get("session_date");
   try {
     const result = await pool.query(
       `
@@ -317,8 +370,17 @@ export async function GET(
       INNER JOIN players p ON p.user_id = sp.user_id
       INNER JOIN users u ON u.id = p.user_id
       WHERE sp.session_id = $1
+        AND (
+          $2::date IS NULL
+          OR EXISTS (
+            SELECT 1 FROM payments pay
+            WHERE pay.session_id = sp.session_id
+              AND pay.user_id = sp.user_id
+              AND pay.session_date::date = $2::date
+          )
+        )
       `,
-      [session_id]
+      [session_id, selectedDate]
     );
 
     const attendanceRes = await pool.query(

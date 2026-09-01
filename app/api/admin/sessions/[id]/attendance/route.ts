@@ -23,7 +23,7 @@ export async function POST(
       AND session_id = $2
       AND DATE(created_at) = CURRENT_DATE
 ) AS is_present;`, 
-            [session_id, data.player_id]
+            [data.user_id, session_id]
         );
     
         if (present_today.rows[0].is_present) {   

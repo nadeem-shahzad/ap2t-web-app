@@ -11,6 +11,7 @@ const ParticipateButton = ({
   session_id,
   onSuccess,
   variants = [],
+  session_date,
   label = "Participate",
   buttonVariant,
 }: {
@@ -18,6 +19,7 @@ const ParticipateButton = ({
   session_id: string | number;
   onSuccess: () => Promise<void>;
   variants?: SessionVariant[];
+  session_date?: string;
   label?: string;
   buttonVariant?: "default" | "outline";
 }) => {
@@ -32,6 +34,7 @@ const ParticipateButton = ({
       await axios.post(`/admin/sessions/${session_id}/participants`, {
         player_id,
         ...(variantId !== undefined ? { variant_id: variantId } : {}),
+        ...(session_date ? { session_date } : {}),
       });
       await onSuccess();
       setOpen(false);

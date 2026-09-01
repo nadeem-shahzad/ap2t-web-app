@@ -6,6 +6,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: session_id } = await params;
+  const selectedDate = new URL(request.url).searchParams.get("session_date");
 
   try {
     const result = await pool.query(
@@ -18,10 +19,11 @@ export async function GET(
       
      LEFT JOIN users u ON u.id = p.user_id
       WHERE p.session_id = $1
+        AND ($2::date IS NULL OR p.session_date::date = $2::date)
       
       ORDER BY p.created_at DESC
       `,
-      [session_id]
+      [session_id, selectedDate]
     );
 
     return NextResponse.json(result.rows, { status: 200 });

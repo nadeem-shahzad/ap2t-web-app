@@ -72,7 +72,17 @@ JOIN payments p
 WHERE p.user_id = $1
   AND (
         p.status = 'failed'
-        OR (p.status = 'pending' AND s.status = 'completed')
+        OR (
+          p.status = 'pending'
+          AND (
+            s.status = 'completed'
+            OR (
+              s.is_daily_payment = true
+              AND p.session_date IS NOT NULL
+              AND p.session_date::date <= CURRENT_DATE
+            )
+          )
+        )
       );
         `, [id])
         const sessionsToBePaid = sessionsToBePaidRaw.rows;
@@ -214,7 +224,17 @@ JOIN payments p
 WHERE p.user_id = $1
   AND (
         p.status = 'failed'
-        OR (p.status = 'pending' AND s.status = 'completed')
+        OR (
+          p.status = 'pending'
+          AND (
+            s.status = 'completed'
+            OR (
+              s.is_daily_payment = true
+              AND p.session_date IS NOT NULL
+              AND p.session_date::date <= CURRENT_DATE
+            )
+          )
+        )
       );
         `, [id])
         const sessionsToBePaid = sessionsToBePaidRaw.rows;

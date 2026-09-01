@@ -21,6 +21,7 @@ export async function GET() {
     s.start_time,
     s.end_time,
     fda.price,
+    fda.session_date,
     fda.referal_code,
     fda.action,
     fda.status
@@ -91,11 +92,12 @@ export async function PUT(req: NextRequest) {
           /* ---------------- SESSION ---------------- */
 
           const sessionResult = await client.query(
-            `SELECT id, comped, max_players
+            `SELECT id, comped, max_players, is_daily_payment,
+              CASE WHEN is_daily_payment THEN $2::date BETWEEN date::date AND COALESCE(end_date, date)::date ELSE true END AS is_valid_date
        FROM sessions
        WHERE id = $1
        FOR UPDATE`,
-            [session_id],
+            [session_id, updatingRow?.session_date ?? moment().format("YYYY-MM-DD")],
           );
 
           const session = sessionResult.rows?.[0];
@@ -135,11 +137,63 @@ export async function PUT(req: NextRequest) {
             [session_id, user_id],
           );
 
-          if (playerCheck.rows.length === 0) {
-            const countResult = await client.query(
-              `SELECT COUNT(*) FROM session_players WHERE session_id = $1`,
-              [session_id],
+          // Existing actions created before session_date was introduced remain today-only.
+          const dailySessionDate = updatingRow?.session_date ?? moment().format("YYYY-MM-DD");
+          if (session.is_daily_payment && playerCheck.rows.length > 0) {
+            const existingDailyPayment = await client.query(
+              `SELECT 1 FROM payments
+               WHERE session_id = $1 AND user_id = $2
+                 AND session_date::date = $3::date
+               LIMIT 1`,
+              [session_id, user_id, dailySessionDate],
             );
+            if (existingDailyPayment.rows.length > 0) {
+              await client.query("ROLLBACK");
+              return NextResponse.json({ message: "Player is already enrolled for this date" }, { status: 409 });
+            }
+
+            const dailyCapacity = await client.query(
+              `SELECT COUNT(DISTINCT user_id) FROM payments
+               WHERE session_id = $1
+                 AND session_date::date = $2::date`,
+              [session_id, dailySessionDate],
+            );
+            if (Number(dailyCapacity.rows[0].count) >= Number(session.max_players)) {
+              await client.query("ROLLBACK");
+              return NextResponse.json({ message: "Session is full for this date" }, { status: 409 });
+            }
+
+            if (session.comped) {
+              await client.query(
+                `INSERT INTO payments (session_id, user_id, amount, status, paid_at, method, session_date)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+                [session_id, user_id, amount, "comped", new Date(), "Nil", dailySessionDate],
+              );
+            } else {
+              await client.query(
+                `INSERT INTO payments (session_id, user_id, amount, status, session_date)
+                 VALUES ($1, $2, $3, $4, $5)`,
+                [session_id, user_id, amount, "pending", dailySessionDate],
+              );
+            }
+          }
+          if (session.is_daily_payment && !session.is_valid_date) {
+            await client.query("ROLLBACK");
+            return NextResponse.json({ message: "Selected date is outside the session period" }, { status: 400 });
+          }
+
+          if (playerCheck.rows.length === 0) {
+            const countResult = session.is_daily_payment
+              ? await client.query(
+                `SELECT COUNT(DISTINCT user_id) FROM payments
+                 WHERE session_id = $1
+                   AND session_date::date = $2::date`,
+                [session_id, dailySessionDate],
+              )
+              : await client.query(
+                `SELECT COUNT(*) FROM session_players WHERE session_id = $1`,
+                [session_id],
+              );
 
             const currentPlayers = Number(countResult.rows[0].count);
             const maxPlayers = Number(session.max_players);
@@ -210,8 +264,8 @@ export async function PUT(req: NextRequest) {
             if (session.comped) {
               await client.query(
                 `INSERT INTO payments
-                 (session_id, user_id, amount, status, paid_at, method, siblings_discount)
-                 VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+                 (session_id, user_id, amount, status, paid_at, method, siblings_discount, session_date)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
                 [
                   session_id,
                   user_id,
@@ -220,14 +274,16 @@ export async function PUT(req: NextRequest) {
                   new Date(),
                   "Nil",
                   hasSiblingDiscount,
+                  session.is_daily_payment ? dailySessionDate : null,
                 ],
               );
             } else {
               await client.query(
                 `INSERT INTO payments
-                 (session_id, user_id, amount, status, siblings_discount)
-                 VALUES ($1, $2, $3, $4, $5)`,
-                [session_id, user_id, amount, "pending", hasSiblingDiscount],
+                 (session_id, user_id, amount, status, siblings_discount, session_date)
+                 VALUES ($1, $2, $3, $4, $5, $6)`,
+                [session_id, user_id, amount, "pending", hasSiblingDiscount,
+                  session.is_daily_payment ? dailySessionDate : null],
               );
             }
           }
@@ -393,7 +449,19 @@ WHERE se.session_id = $1
           `
           UPDATE payments
           SET method = 'Cash', status = 'paid', paid_at = $1, paid_by = $2, transaction_id = $3
-          WHERE user_id = $4 AND session_id = $5 RETURNING *
+          WHERE id = (
+            SELECT p.id
+            FROM payments p
+            JOIN sessions s ON s.id = p.session_id
+            WHERE p.user_id = $4
+              AND p.session_id = $5
+              AND (
+                s.is_daily_payment = false
+                OR p.session_date::date = $6::date
+              )
+            ORDER BY p.created_at DESC
+            LIMIT 1
+          ) RETURNING *
         `,
           [
             new Date(),
@@ -401,6 +469,7 @@ WHERE se.session_id = $1
             moment().valueOf().toString(),
             updatingRow?.user_id,
             updatingRow?.session_id,
+            updatingRow?.session_date,
           ],
         );
 

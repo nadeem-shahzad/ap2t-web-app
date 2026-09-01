@@ -11,6 +11,7 @@ import { joinNames } from "@/lib/functions";
 import { Plus, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import RenderAvatar from "../render-avatar";
+import { Badge } from "../ui/badge";
 import { Spinner } from "../ui/spinner";
 
 interface AddParticipantDialogProps {
@@ -18,6 +19,8 @@ interface AddParticipantDialogProps {
   onSuccess: () => Promise<void>;
   parent_id?: string | null | undefined | number;
   variants?: Array<{ id: number; hour: number; price: number | string }>;
+  session_date?: string;
+  enrolled_player_ids?: number[];
 }
 
 interface Player {
@@ -28,7 +31,7 @@ interface Player {
   picture: string;
 }
 
-export function AddParticipantDialog({ sessionId, onSuccess, parent_id = null, variants = [] }: AddParticipantDialogProps) {
+export function AddParticipantDialog({ sessionId, onSuccess, parent_id = null, variants = [], session_date, enrolled_player_ids = [] }: AddParticipantDialogProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [results, setResults] = useState<Player[]>([]);
@@ -65,6 +68,7 @@ export function AddParticipantDialog({ sessionId, onSuccess, parent_id = null, v
       await axios.post(`/admin/sessions/${sessionId}/participants`, {
         player_id: playerId,
         ...(variantId ? { variant_id: variantId } : {}),
+        ...(session_date ? { session_date } : {}),
       });
       await onSuccess();
       setOpen(false);
@@ -152,6 +156,9 @@ export function AddParticipantDialog({ sessionId, onSuccess, parent_id = null, v
             <ScrollArea className="h-[calc(100vh-250px)]">
               <div className="space-y-2">
                 {filteredData.map((player) => (
+                  (() => {
+                    const isEnrolledForSelectedDate = enrolled_player_ids.includes(player.id);
+                    return (
                   <div
                     key={player.id}
                     className="flex items-center justify-between p-3 rounded-lg bg-[#1A1A1A] border border-[#3A3A3A]"
@@ -163,6 +170,7 @@ export function AddParticipantDialog({ sessionId, onSuccess, parent_id = null, v
                           {player.first_name} {player.last_name}
                         </p>
                         <p className="text-xs text-[#99A1AF]">{player.email}</p>
+                        {isEnrolledForSelectedDate && <Badge className="mt-1 bg-green-500/10 text-green-400">Enrolled</Badge>}
                       </div>
                     </div>
                     <Button
@@ -170,7 +178,7 @@ export function AddParticipantDialog({ sessionId, onSuccess, parent_id = null, v
                       variant="ghost"
                       className="h-8 w-8 p-0"
                       onClick={() => variants.length > 0 ? setSelectedPlayer(player) : addParticipant(player.id)}
-                      disabled={addingId === player.id}
+                      disabled={addingId === player.id || isEnrolledForSelectedDate}
                     >
                       {addingId === player.id ? (
                         <Spinner className="text-white" />
@@ -179,6 +187,8 @@ export function AddParticipantDialog({ sessionId, onSuccess, parent_id = null, v
                       )}
                     </Button>
                   </div>
+                    );
+                  })()
                 ))}
               </div>
             </ScrollArea>

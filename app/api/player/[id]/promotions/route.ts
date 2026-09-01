@@ -17,7 +17,17 @@ export async function GET(req: NextRequest, {params} : {params : Promise<{id : s
   CASE 
         WHEN sp.user_id IS NOT NULL THEN true
         ELSE false
-      END AS enrolled
+      END AS enrolled,
+  COALESCE(
+    (
+      SELECT jsonb_agg(DISTINCT (p.session_date::date)::text)
+      FROM payments p
+      WHERE p.session_id = s.id
+        AND p.user_id = $1
+        AND p.session_date IS NOT NULL
+    ),
+    '[]'::jsonb
+  ) AS enrolled_dates
 FROM sessions s
 LEFT JOIN users u ON u.id = s.coach_id
 LEFT JOIN session_players sp

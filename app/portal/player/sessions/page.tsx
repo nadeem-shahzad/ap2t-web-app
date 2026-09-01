@@ -75,6 +75,8 @@ export default function Page() {
             variants: s?.variants || [],
             status: s?.status || 'upcoming',
             enrolled: s?.enrolled,
+            is_daily_payment: s?.is_daily_payment ?? false,
+            enrolled_dates: s?.enrolled_dates ?? [],
             end_date: s?.end_date ? moment(new Date(s.end_date)).format("YYYY-MM-DD") : null
           })
         });
@@ -125,6 +127,8 @@ export default function Page() {
             variants: s?.variants || [],
             status: s?.status || 'upcoming',
             enrolled: s?.enrolled,
+            is_daily_payment: s?.is_daily_payment ?? false,
+            enrolled_dates: s?.enrolled_dates ?? [],
             end_date: s?.end_date ? moment(new Date(s.end_date)).format("YYYY-MM-DD") : null,
             location : s?.location || ""
           })

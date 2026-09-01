@@ -22,6 +22,9 @@ export default function CampsAndClinicsDetail({
   const mobile = useIsMobile();
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
+    session_date: data?.is_daily_payment && data.date
+      ? moment(data.date).format("YYYY-MM-DD")
+      : "",
     player: {
       first_name: "",
       last_name: "",
@@ -70,6 +73,12 @@ export default function CampsAndClinicsDetail({
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    if (data?.is_daily_payment && !formData.session_date) {
+      toast.error("Please select a booking date");
+      return;
+    }
+
     setLoading(true);
 
   try {
@@ -131,7 +140,7 @@ export default function CampsAndClinicsDetail({
                   {currentCamp.badge}
                 </div>
 
-                {currentCamp?.left && (
+                {!data?.is_daily_payment && currentCamp?.left && (
                   <div className="text-xs font-semibold px-2 py-1 rounded-md bg-red-500/15 text-red-400">
                     {currentCamp.left} Left
                   </div>
@@ -213,7 +222,7 @@ export default function CampsAndClinicsDetail({
                           </p>
                         </div>
 
-                        {currentCamp?.left && (
+                        {!data?.is_daily_payment && currentCamp?.left && (
                           <div className="bg-[#DC262652] border-[#EF4444] p-5 rounded-[8px]">
                             <div className="flex items-start gap-3">
                               <CircleAlert className="text-[#EF4444] mt-0.5" />
@@ -232,6 +241,31 @@ export default function CampsAndClinicsDetail({
                           </div>
                         )}
                         <div className="flex flex-col gap-4">
+                          {data?.is_daily_payment && (
+                            <div className="space-y-2">
+                              <h4 className="text-sm font-medium text-white/80">
+                                Booking Date
+                              </h4>
+                              <input
+                                type="date"
+                                required
+                                min={moment(data.date).format("YYYY-MM-DD")}
+                                max={moment(data.end_date || data.date).format("YYYY-MM-DD")}
+                                value={formData.session_date}
+                                className="w-full rounded-[8px] border border-[#6D6D6D] bg-transparent px-3 py-2 text-sm text-white focus:outline-none focus:border-white/30"
+                                onChange={(e) =>
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    session_date: e.target.value,
+                                  }))
+                                }
+                              />
+                              <p className="text-xs text-white/50">
+                                Select the day you want to attend.
+                              </p>
+                            </div>
+                          )}
+
                           <div className="space-y-3">
                             <h4 className="text-sm font-medium text-white/80">
                               Player Information

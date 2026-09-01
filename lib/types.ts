@@ -19,6 +19,9 @@ export type CalendarEvent = {
   original_price: string | number
   promotion: boolean
   variants?: { id: number; hour: number; price: string | number }[]
+  is_daily_payment?: boolean
+  enrolled_dates?: string[]
+  enrolled_dates_by_player?: Record<string, string[]>
 }
 
 export type CustomCalendarProps = {
@@ -275,6 +278,9 @@ export type SessionProps = {
   promotion ?:boolean
   original_price ?: string
   enrolled :boolean
+  is_daily_payment?: boolean
+  enrolled_dates?: string[]
+  enrolled_dates_by_player?: Record<string, string[]>
   children: { user_id: number, last_name: string, first_name: string }[]
   location ?:string
   variants?: { id: number; hour: number; price: string | number }[]
@@ -323,6 +329,7 @@ export type FrontDeskActionData = {
   end_date: string;
   start_time: string;
   end_time: string;
+  session_date?: string | null;
   referal_code: string | null;
   price: number;
   action: "cash" | "approval";
@@ -488,6 +495,7 @@ export type SessionType = {
   status: string;
   end_time: string;
   price: number | string;
+  is_daily_payment?: boolean;
   max_players: number | string;
   apply_promotion: boolean;
   promotion_price?: number | string;
@@ -569,6 +577,7 @@ export type CampClinicSession = {
   promotion_price: string;
   price: string;
   max_players: number;
+  is_daily_payment?: boolean;
   total_enrolled_players: number;
   total_left: number;
   location : string
@@ -814,6 +823,8 @@ export type PrmotionsType = {
   rawData: any
   promotion_end: string | null
   enrolled ?: boolean
+  is_daily_payment?: boolean
+  enrolled_dates?: string[]
 }
 
 export type ConfirmationProps = {

@@ -15,6 +15,7 @@ import {
   DialogTitle
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
@@ -74,6 +75,8 @@ export default function SessionMainPage({ id, back, back_title, admin = false, p
   const { user, isAdmin } = useAuth()
   const [participants, setParticipants] = useState<any[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
+  const [selectedSessionDate, setSelectedSessionDate] = useState("");
+  const [dailyDataLoading, setDailyDataLoading] = useState(false);
   const [notes, setNotes] = useState([])
   const [paymentStats, setPaymentStats] = useState({
     total_revenue: 0,
@@ -101,6 +104,9 @@ export default function SessionMainPage({ id, back, back_title, admin = false, p
       if (result.data) {
         const d = result.data;
         setRawSessionData(d);
+        if (d.is_daily_payment) {
+          setSelectedSessionDate(moment(new Date(d.date)).format("YYYY-MM-DD"));
+        }
         setData({
           id: d.id,
           sessionName: d.name,
@@ -147,7 +153,9 @@ export default function SessionMainPage({ id, back, back_title, admin = false, p
 
   const fetchParticipants = async () => {
     try {
-      const response = await axios.get(`/admin/sessions/${id}/participants`);
+      const response = await axios.get(`/admin/sessions/${id}/participants`, {
+        params: rawSessionData?.is_daily_payment && selectedSessionDate ? { session_date: selectedSessionDate } : undefined,
+      });
       setParticipants(response.data);
     } catch (error) {
       console.error("Error fetching participants", error);
@@ -157,7 +165,9 @@ export default function SessionMainPage({ id, back, back_title, admin = false, p
 
   const fetchPayments = async () => {
     try {
-      const response = await axios.get(`/admin/sessions/${id}/payments`);
+      const response = await axios.get(`/admin/sessions/${id}/payments`, {
+        params: rawSessionData?.is_daily_payment && selectedSessionDate ? { session_date: selectedSessionDate } : undefined,
+      });
       setPayments(response.data);
     } catch (error) {
       console.error("Error fetching payments", error);
@@ -188,6 +198,14 @@ export default function SessionMainPage({ id, back, back_title, admin = false, p
     const res = calculatePaymentStats(participants, payments)
     setPaymentStats({ paid_amount: res.totalPaid, pending_amount: res.totalPending, total_revenue: res.totalAmount })
   }, [participants, payments, data])
+
+  useEffect(() => {
+    if (rawSessionData?.is_daily_payment && selectedSessionDate) {
+      setDailyDataLoading(true);
+      Promise.all([fetchParticipants(), fetchPayments()])
+        .finally(() => setDailyDataLoading(false));
+    }
+  }, [selectedSessionDate, rawSessionData?.is_daily_payment]);
 
   function calculatePaymentStats(
     participants: any[],
@@ -224,7 +242,7 @@ export default function SessionMainPage({ id, back, back_title, admin = false, p
   const stats = [
     {
       h: `${participants.length}/${data?.max_players || '-'}`,
-      p: "Participants",
+      p: rawSessionData?.is_daily_payment ? `Booked for ${selectedSessionDate}` : "Overall Enrolled",
       icon: <Users />,
       type: "info",
     },
@@ -250,6 +268,19 @@ export default function SessionMainPage({ id, back, back_title, admin = false, p
   return (
     <div className="flex flex-col w-full gap-6">
       <BackButton title={back_title} route={back} />
+
+      {rawSessionData?.is_daily_payment && (
+        <div className="flex max-w-xs flex-col gap-2">
+          <Label className="flex items-center gap-2">Session Date {dailyDataLoading && <Spinner className="h-4 w-4" />}</Label>
+          <Input
+            type="date"
+            value={selectedSessionDate}
+            min={moment(new Date(rawSessionData.date)).format("YYYY-MM-DD")}
+            max={moment(new Date(rawSessionData.end_date || rawSessionData.date)).format("YYYY-MM-DD")}
+            onChange={(event) => setSelectedSessionDate(event.target.value)}
+          />
+        </div>
+      )}
 
       <Card className="w-full rounded-2xl bg-[#252525]">
         <CardContent className="p-0 space-y-2">
@@ -380,7 +411,7 @@ export default function SessionMainPage({ id, back, back_title, admin = false, p
                 >
                   {t === "Participants" && (
                     <div className="flex gap-2 items-center py-2">
-                      <User /> Participants {`(${participants.length})`}
+                      <User /> {rawSessionData?.is_daily_payment ? `Booked (${participants.length})` : `Overall Enrolled (${participants.length})`}
                     </div>
                   )}
                   {t === "Payments" && (
@@ -401,7 +432,7 @@ export default function SessionMainPage({ id, back, back_title, admin = false, p
           <Separator />
 
           <TabsContent value="Participants" className="space-y-4 p-4">
-            {data?.status === "upcoming" && allowed && <AddParticipantDialog sessionId={Number(id)} variants={rawSessionData?.variants ?? []} onSuccess={async () => {
+            {data?.status === "upcoming" && allowed && <AddParticipantDialog sessionId={Number(id)} variants={rawSessionData?.variants ?? []} session_date={rawSessionData?.is_daily_payment ? selectedSessionDate : undefined} enrolled_player_ids={rawSessionData?.is_daily_payment ? participants.map((participant) => participant.player_id) : []} onSuccess={async () => {
               await fetchParticipants()
               await fetchPayments()
             }} />}
@@ -479,6 +510,12 @@ export default function SessionMainPage({ id, back, back_title, admin = false, p
                         <p className="text-muted-foreground">Date:</p>{" "}
                         <p className="text-[#D1D5DC]">{payment.paid_at ? new Date(payment.paid_at).toLocaleDateString() : 'Pending'}</p>
                       </div>
+                      {rawSessionData?.is_daily_payment && (
+                        <div className="flex text-sm text-ghost-text gap-1">
+                          <p className="text-muted-foreground">Session Date:</p>{" "}
+                          <p className="text-[#D1D5DC]">{payment.session_date ? moment(new Date(payment.session_date)).format("YYYY-MM-DD") : "-"}</p>
+                        </div>
+                      )}
                       <div className="flex text-sm text-ghost-text gap-1">
                         <p className="text-muted-foreground">Transaction ID:</p>{" "}
                         <p className="text-[#D1D5DC]">{payment.transaction_id}</p>

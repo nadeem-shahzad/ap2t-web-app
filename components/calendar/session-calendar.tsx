@@ -64,14 +64,19 @@ export default function SessionCalendar({ currentMonth, setCurrentMonth, session
     end_time : session?.time?.split(" - ")[1],
     type: type as any,
     children: session.children,
-    enrolled: session.enrolled,
+    enrolled: session.is_daily_payment
+      ? session.enrolled_dates?.includes(date) ?? false
+      : session.enrolled,
     isMultiDay: Boolean(endDate),
     end_date : endDate,
     start_date : startDate,
     price : session?.price,
     promotion:session?.promotion ?? false,
     original_price:session?.original_price ?? 0,
-    variants: session?.variants ?? []
+    variants: session?.variants ?? [],
+    is_daily_payment: session.is_daily_payment,
+    enrolled_dates: session.enrolled_dates,
+    enrolled_dates_by_player: session.enrolled_dates_by_player,
   }))
 })
 
