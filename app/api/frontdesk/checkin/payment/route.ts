@@ -52,6 +52,8 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    const isDailyPayment = session.is_daily_payment === true;
+
     /* ---------------- PLAYER ---------------- */
 
     const playerResult = await client.query(
@@ -75,16 +77,27 @@ export async function GET(req: NextRequest) {
 
     const playerCheck = await client.query(
       `SELECT 1 FROM session_players
-             WHERE session_id = $1
-               AND user_id = $2
-               AND (
-                 NOT COALESCE($3::boolean, FALSE)
-                 OR DATE(created_at) = CURRENT_DATE
-               )`,
-      [session_id, user_id, session.is_daily_payment],
+             WHERE session_id = $1 AND user_id = $2`,
+      [session_id, user_id],
     );
 
-    if (playerCheck.rows.length === 0) {
+    let payment = (
+      await client.query(
+        `SELECT id, status, amount
+         FROM payments
+         WHERE session_id = $1
+           AND user_id = $2
+           AND (
+             NOT $3::boolean
+             OR DATE(session_date) = CURRENT_DATE
+           )
+         ORDER BY id DESC
+         LIMIT 1`,
+        [session_id, user_id, isDailyPayment],
+      )
+    ).rows?.[0];
+
+    if (!payment) {
       const variantsResult = await client.query(
         `SELECT id, price
          FROM session_variants
@@ -113,28 +126,28 @@ export async function GET(req: NextRequest) {
         );
       }
 
-      const countResult = await client.query(
-        `SELECT COUNT(*) FROM session_players
-         WHERE session_id = $1
-           AND (
-             NOT COALESCE($2::boolean, FALSE)
-             OR DATE(created_at) = CURRENT_DATE
-           )`,
-        [session_id, session.is_daily_payment],
-      );
-
-      const currentPlayers = Number(countResult.rows[0].count);
-      const maxPlayers = Number(session.max_players);
-
-      if (currentPlayers >= maxPlayers) {
-        await client.query("ROLLBACK");
-        return NextResponse.json(
-          {
-            message: "Max players added in the session can not add more",
-            max: true,
-          },
-          { status: 400 },
+      if (isDailyPayment || playerCheck.rows.length === 0) {
+        const countResult = await client.query(
+          isDailyPayment
+            ? `SELECT COUNT(*) FROM payments
+               WHERE session_id = $1 AND DATE(session_date) = CURRENT_DATE`
+            : `SELECT COUNT(*) FROM session_players WHERE session_id = $1`,
+          [session_id],
         );
+
+        const currentPlayers = Number(countResult.rows[0].count);
+        const maxPlayers = Number(session.max_players);
+
+        if (currentPlayers >= maxPlayers) {
+          await client.query("ROLLBACK");
+          return NextResponse.json(
+            {
+              message: "Max players added in the session can not add more",
+              max: true,
+            },
+            { status: 400 },
+          );
+        }
       }
 
       /* ---------------- CALCULATE AMOUNT ---------------- */
@@ -193,17 +206,20 @@ export async function GET(req: NextRequest) {
 
       /* ---------------- INSERT PLAYER ---------------- */
 
-      await client.query(
-        `INSERT INTO session_players (session_id, user_id)
-                 VALUES ($1, $2)`,
-        [session_id, user_id],
-      );
+      if (playerCheck.rows.length === 0) {
+        await client.query(
+          `INSERT INTO session_players (session_id, user_id)
+                   VALUES ($1, $2)`,
+          [session_id, user_id],
+        );
+      }
 
       if (session.comped) {
-        await client.query(
+        const paymentResult = await client.query(
           `INSERT INTO payments
-                     (session_id, user_id, amount, status, paid_at, method, siblings_discount)
-                     VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+                     (session_id, user_id, amount, status, paid_at, method, siblings_discount, session_date)
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_DATE)
+                     RETURNING id, status, amount`,
           [
             session_id,
             user_id,
@@ -214,24 +230,18 @@ export async function GET(req: NextRequest) {
             hasSiblingDiscount,
           ],
         );
+        payment = paymentResult.rows[0];
       } else {
-        await client.query(
+        const paymentResult = await client.query(
           `INSERT INTO payments
-                     (session_id, user_id, amount, status, siblings_discount)
-                     VALUES ($1, $2, $3, $4, $5)`,
+                     (session_id, user_id, amount, status, siblings_discount, session_date)
+                     VALUES ($1, $2, $3, $4, $5, CURRENT_DATE)
+                     RETURNING id, status, amount`,
           [session_id, user_id, amount, "pending", hasSiblingDiscount],
         );
+        payment = paymentResult.rows[0];
       }
     }
-
-    const paymentResult = await client.query(
-      `SELECT id, status, amount
-             FROM payments
-             WHERE session_id = $1 AND user_id = $2 ORDER BY id DESC LIMIT 1`,
-      [session_id, user_id],
-    );
-
-    const payment = paymentResult.rows?.[0];
 
     if (!payment) {
       throw new Error("Payment record missing");
@@ -268,6 +278,7 @@ export async function GET(req: NextRequest) {
       }
 
       if (!square_customer_id || !square_card_id) {
+        await client.query("COMMIT");
         return NextResponse.json(
           { message: "No card attached on file", success: false },
           { status: 200 },

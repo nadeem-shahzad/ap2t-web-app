@@ -71,14 +71,19 @@ WHERE
       p.status AS payment_status,
       s.apply_promotion,
       s.promotion_price,
-      s.date
+      s.date,
+      s.is_daily_payment
     FROM session_players se
     JOIN sessions s ON s.id = se.session_id
     LEFT JOIN LATERAL (
-      SELECT amount, status
+      SELECT id, amount, status, session_date
       FROM payments
       WHERE session_id = se.session_id
         AND user_id = se.user_id
+        AND (
+          NOT COALESCE(s.is_daily_payment, FALSE)
+          OR DATE(session_date) = CURRENT_DATE
+        )
       ORDER BY id DESC
       LIMIT 1
     ) p ON true
@@ -86,6 +91,10 @@ WHERE
       se.user_id = ANY($1::int[])
       AND CURRENT_DATE BETWEEN s.date AND s.end_date
       AND s.status = ANY($2::text[])
+      AND (
+        NOT COALESCE(s.is_daily_payment, FALSE)
+        OR p.id IS NOT NULL
+      )
   `,
             [userIds, ["upcoming", "ongoing"]]
         );

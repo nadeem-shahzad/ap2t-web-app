@@ -7,7 +7,15 @@ export async function GET() {
       `
       SELECT 
         s.*,
-        COUNT(sp.user_id) AS total_enrolled,
+        CASE
+          WHEN COALESCE(s.is_daily_payment, FALSE) THEN (
+            SELECT COUNT(*)
+            FROM payments p
+            WHERE p.session_id = s.id
+              AND DATE(p.session_date) = CURRENT_DATE
+          )
+          ELSE COUNT(sp.user_id)
+        END AS total_enrolled,
         COALESCE(
           (
             SELECT json_agg(
