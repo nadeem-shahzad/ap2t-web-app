@@ -13,6 +13,7 @@ export async function GET() {
     s.name,
     s.description,
     s.date,
+    s.image,
     s.end_date,
     s.start_time,
     s.end_time,

@@ -28,6 +28,7 @@ export async function GET(req : NextRequest, {params} : {params : {id : string}}
     s.promotion_price,
     s.price,
     s.max_players,
+    s.image,
     s.is_daily_payment,
     COUNT(sp.user_id) AS total_enrolled_players,
     (s.max_players - COUNT(sp.user_id)) AS total_left

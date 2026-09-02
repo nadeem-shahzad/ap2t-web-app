@@ -8,38 +8,42 @@ import { Calendar, DollarSign, Info, User } from "lucide-react"
 
 export function DashboardOverview({ data }: { data: DashboardStats | undefined }) {
 
+    const formatPercentage = (value: number | undefined) => {
+        const safeValue = value ?? 0;
+        return `${safeValue > 0 ? "+" : ""}${safeValue}%`;
+    }
 
     const localData = [{
         Icon: <User />,
         title: "Today's Check-ins",
         description: data?.totalCheckIns || 0,
-        value: data?.checkInsDifference || 0,
+        value: formatPercentage(data?.checkInsChangePercentage),
         type: "success",
-        going: data?.checkInsDifference || 0 >= 0 ? "active" : "danger"
+        going: (data?.checkInsChangePercentage ?? 0) >= 0 ? "active" : "danger"
     },
     {
         Icon: <DollarSign />,
         title: "Today's Revenue",
         description: data?.totalRevenue || 0,
-        value: `${data?.revenueChangePercentage || 0}%`,
+        value: formatPercentage(data?.revenueChangePercentage),
         type: "active",
-        going: data?.revenueChangePercentage || 0 >= 0 ? "active" : "danger"
+        going: (data?.revenueChangePercentage ?? 0) >= 0 ? "active" : "danger"
     },
     {
         Icon: <Info />,
         title: "Pending Payments",
         description: data?.pendingToday || 0,
-        value: `${data?.pendingChangePercentage || 0}%`,
+        value: formatPercentage(data?.pendingChangePercentage),
         type: "warning",
-        going: data?.pendingChangePercentage || 0 >= 0 ? "active" : "danger"
+        going: (data?.pendingChangePercentage ?? 0) >= 0 ? "active" : "danger"
     },
     {
         Icon: <Calendar />,
         title: "Upcoming Sessions",
         description: data?.upcomingToday || 0,
-        value: `${data?.upcomingChangePercentage || 0}%`,
+        value: formatPercentage(data?.upcomingChangePercentage),
         type: "other",
-        going: data?.upcomingChangePercentage || 0 >= 0 ? "active" : "danger"
+        going: (data?.upcomingChangePercentage ?? 0) >= 0 ? "active" : "danger"
     }
     ]
 

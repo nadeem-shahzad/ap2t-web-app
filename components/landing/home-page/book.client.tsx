@@ -61,17 +61,17 @@ export default function Booking() {
                 {[
                   {
                     title: "Speed & Agility",
-                    price: "$40",
+                    price: "$45",
                     time: "4:00 PM - 5:00 PM • Monday - Friday",
                   },
                   {
                     title: "Technical Session",
-                    price: "$40",
+                    price: "$45",
                     time: "5:00 PM - 6:00 PM • Monday - Friday",
                   },
                   {
-                    title: "Both Sessions (Combined)",
-                    price: "$60",
+                    title: "2-hr Session",
+                    price: "$69.95",
                     time: "4:00 PM - 6:00 PM • Monday - Friday",
                     note: "⭐ Best Value - Save $20",
                   },

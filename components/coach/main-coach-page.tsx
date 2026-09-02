@@ -3,6 +3,7 @@ import CardStatus from "@/components/card-status";
 import LineChart from "@/components/charts/line-chart-dots";
 import EditCoachProfile from "@/components/coach/EditCoachProfile";
 import { WeeklySchedule } from "@/components/coach/weekly-schedule";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   type ChartConfig
@@ -28,7 +29,9 @@ import {
   Mail,
   Phone,
   TrendingUp,
-  User
+  User,
+  UserX,
+  Loader2,
 } from "lucide-react";
 import moment from "moment";
 import { ReactNode, useEffect, useState } from "react";
@@ -47,6 +50,7 @@ export default function MainCoachPage({
   const [data, setData] = useState<CoachResponse>();
   const [tab, setTab] = useState("Details");
   const [loading, setLoading] = useState(true)
+  const [statusLoading, setStatusLoading] = useState(false)
   const [sessionTypes, setSessionTypes] = useState([])
   const isMobile = useIsMobile();
 
@@ -82,6 +86,18 @@ export default function MainCoachPage({
       setSessionTypes(response.data)
     } finally {
       setLoading(false)
+    }
+  };
+
+  const setStatus = async (status: string) => {
+    if (!id) return;
+
+    setStatusLoading(true);
+    try {
+      await axios.put("/user", { id, status });
+      setData((previous) => previous ? { ...previous, status } : previous);
+    } finally {
+      setStatusLoading(false);
     }
   };
 
@@ -221,6 +237,23 @@ export default function MainCoachPage({
               </div>
             </div>
             <div className="flex gap-4 flex-wrap">
+              {admin && (data?.status === "active" ? (
+                <Button variant="destructive" onClick={() => setStatus("inactive")} disabled={statusLoading}>
+                  {statusLoading ? (
+                    <><Loader2 className="h-4 w-4 animate-spin" /> Disabling...</>
+                  ) : (
+                    <><UserX className="h-4 w-4" /> Disable</>
+                  )}
+                </Button>
+              ) : (
+                <Button onClick={() => setStatus("active")} disabled={statusLoading}>
+                  {statusLoading ? (
+                    <><Loader2 className="h-4 w-4 animate-spin" /> Activating...</>
+                  ) : (
+                    <><User className="h-4 w-4" /> Activate</>
+                  )}
+                </Button>
+              ))}
               <EditCoachProfile id={id} onRefresh={async () => await fetchData()} data={data} />
             </div>
           </div>

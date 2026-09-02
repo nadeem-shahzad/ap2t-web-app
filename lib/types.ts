@@ -531,6 +531,7 @@ export type PaymentRecord = {
 export type DashboardStats = {
   totalCheckIns: number;
   checkInsDifference: number;
+  checkInsChangePercentage: number;
   totalRevenue: number;
   revenueChangePercentage: number;
   pendingToday: number;
@@ -581,11 +582,13 @@ export type CampClinicSession = {
   total_enrolled_players: number;
   total_left: number;
   location : string
+  image ?: string
 }
 
 export type CampClinicCard = {
   id: string | number,
   badge: "CAMP" | "CLINIC";
+  image?: string;
   title: string;
   description: string;
   price: number;

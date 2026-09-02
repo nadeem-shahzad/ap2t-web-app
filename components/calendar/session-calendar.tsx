@@ -52,8 +52,16 @@ export default function SessionCalendar({ currentMonth, setCurrentMonth, session
   const dates = endDate
     ? expandDateRange(startDate, endDate)
     : [startDate]
+  const isPrivateSession = session.type?.trim().toLowerCase() === "private session"
 
-  return dates.map(date => ({
+  return dates
+    .filter((date) => {
+      const day = new Date(`${date}T00:00:00Z`).getUTCDay()
+      const isWeekend = day === 0 || day === 6
+
+      return !isWeekend || isPrivateSession
+    })
+    .map(date => ({
     id: `${session.id}-${date}`,
     originalId: session.id,
     status,

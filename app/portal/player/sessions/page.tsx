@@ -144,7 +144,7 @@ export default function Page() {
 
   return (
     <div className="flex flex-col w-full gap-4">
-      <Header session_length={sessions.length}>
+      <Header>
         <div className="flex flex-wrap gap-4">
           <div className="flex gap-4 items-center flex-wrap">
             <div className="!bg-[#252525] border border-border rounded-[10px] flex flex-wrap items-center p-[2px]">
@@ -178,13 +178,13 @@ export default function Page() {
   );
 }
 
-const Header = ({ children, session_length }: { children: ReactNode, session_length: number | undefined }) => {
+const Header = ({ children, }: { children: ReactNode, }) => {
   return (
     <div className="flex w-full gap-4 justify-between flex-wrap items-center">
       <div className="space-y-2">
         <p className="text-xl">Sessions Enrollment</p>
         <span className="text-xs text-muted-foreground flex items-center">
-          <span>{session_length} of {session_length} sessions </span>
+          <span>Available sessions </span>
           <span className="text-warning-text inline-flex">
             {" "}
             {/* <Dot size={16} /> 1 pending payments */}

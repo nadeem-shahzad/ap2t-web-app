@@ -68,7 +68,9 @@ export default function InHouseProgramsPage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {events2.map((item, i) => (
+            {events2
+              .filter((item) => item.title !== "Sport-Specific Technical Training")
+              .map((item, i) => (
               <Card
                 key={i}
                 className="flex flex-col justify-between bg-[#131313] rounded-lg"
@@ -103,7 +105,7 @@ export default function InHouseProgramsPage() {
 
                 <CardFooter className="flex items-center justify-between border-t border-[#282828] px-6 py-4">
                   <h1 className="text-primary font-semibold">
-                    ${item.price}/hr
+                    ${item.price}
                   </h1>
                   <Link href="/portal/auth?p=signup">
                     <Button className="bg-primary text-secondary">
@@ -112,7 +114,7 @@ export default function InHouseProgramsPage() {
                   </Link>
                 </CardFooter>
               </Card>
-            ))}
+              ))}
           </div>
         </section>
 
@@ -174,7 +176,7 @@ const events2 = [
     players: "12 Players",
     time: "4:00 PM - 5:00 PM",
     day: "Monday - Friday",
-    price: 40,
+    price: 45,
   },
   {
     title: "Strength Training",
@@ -185,10 +187,10 @@ const events2 = [
     players: "12 Players",
     time: "4:00 PM - 5:00 PM",
     day: "Monday - Friday",
-    price: 40,
+    price: 25,
   },
   {
-    title: "Nutrition",
+    title: "Basic Nutrition Plan",
     description:
       "Fuel your body for peak performance with AP2T’s personalized nutrition plans. Whether your goal is to build lean muscle, increase endurance, or improve recovery, our expert staff will create a plan tailored to your age, athletic level, and goals. Learn how to eat smarter, train harder, and maximize results both on and off the field.",
     icon: (
@@ -198,7 +200,7 @@ const events2 = [
     players: "Individual or Small Group",
     time: "Flexible / By Appointment",
     day: "Monday - Friday",
-    price: 40,
+    price: 100,
   },
   {
     title: "Sport-Specific Technical Training",
@@ -213,13 +215,13 @@ const events2 = [
   },
 
   {
-    title: "Soccer Training",
+    title: "Technical and Skill Training",
     description:
       "AP2T offers team training for athletes of all ages and levels. Many of our current coaches work at the professional and Division-I levels, and all are fully licensed to coach youth soccer teams. Our coaches have achieved success at both the youth and professional levels, winning State, Regional, and National Championships along the way. Many also hold advanced coaching certifications. Please email us to learn more about our Soccer Team Training programs.",
     icon: <Volleyball className="w-8 h-8 text-primary" />,
     area: "Main Training Area",
     players: "12 Players",
-    time: "4:00 PM - 5:00 PM",
+    time: "5:00 PM - 6:00 PM",
     day: "Monday - Friday",
     price: 40,
   },

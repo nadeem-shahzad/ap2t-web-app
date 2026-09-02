@@ -5,9 +5,6 @@ import { BookedSession, SessionCoach, SessionType } from "@/lib/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Calendar,
-  DollarSign,
-  Eye,
-  Image,
   MapPin,
   SquarePen,
   Tag,
@@ -17,7 +14,7 @@ import {
 import moment from "moment";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Controller, useFieldArray, useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import z from "zod";
 import ConfirmationDialog from "../alert-dialog";
@@ -26,7 +23,6 @@ import SelectSessionType from "../players/select-session-type";
 import { RequiredStar } from "../required-star";
 import { TimePickerFixed } from "../time-picker-fixed";
 import { Button } from "../ui/button";
-import { Checkbox } from "../ui/checkbox";
 import {
   Dialog,
   DialogClose,
@@ -41,9 +37,7 @@ import { ScrollArea } from "../ui/scroll-area";
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
@@ -226,42 +220,7 @@ export function EditSessionDialog({
     },
   });
 
-  const { fields: variantFields, replace: replaceVariants } = useFieldArray({
-    control: form.control,
-    name: "variants",
-  });
-
-  const applyPromotion = form.watch("apply_promotion");
-  const image = form.watch("image");
   const selectedCoachId = form.watch("coach_id");
-  const startTime = form.watch("start_time");
-  const endTime = form.watch("end_time");
-  const pricingMode = form.watch("pricing_mode");
-
-  useEffect(() => {
-    if (pricingMode !== "variants") return;
-
-    const start = to24Hour(startTime);
-    const end = to24Hour(endTime);
-    if (!start || !end) {
-      replaceVariants([]);
-      return;
-    }
-
-    const [startHour, startMinute] = start.split(":").map(Number);
-    const [endHour, endMinute] = end.split(":").map(Number);
-    const totalHours = Math.floor(
-      (endHour * 60 + endMinute - (startHour * 60 + startMinute)) / 60,
-    );
-    const previousPrices = new Map(
-      form.getValues("variants").map((variant) => [variant.hour, variant.price]),
-    );
-
-    replaceVariants(
-      Array.from({ length: Math.max(0, totalHours) }, (_, index) => index + 1)
-        .map((hour) => ({ hour, price: previousPrices.get(hour) ?? 0 })),
-    );
-  }, [pricingMode, startTime, endTime, form, replaceVariants]);
 
   useEffect(() => {
     if (open && sessionData) {
@@ -339,7 +298,23 @@ export function EditSessionDialog({
         return
       }
 
-      await axios.put(`/admin/sessions`, { ...values, id: sessionId, byAdmin: isAdmin });
+      const lockedFields = new Set([
+        "price",
+        "is_daily_payment",
+        "pricing_mode",
+        "variants",
+        "apply_promotion",
+        "promotion_price",
+        "image",
+        "promotion_start",
+        "promotion_end",
+        "show_storefront",
+      ]);
+      const editableValues = Object.fromEntries(
+        Object.entries(values).filter(([key]) => !lockedFields.has(key)),
+      );
+
+      await axios.put(`/admin/sessions`, { ...editableValues, id: sessionId, byAdmin: isAdmin });
 
       toast.success("Session updated successfully");
       setOpen(false);
@@ -708,7 +683,7 @@ export function EditSessionDialog({
 
                 <div className="flex gap-2 text-md ">
                   <MapPin className="text-primary w-4 w-4" />
-                  <h1 className="text-[#F3F4F6]">Location & Pricing</h1>
+                  <h1 className="text-[#F3F4F6]">Location</h1>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -735,131 +710,11 @@ export function EditSessionDialog({
                       )}
                     />
                   </div>
-                  {pricingMode === "single" && (
-                    <div className="space-y-2">
-                      <Controller
-                        name="price"
-                        control={form.control}
-                        render={({ field, fieldState }) => (
-                          <Field data-invalid={fieldState.invalid}>
-                            <Label className="text-sm text-[#99A1AF]">
-                              Price <RequiredStar />
-                            </Label>
-                            <Input
-                              {...field}
-                              id={field.name}
-                              aria-invalid={fieldState.invalid}
-                              placeholder=""
-                              autoComplete="off"
-                            />
-                            {fieldState.invalid && (
-                              <FieldError errors={[fieldState.error]} />
-                            )}
-                          </Field>
-                        )}
-                      />
-                    </div>
-                  )}
-                  <Controller
-                    name="is_daily_payment"
-                    control={form.control}
-                    render={({ field, fieldState }) => (
-                      <Field data-invalid={fieldState.invalid}>
-                        <Label className="text-sm text-[#99A1AF]">
-                          Payment Type <RequiredStar />
-                        </Label>
-                        <Select
-                          value={field.value ? "daily" : "one-time"}
-                          onValueChange={(value) => field.onChange(value === "daily")}
-                        >
-                          <SelectTrigger className="w-full dark:bg-[#1A1A1A] rounded-sm">
-                            <SelectValue placeholder="Select payment type" />
-                          </SelectTrigger>
-                          <SelectContent className="!bg-[#1A1A1A]">
-                            <SelectGroup>
-                              <SelectLabel>Payment Type</SelectLabel>
-                              <SelectItem value="one-time">One-time payment</SelectItem>
-                              <SelectItem value="daily">Daily payment</SelectItem>
-                            </SelectGroup>
-                          </SelectContent>
-                        </Select>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {field.value
-                            ? "Players are charged for each attended day."
-                            : "Players are charged once when they enroll."}
-                        </p>
-                        {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                      </Field>
-                    )}
-                  />
                 </div>
-
-                {pricingMode === "single" ? (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      if (applyPromotion) {
-                        toast.error("Promotional sessions cannot have variants.");
-                        return;
-                      }
-                      form.setValue("pricing_mode", "variants", { shouldValidate: true });
-                    }}
-                    className="mt-2"
-                  >
-                    Convert to variants
-                  </Button>
-                ) : (
-                  <div className="mt-2 space-y-3 rounded-md border border-[#3A3A3A] bg-[#1A1A1A] p-3">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div>
-                        <p className="text-sm font-medium text-[#F3F4F6]">Session variants</p>
-                        <p className="text-xs text-muted-foreground">Enter a price for every available duration.</p>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          form.setValue("pricing_mode", "single", { shouldValidate: true });
-                          replaceVariants([]);
-                          form.clearErrors("variants");
-                        }}
-                      >
-                        Back to single session
-                      </Button>
-                    </div>
-
-                    {!startTime || !endTime ? (
-                      <p className="text-sm text-amber-500">Set the start and end times to generate variants.</p>
-                    ) : variantFields.length === 0 ? (
-                      <p className="text-sm text-red-500">End time must be at least one hour after start time.</p>
-                    ) : (
-                      <div className="space-y-3">
-                        {variantFields.map((variant, index) => (
-                          <Controller
-                            key={variant.id}
-                            name={`variants.${index}.price`}
-                            control={form.control}
-                            render={({ field, fieldState }) => (
-                              <Field data-invalid={fieldState.invalid}>
-                                <Label className="text-sm text-[#99A1AF]">
-                                  {variant.hour} {variant.hour === 1 ? "hour" : "hours"} price <RequiredStar />
-                                </Label>
-                                <Input {...field} type="number" min="0" step="0.01" value={field.value ?? ""} placeholder="0.00" />
-                                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                              </Field>
-                            )}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
 
                 <div className="flex gap-2 text-md ">
                   <Users className="text-primary w-4 w-4" />
-                  <h1 className="text-[#F3F4F6]">Capacity & Promotions</h1>
+                  <h1 className="text-[#F3F4F6]">Capacity</h1>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -886,218 +741,8 @@ export function EditSessionDialog({
                       )}
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Controller
-                      name="apply_promotion"
-                      control={form.control}
-                      render={({ field, fieldState }) => (
-                        <Field data-invalid={fieldState.invalid}>
-                          <Label className="text-sm text-[#99A1AF]">
-                            Apply Promotion (Optional)
-                          </Label>
-                          <Select
-                            value={String(field.value)}
-                            onValueChange={(val) => {
-                              if (val === "true" && pricingMode === "variants") {
-                                toast.error("Sessions with variants cannot be made promotional.");
-                                return;
-                              }
-                              field.onChange(val === "true");
-                            }}
-                          >
-                            <SelectTrigger className="w-full dark:bg-[#1A1A1A] rounded-sm">
-                              <SelectValue placeholder="Select" />
-                            </SelectTrigger>
-
-                            <SelectContent className="!bg-[#1A1A1A]">
-                              <SelectGroup>
-                                <SelectLabel>Select</SelectLabel>
-                                <SelectItem value="true">Yes</SelectItem>
-                                <SelectItem value="false">No</SelectItem>
-                              </SelectGroup>
-                            </SelectContent>
-                          </Select>
-                          {fieldState.invalid && (
-                            <FieldError errors={[fieldState.error]} />
-                          )}
-                        </Field>
-                      )}
-                    />
-                  </div>
                 </div>
 
-                {applyPromotion && (
-                  <>
-                    <div className="flex gap-2 text-md items-center">
-                      <Image className="text-primary" size={16} />
-                      <h1 className="text-[#F3F4F6]">Promotional Flyer</h1>
-                    </div>
-                    <div className="space-y-2">
-                      <Controller
-                        name="image"
-                        control={form.control}
-                        render={({ field, fieldState }) => (
-                          <Field data-invalid={fieldState.invalid}>
-                            <Label className="text-sm text-[#99A1AF]">
-                              Image Url <RequiredStar />
-                            </Label>
-                            <Input
-                              {...field}
-                              id={field.name}
-                              aria-invalid={fieldState.invalid}
-                              placeholder=""
-                              autoComplete="off"
-                            />
-                            {fieldState.invalid && (
-                              <FieldError errors={[fieldState.error]} />
-                            )}
-                          </Field>
-                        )}
-                      />
-                    </div>
-
-                    <div className="bg-[#1A1A1A] border border-border rounded-[10px] p-4 space-y-2">
-                      <h1 className="text-[#99A1AF]">Preview:</h1>
-
-                      {image ? (
-                        <img
-                          src={image}
-                          className="w-full h-50 object-contain"
-                        />
-                      ) : (
-                        <div className="w-full h-50" />
-                      )}
-                    </div>
-
-                    <div className="flex gap-2 text-md items-center">
-                      <Calendar className="text-primary" size={16} />
-                      <h1 className="text-[#F3F4F6]">Promotion Duration</h1>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Controller
-                          name="promotion_start"
-                          control={form.control}
-                          render={({ field, fieldState }) => (
-                            <Field data-invalid={fieldState.invalid}>
-                              <Label className="text-sm text-[#99A1AF]">
-                                Start Date <RequiredStar />
-                              </Label>
-                              <AppCalendar
-                                className="h-9"
-                                date={
-                                  field.value
-                                    ? new Date(field.value)
-                                    : undefined
-                                }
-                                onChange={field.onChange}
-                                required
-                              />
-                              {fieldState.invalid && (
-                                <FieldError errors={[fieldState.error]} />
-                              )}
-                            </Field>
-                          )}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Controller
-                          name="promotion_end"
-                          control={form.control}
-                          render={({ field, fieldState }) => (
-                            <Field data-invalid={fieldState.invalid}>
-                              <Label className="text-sm text-[#99A1AF]">
-                                End Date <RequiredStar />
-                              </Label>
-                              <AppCalendar
-                                className="h-9"
-                                date={
-                                  field.value
-                                    ? new Date(field.value)
-                                    : undefined
-                                }
-                                onChange={field.onChange}
-                                required
-                              />
-                              {fieldState.invalid && (
-                                <FieldError errors={[fieldState.error]} />
-                              )}
-                            </Field>
-                          )}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2 text-md items-center">
-                      <DollarSign className="text-primary" size={16} />
-                      <h1 className="text-[#F3F4F6]">Price</h1>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Controller
-                          name="promotion_price"
-                          control={form.control}
-                          render={({ field, fieldState }) => (
-                            <Field data-invalid={fieldState.invalid}>
-                              <Label className="text-sm text-[#99A1AF]">
-                                Promotion Price <RequiredStar />
-                              </Label>
-                              <Input
-                                {...field}
-                                id={field.name}
-                                aria-invalid={fieldState.invalid}
-                                placeholder=""
-                                autoComplete="off"
-                              />
-                              {fieldState.invalid && (
-                                <FieldError errors={[fieldState.error]} />
-                              )}
-                            </Field>
-                          )}
-                        />
-                      </div>
-                    </div>
-                    <div className="flex gap-2 text-md items-center">
-                      <Eye className="text-primary" size={16} />
-                      <h1 className="text-[#F3F4F6]">Storefront Display</h1>
-                    </div>
-
-                    <div className="flex items-center gap-4 px-8 bg-[#1A1A1A] border border-[#3A3A3A] rounded-[10px] p-2">
-                      <Controller
-                        name="show_storefront"
-                        control={form.control}
-                        render={({ field, fieldState }) => (
-                          <>
-                            <div className="pt-1 flex-none">
-                              <Checkbox
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                                className="h-4 w-4"
-                              />
-                            </div>
-
-                            <div className="flex-1">
-                              <label className="text-sm font-medium text-[#D1D5DC]">
-                                Show on Online Storefront
-                              </label>
-
-                              <p className="text-sm text-[#6A7282]">
-                                Display promotional card with image, title,
-                                price
-                              </p>
-
-                              {fieldState.invalid && (
-                                <FieldError errors={[fieldState.error]} />
-                              )}
-                            </div>
-                          </>
-                        )}
-                      />
-                    </div>
-                  </>
-                )}
               </div>
             </ScrollArea>
             <Separator />

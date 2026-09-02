@@ -42,6 +42,10 @@ export default function ReserveComponent({ sessions, onSuccess, loading, player_
     const selectedSessions = useMemo(() => {
         return sessions.filter((s) => {
             const selected = moment(selectedDate).startOf("day");
+            const isWeekend = selected.day() === 0 || selected.day() === 6;
+            const isPrivateSession = s.type?.trim().toLowerCase() === "private session";
+
+            if (isWeekend && !isPrivateSession) return false;
 
             const start = moment(s.date).startOf("day");
             const end = s.end_date

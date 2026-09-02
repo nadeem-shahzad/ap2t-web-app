@@ -56,15 +56,15 @@ export default function Programs() {
 const programs = [
   {
     title: "Technical Training",
-    price: "$40/Player",
+    price: "$45",
     description:
       "Group sessions focused on improving soccer skills, technique, and on-field decision-making.",
     buttonText: "Book Online",
     icon: <Users className="text-[#CAFF33] size-8 relative z-10" />,
   },
   {
-    title: "Physical Training",
-    price: "Custom fit",
+    title: "Speed & Agility",
+    price: "$45",
     description:
       "Personalized workouts to improve strength, speed, agility, and overall athletic performance",
     buttonText: "Book Online",
@@ -72,7 +72,7 @@ const programs = [
   },
   {
     title: "2 Hour Training",
-    price: "$40/Player",
+    price: "$69.95",
     description:
       "Intensive 2-hour sessions focused on improving skills, speed, and game performance.",
     buttonText: "Book Online",
@@ -80,7 +80,7 @@ const programs = [
   },
   {
     title: "Semi-Private Session",
-    price: "Contact Us",
+    price: "$120",
     description:
       "Semi-private sessions for personalized guidance in a small-group setting.",
     buttonText: "Email to Book",
@@ -88,10 +88,18 @@ const programs = [
   },
   {
     title: "Private Session",
-    price: "Contact Us",
+    price: "$95",
     description:
       "Personalized private coaching to refine skills and reach your highest potential.",
     buttonText: "Email to Book",
     icon: <Trophy className="text-[#CAFF33] size-8 relative z-10" />,
+  },
+  {
+    title: "Groups of 3 or More",
+    price: "$40/Player",
+    description:
+      "Small-group training for three or more players, with focused coaching and shared development.",
+    buttonText: "Email to Book",
+    icon: <Users className="text-[#CAFF33] size-8 relative z-10" />,
   },
 ];

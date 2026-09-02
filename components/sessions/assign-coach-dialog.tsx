@@ -52,7 +52,7 @@ export function AssignCoachDialog({ onSelect, placeholder = "Select Coach" }: As
     setLoading(true);
     try {
       const response = await axios.get(
-        `/admin/coaches/search`
+        `/admin/coaches/search?active_only=true`
       );
       setResults(response.data);
     } finally {

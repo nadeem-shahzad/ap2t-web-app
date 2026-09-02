@@ -1,9 +1,13 @@
 import pool from "@/lib/db";
 import { joinNames } from "@/lib/functions";
-import moment from "moment";
 import { NextResponse } from "next/server";
 
 
+
+function percentageChange(today: number, yesterday: number) {
+  if (yesterday === 0) return today > 0 ? 100 : 0;
+  return ((today - yesterday) / yesterday) * 100;
+}
 
 export async function GET() {
   try {
@@ -13,7 +17,7 @@ export async function GET() {
       `SELECT COUNT(*) AS total_check_ins
        FROM attendance
        WHERE status = 'present'
-         AND DATE(created_at AT TIME ZONE 'UTC') = CURRENT_DATE`
+         AND DATE(created_at AT TIME ZONE 'UTC') = DATE(NOW() AT TIME ZONE 'UTC')`
     );
     const totalCheckIns = Number(attendanceTodayRes.rows[0]?.total_check_ins || 0);
 
@@ -21,11 +25,12 @@ export async function GET() {
       `SELECT COUNT(*) AS total_check_ins
        FROM attendance
        WHERE status = 'present'
-         AND DATE(created_at AT TIME ZONE 'UTC') = CURRENT_DATE - INTERVAL '1 day'`
+         AND DATE(created_at AT TIME ZONE 'UTC') = DATE(NOW() AT TIME ZONE 'UTC') - INTERVAL '1 day'`
     );
     const yesterdayCheckIns = Number(attendanceYesterdayRes.rows[0]?.total_check_ins || 0);
 
     const checkInsDifference = totalCheckIns - yesterdayCheckIns;
+    const checkInsChangePercentage = percentageChange(totalCheckIns, yesterdayCheckIns);
 
     
     const revenueTodayRes = await pool.query(
@@ -33,7 +38,7 @@ export async function GET() {
    FROM payments
    WHERE status = 'paid'
      AND paid_at IS NOT NULL
-     AND DATE(paid_at AT TIME ZONE 'UTC') = CURRENT_DATE`
+     AND DATE(paid_at AT TIME ZONE 'UTC') = DATE(NOW() AT TIME ZONE 'UTC')`
     );
     const totalRevenue = Number(revenueTodayRes.rows[0]?.total_revenue || 0);
 
@@ -42,17 +47,12 @@ export async function GET() {
    FROM payments
    WHERE status = 'paid'
      AND paid_at IS NOT NULL
-     AND DATE(paid_at AT TIME ZONE 'UTC') = CURRENT_DATE - INTERVAL '1 day'`
+     AND DATE(paid_at AT TIME ZONE 'UTC') = DATE(NOW() AT TIME ZONE 'UTC') - INTERVAL '1 day'`
     );
     const yesterdayRevenue = Number(revenueYesterdayRes.rows[0]?.total_revenue || 0);
 
     
-    const revenueChangePercentage =
-      yesterdayRevenue === 0
-        ? totalRevenue > 0
-          ? 100
-          : 0
-        : ((totalRevenue - yesterdayRevenue) / yesterdayRevenue) * 100;
+    const revenueChangePercentage = percentageChange(totalRevenue, yesterdayRevenue);
 
 
     
@@ -61,7 +61,7 @@ export async function GET() {
       `SELECT COUNT(*) AS pending_count
        FROM payments
        WHERE status != ANY($1::text[])
-         AND DATE(created_at AT TIME ZONE 'UTC') = CURRENT_DATE`, [["paid", "comped"]]
+         AND DATE(created_at AT TIME ZONE 'UTC') = DATE(NOW() AT TIME ZONE 'UTC')`, [["paid", "comped"]]
     );
     const pendingToday = Number(pendingTodayRes.rows[0]?.pending_count || 0);
 
@@ -69,16 +69,11 @@ export async function GET() {
       `SELECT COUNT(*) AS pending_count
        FROM payments
        WHERE status != ANY($1::text[])
-         AND DATE(created_at AT TIME ZONE 'UTC') = CURRENT_DATE - INTERVAL '1 day'`, [["paid", "comped"]]
+         AND DATE(created_at AT TIME ZONE 'UTC') = DATE(NOW() AT TIME ZONE 'UTC') - INTERVAL '1 day'`, [["paid", "comped"]]
     );
     const pendingYesterday = Number(pendingYesterdayRes.rows[0]?.pending_count || 0);
 
-    const pendingChangePercentage =
-      pendingYesterday === 0
-        ? pendingToday > 0
-          ? 100
-          : 0
-        : ((pendingToday - pendingYesterday) / pendingYesterday) * 100;
+    const pendingChangePercentage = percentageChange(pendingToday, pendingYesterday);
 
         const sessionsDataRes = await pool.query(
       `SELECT s.id, s.session_type, s.name, s.start_time, s.end_time, s.coach_id, s.status, s.date, s.end_date,
@@ -86,39 +81,27 @@ export async function GET() {
               u.last_name AS coach_last_name
        FROM sessions s
        LEFT JOIN users u ON s.coach_id = u.id
-       WHERE s.status = ANY($1 :: text[])`, [["upcoming", "ongoing"]]
+       WHERE s.status = ANY($1 :: text[])
+         AND DATE(s.date AT TIME ZONE 'UTC') <= DATE(NOW() AT TIME ZONE 'UTC')
+         AND DATE(COALESCE(s.end_date, s.date) AT TIME ZONE 'UTC') >= DATE(NOW() AT TIME ZONE 'UTC')`, [["upcoming", "ongoing"]]
     );
-      const today = moment()
-     const yesterday = moment().subtract(1, "day");
+    const upcomingToday = sessionsDataRes.rows.length;
 
-    const upcomingYesterday = sessionsDataRes.rows.filter((item)=>{
-      const start = moment(new Date(item.date))
-      const end = moment(new Date(item.end_date))
-      if (yesterday.isSameOrAfter(start, 'day') && yesterday.isSameOrBefore(end, 'day')) return true
-    }).length
-
-    const upcomingToday = sessionsDataRes.rows.filter((item)=>{
-      const start = moment(new Date(item.date))
-      const end = moment(new Date(item.end_date))
-      if (today.isSameOrAfter(start, 'day') && today.isSameOrBefore(end, 'day')) return true
-    }).length
-
-     const upcomingChangePercentage =
-      upcomingYesterday === 0
-        ? upcomingToday > 0
-          ? 100
-          : 0
-        : ((upcomingToday - upcomingYesterday) / upcomingYesterday) * 100;
+    const upcomingYesterdayRes = await pool.query(
+      `SELECT COUNT(*) AS total
+       FROM sessions s
+       WHERE s.status = ANY($1 :: text[])
+         AND DATE(s.date AT TIME ZONE 'UTC') <= DATE(NOW() AT TIME ZONE 'UTC') - INTERVAL '1 day'
+         AND DATE(COALESCE(s.end_date, s.date) AT TIME ZONE 'UTC') >= DATE(NOW() AT TIME ZONE 'UTC') - INTERVAL '1 day'`,
+      [["upcoming", "ongoing"]]
+    );
+    const upcomingYesterday = Number(upcomingYesterdayRes.rows[0]?.total || 0);
+    const upcomingChangePercentage = percentageChange(upcomingToday, upcomingYesterday);
 
     const sessionsData = sessionsDataRes.rows.map((s: any) => ({
       ...s,
       coach_name: joinNames([s.coach_first_name, s.coach_last_name]),
-    })).filter((item) => {
-    
-      const start = moment(new Date(item.date))
-      const end = moment(new Date(item.end_date))
-      if (today.isSameOrAfter(start, 'day') && today.isSameOrBefore(end, 'day')) return true
-    })
+    }));
 
     
     
@@ -156,10 +139,9 @@ export async function GET() {
   SELECT 1
   FROM payment_alert_actions pa
   WHERE pa.payment_id = p.id
-    AND DATE(pa.acted_at) = CURRENT_DATE
+    AND DATE(pa.acted_at AT TIME ZONE 'UTC') = DATE(NOW() AT TIME ZONE 'UTC')
 )
-    ORDER BY p.created_at DESC;
-    `)
+    ORDER BY p.created_at DESC;`)
 
     const enhancedData = paymentQuery.rows.map((item)=>{
       return (
@@ -173,6 +155,7 @@ export async function GET() {
     return NextResponse.json({
       totalCheckIns,
       checkInsDifference,
+      checkInsChangePercentage: Number(checkInsChangePercentage.toFixed(0)),
       totalRevenue,
       revenueChangePercentage: Number(revenueChangePercentage.toFixed(0)),
       pendingToday,

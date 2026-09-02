@@ -12,6 +12,8 @@ import { CampClinicSession } from "@/lib/types";
 import { CircleAlert, CircleCheckBig, DollarSign } from "lucide-react";
 import moment from "moment";
 import { useState } from "react";
+import Zoom from "react-medium-image-zoom";
+import "react-medium-image-zoom/dist/styles.css";
 import { toast } from "sonner";
 
 export default function CampsAndClinicsDetail({
@@ -43,12 +45,13 @@ export default function CampsAndClinicsDetail({
 
     },
   });
-
+  console.log(data)
   const currentCamp = data
     ? {
       id: data.id,
       badge: data.session_type.toUpperCase() as "CAMP" | "CLINIC",
       title: data.name,
+      image: data.image,
       description: data.description,
       price: Number(data.apply_promotion ? data.promotion_price : data.price),
       left: data.total_left,
@@ -81,8 +84,8 @@ export default function CampsAndClinicsDetail({
 
     setLoading(true);
 
-  try {
-    const res = await axios.post(`/camps-clinics/${data?.id}`, formData);
+    try {
+      const res = await axios.post(`/camps-clinics/${data?.id}`, formData);
 
       if (res.data.success) {
         toast.success("Registered Successfully!");
@@ -117,13 +120,24 @@ export default function CampsAndClinicsDetail({
               </div>
             </div>
 
-            <CurvedImage
-              src="/images/camps/hero.JPG"
-              alt="About hero"
-              curveDepth={mobile ? 10 : 20}
-              className="shadow-2xl"
-              imageClassName="object-top"
-            />
+            {currentCamp?.image ?
+              <Zoom>
+                <img
+                  src={currentCamp.image}
+                  alt={`${currentCamp.title} program`}
+                  className="h-[600px] w-full rounded-md object-contain"
+                />
+              </Zoom>
+              :
+
+              <CurvedImage
+                src={"/images/camps/hero.JPG"}
+                alt="About hero"
+                curveDepth={mobile ? 10 : 20}
+                className="shadow-2xl"
+                imageClassName="object-top"
+              />
+            }
           </div>
 
           {currentCamp && (
@@ -146,6 +160,8 @@ export default function CampsAndClinicsDetail({
                   </div>
                 )}
               </div>
+
+
 
               <div className="font-semibold text-white text-4xl">
                 {currentCamp.title}

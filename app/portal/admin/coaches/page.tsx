@@ -7,6 +7,7 @@ import getInitials from "@/components/parents/get-initials";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import { useAuth } from "@/contexts/auth-context";
 import { useDebounce } from "@/hooks/use-debounce";
@@ -20,12 +21,29 @@ import { ReactNode, useEffect, useState } from "react";
 
 const CoachCardNames: CoachCardNamesType = { totalSessions: "Total Sessions", completed: "Completed", upComing: "Upcoming", players: "Players" }
 
+type ApiCoach = {
+  id: number;
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  phone_no?: string;
+  status?: string;
+  notifications?: string;
+  profile?: { specialities?: string[] };
+  total_sessions?: string;
+  completed_sessions?: string;
+  upcoming_sessions?: string;
+  player_count?: string;
+  average_rating?: string;
+}
+
 export default function Page() {
   const { user } = useAuth()
   const [coaches, setCoaches] = useState<{ data: coachinfoType[], stats: { total_active_coaches: string, total_coaches: string, total_players: string, total_sessions: string } }>()
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
-    const debouncedSearch = useDebounce(search, 300);
+  const [statusFilter, setStatusFilter] = useState<"active" | "inactive">("active")
+  const debouncedSearch = useDebounce(search, 300);
   const localData = [
     {
       Icon: <User />,
@@ -66,7 +84,7 @@ export default function Page() {
     try {
       setLoading(true)
       const result = await axios.get("/admin/users?role=coach")
-      const mappedCoaches = result?.data?.data?.map((coach: any) => (
+      const mappedCoaches = result?.data?.data?.map((coach: ApiCoach) => (
         {
           name: joinNames([coach.first_name, coach.last_name]),
           email: coach.email,
@@ -91,23 +109,17 @@ export default function Page() {
   }
 
   const filteredData = coaches?.data?.filter((item) => {
-  const text = `${item.name} ${item.email}`.toLowerCase();
-  
+    const text = `${item.name} ${item.email}`.toLowerCase();
+    const searchWords = debouncedSearch
+      ?.toLowerCase()
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+    const matchesSearch = !searchWords?.length || searchWords.every((word: string) => text.includes(word));
+    const matchesStatus = item.status?.toLowerCase() === statusFilter;
 
-  const searchWords = debouncedSearch
-    ?.toLowerCase()
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean); // remove empty strings
-
-  const matchesSearch =
-    !searchWords?.length ||
-    searchWords.every((word : string) => text.includes(word));
-
- 
-
-  return matchesSearch;
-});
+    return matchesSearch && matchesStatus;
+  });
 
 
   return (
@@ -149,8 +161,19 @@ export default function Page() {
         ))}
       </div>
 
-      <div className="w-full">
-        <InputWithIcon value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by coach..." />
+      <div className="flex w-full flex-col gap-4 sm:flex-row">
+        <div className="flex-1">
+          <InputWithIcon value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by coach..." />
+        </div>
+        <Select value={statusFilter} onValueChange={(value: "active" | "inactive") => setStatusFilter(value)}>
+          <SelectTrigger className="w-full sm:w-48">
+            <SelectValue placeholder="Coach status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="active">Active Coaches</SelectItem>
+            <SelectItem value="inactive">Disabled Coaches</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {loading ? (
@@ -201,7 +224,7 @@ export default function Page() {
                     </div>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {["totalSessions", "completed", "upComing", "players"].map((item, i) => (
+                    {["totalSessions", "completed", "upComing", "players"].map((item) => (
                       <div key={item} className="bg-[#1A1A1A] border border-border space-y-1 px-4 py-2 rounded-lg">
                         <div className="text-muted-foreground items-center flex gap-2">
                           <CheckCircle size={16} />

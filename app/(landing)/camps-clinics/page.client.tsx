@@ -11,18 +11,20 @@ import { ArrowRight, Search } from "lucide-react";
 import moment from "moment";
 import Link from "next/link";
 import { useState } from "react";
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
 
 
 
 
 
-
-export default function CampsAndClinics({ data = [] }: any) {
+export default function CampsAndClinics({ data = [] }: { data?: CampClinicSession[] }) {
 
     const [search, setSearch] = useState("")
     const [filter, setFilter] = useState("All")
     const mobile = useIsMobile()
     const camps = transformCampClinics(data);
+    console.log(data)
     return (
         <div className="relative pt-16 sm:pt-20">
             <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 space-y-10">
@@ -102,7 +104,7 @@ export default function CampsAndClinics({ data = [] }: any) {
                             .filter((item) =>
                                 item.title.toLowerCase().includes(search?.toLowerCase())
                             )
-                            .map((item, i) => (
+                            .map((item) => (
                                 <Card
                                     key={item.id}
                                     className="bg-[#131313] rounded border border-white/5"
@@ -126,6 +128,16 @@ export default function CampsAndClinics({ data = [] }: any) {
                                                 </div>
                                             )}
                                         </div>
+
+                                        {item.image && (
+                                            <Zoom>
+                                                <img
+                                                    src={item.image}
+                                                    alt={`${item.title} program`}
+                                                    className="h-[350px] w-full rounded-md object-contain"
+                                                />
+                                            </Zoom>
+                                        )}
 
                                         {/* Title */}
                                         <div className="text-base font-semibold text-white">
@@ -180,6 +192,7 @@ export const transformCampClinics = (
     return sessions.map((s) => ({
         id: s.id,
         badge: s.session_type.toUpperCase() as "CAMP" | "CLINIC",
+        image: s.image,
         title: s.name,
         description: s.description,
         price: Number(s.apply_promotion ? s.promotion_price : s.price),
