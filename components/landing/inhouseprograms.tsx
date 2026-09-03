@@ -10,12 +10,14 @@ import { Button } from "../ui/button";
 import Image from "next/image";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { CurvedImage } from "./curved-image";
+import FlyerDialog from "./flyer-dialog";
 
 export default function InHouseProgramsPage() {
   const mobile = useIsMobile();
 
   return (
     <div className="relative py-16 sm:py-20">
+      <FlyerDialog page="in_house" />
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 space-y-10">
         {/* HERO / PROGRAM INTRO */}
         <section className="space-y-12">
@@ -223,6 +225,6 @@ const events2 = [
     players: "12 Players",
     time: "5:00 PM - 6:00 PM",
     day: "Monday - Friday",
-    price: 40,
+    price: 45,
   },
 ];

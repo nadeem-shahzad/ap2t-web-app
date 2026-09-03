@@ -111,8 +111,8 @@ export const WeeklySchedule: React.FC<WeeklyScheduleProps> = ({ events, id, pref
     return { title: "", date: date.format("YYYY-MM-DD"), time, status: "Available" };
   };
 
-  const handleRightClick = (e: React.MouseEvent, date: moment.Moment, time: string, event: any) => {
-    e.preventDefault();
+  const handleSlotClick = (e: React.MouseEvent, date: moment.Moment, time: string, event: any) => {
+    e.stopPropagation();
 
     const dateTime = `${date.format("YYYY-MM-DD")}_${time}`;
 
@@ -217,7 +217,7 @@ export const WeeklySchedule: React.FC<WeeklyScheduleProps> = ({ events, id, pref
                         return (
                           <TableCell
                             key={date.format("YYYY-MM-DD") + time}
-                            onContextMenu={(e) => handleRightClick(e, date, time, event)}
+                            onClick={(e) => handleSlotClick(e, date, time, event)}
                             className={`p-2 border-2 border-border ${statusColor(event?.status || "Available")} overflow-hidden whitespace-nowrap truncate`}
                           >
                             {event?.title || ""}
@@ -239,6 +239,7 @@ export const WeeklySchedule: React.FC<WeeklyScheduleProps> = ({ events, id, pref
         <div
           style={{ top: contextMenu.y, left: contextMenu.x }}
           className="fixed z-50 bg-[#1A1A1A] border border-border rounded-md shadow-md"
+          onClick={(e) => e.stopPropagation()}
         >
           <button
             onClick={handleToggleBlock}

@@ -2,6 +2,7 @@
 
 import { detailIcons } from "@/components/landing/constants";
 import { CurvedImage } from "@/components/landing/curved-image";
+import FlyerDialog from "@/components/landing/flyer-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -24,9 +25,9 @@ export default function CampsAndClinics({ data = [] }: { data?: CampClinicSessio
     const [filter, setFilter] = useState("All")
     const mobile = useIsMobile()
     const camps = transformCampClinics(data);
-    console.log(data)
     return (
         <div className="relative pt-16 sm:pt-20">
+            <FlyerDialog page="camps_clinics" />
             <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 space-y-10">
 
                 <section className="space-y-5">

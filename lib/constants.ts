@@ -44,6 +44,13 @@ export const admin_nav_items = [
     shortcut: ['d', 'a', 's', 'h'],
   },
   {
+    title: 'Flyers',
+    url: '/portal/admin/flyers',
+    icon: 'flyers',
+
+    shortcut: ['d', 'a', 's', 'h'],
+  },
+  {
     title: 'Payments',
     url: '/portal/admin/payments',
     icon: 'payments',

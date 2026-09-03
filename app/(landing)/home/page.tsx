@@ -1,5 +1,6 @@
 import Booking from "@/components/landing/home-page/book.client";
 import Facilities from "@/components/landing/home-page/facilities.client";
+import FlyerDialog from "@/components/landing/flyer-dialog";
 import Hero from "@/components/landing/home-page/hero.client";
 import Partners from "@/components/landing/home-page/partner.client";
 import Programs from "@/components/landing/home-page/programs.client";
@@ -22,7 +23,7 @@ export default function LandingPage() {
 
     return (
         <div >
-          
+            <FlyerDialog page="home" />
             <Hero />
             <Facilities />
             <Partners />

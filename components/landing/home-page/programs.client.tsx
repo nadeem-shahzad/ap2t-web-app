@@ -79,6 +79,14 @@ const programs = [
     icon: <Trophy className="text-[#CAFF33] size-8 relative z-10" />,
   },
   {
+    title: "Physical Training",
+    price: "$25",
+    description:
+      "Focused physical training to build strength, conditioning, and athletic performance.",
+    buttonText: "Book Online",
+    icon: <Trophy className="text-[#CAFF33] size-8 relative z-10" />,
+  },
+  {
     title: "Semi-Private Session",
     price: "$120",
     description:

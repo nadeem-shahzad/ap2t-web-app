@@ -8,7 +8,7 @@ import {
   X
 } from 'lucide-react';
 
-import { FaChartColumn, FaTag } from "react-icons/fa6";
+import { FaChartColumn, FaRegImage, FaTag } from "react-icons/fa6";
 import { GiPlayerBase } from "react-icons/gi";
 import { HiUsers } from "react-icons/hi";
 import { IoMdSettings } from "react-icons/io";
@@ -26,6 +26,7 @@ export const Icons: Record<string, IconType> = {
   players : GiPlayerBase,
   sessions : IoCalendarClear,
   promotions : FaTag,
+  flyers: FaRegImage,
   front_desk: RiComputerLine,
 payments : TbCreditCardFilled,
 reports : FaChartColumn,

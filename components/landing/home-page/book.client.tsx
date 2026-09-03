@@ -75,6 +75,11 @@ export default function Booking() {
                     time: "4:00 PM - 6:00 PM • Monday - Friday",
                     note: "⭐ Best Value - Save $20",
                   },
+                  {
+                    title: "Physical Training",
+                    price: "$25",
+                    time: "6:00 PM - 7:00 PM • Monday - Friday",
+                  },
                 ].map((session, i) => (
                   <div
                     key={i}

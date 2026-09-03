@@ -5,6 +5,7 @@ import { BookedSession, SessionCoach, SessionType } from "@/lib/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Calendar,
+  Eye,
   MapPin,
   SquarePen,
   Tag,
@@ -23,6 +24,7 @@ import SelectSessionType from "../players/select-session-type";
 import { RequiredStar } from "../required-star";
 import { TimePickerFixed } from "../time-picker-fixed";
 import { Button } from "../ui/button";
+import { Checkbox } from "../ui/checkbox";
 import {
   Dialog,
   DialogClose,
@@ -221,10 +223,12 @@ export function EditSessionDialog({
   });
 
   const selectedCoachId = form.watch("coach_id");
+  const applyPromotion = form.watch("apply_promotion");
+  const promotionImage = form.watch("image");
+  const isExistingPromotion = Boolean(sessionData?.apply_promotion);
 
   useEffect(() => {
     if (open && sessionData) {
-      console.log(sessionData)
       form.reset({
         name: sessionData.name,
         description: sessionData.description,
@@ -303,13 +307,13 @@ export function EditSessionDialog({
         "is_daily_payment",
         "pricing_mode",
         "variants",
-        "apply_promotion",
-        "promotion_price",
-        "image",
-        "promotion_start",
-        "promotion_end",
-        "show_storefront",
       ]);
+      if (isExistingPromotion) {
+        lockedFields.add("apply_promotion");
+        lockedFields.add("promotion_price");
+        lockedFields.add("promotion_start");
+        lockedFields.add("promotion_end");
+      }
       const editableValues = Object.fromEntries(
         Object.entries(values).filter(([key]) => !lockedFields.has(key)),
       );
@@ -742,6 +746,108 @@ export function EditSessionDialog({
                     />
                   </div>
                 </div>
+
+                <div className="flex gap-2 text-md">
+                  <Tag className="text-primary w-4 h-4" />
+                  <h1 className="text-[#F3F4F6]">Promotion</h1>
+                </div>
+
+                {!isExistingPromotion && (
+                  <Controller
+                    name="apply_promotion"
+                    control={form.control}
+                    render={({ field, fieldState }) => (
+                      <Field data-invalid={fieldState.invalid}>
+                        <Label className="text-sm text-[#99A1AF]">Apply Promotion (Optional)</Label>
+                        <Select value={String(field.value)} onValueChange={(value) => field.onChange(value === "true")}>
+                          <SelectTrigger className="w-full dark:bg-[#1A1A1A] rounded-sm">
+                            <SelectValue placeholder="Select" />
+                          </SelectTrigger>
+                          <SelectContent className="!bg-[#1A1A1A]">
+                            <SelectItem value="true">Yes</SelectItem>
+                            <SelectItem value="false">No</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                      </Field>
+                    )}
+                  />
+                )}
+
+                {(isExistingPromotion || applyPromotion) && (
+                  <div className="space-y-4">
+                    <Controller
+                      name="image"
+                      control={form.control}
+                      render={({ field, fieldState }) => (
+                        <Field data-invalid={fieldState.invalid}>
+                          <Label className="text-sm text-[#99A1AF]">Image URL <RequiredStar /></Label>
+                          <Input {...field} id={field.name} aria-invalid={fieldState.invalid} autoComplete="off" />
+                          {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                        </Field>
+                      )}
+                    />
+                    <div className="space-y-2 rounded-[10px] border border-border bg-[#1A1A1A] p-4">
+                      <h1 className="text-sm text-[#99A1AF]">Preview</h1>
+                      {promotionImage ? (
+                        <img src={promotionImage} alt="Promotional flyer preview" className="h-50 w-full object-contain" />
+                      ) : (
+                        <div className="h-50 w-full" />
+                      )}
+                    </div>
+
+                    {!isExistingPromotion && (
+                      <>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <Controller name="promotion_start" control={form.control} render={({ field, fieldState }) => (
+                            <Field data-invalid={fieldState.invalid}>
+                              <Label className="text-sm text-[#99A1AF]">Start Date <RequiredStar /></Label>
+                              <AppCalendar className="h-9" date={field.value ? new Date(field.value) : undefined} onChange={field.onChange} required />
+                              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                            </Field>
+                          )} />
+                          <Controller name="promotion_end" control={form.control} render={({ field, fieldState }) => (
+                            <Field data-invalid={fieldState.invalid}>
+                              <Label className="text-sm text-[#99A1AF]">End Date <RequiredStar /></Label>
+                              <AppCalendar className="h-9" date={field.value ? new Date(field.value) : undefined} onChange={field.onChange} required />
+                              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                            </Field>
+                          )} />
+                        </div>
+                        <Controller name="promotion_price" control={form.control} render={({ field, fieldState }) => (
+                          <Field data-invalid={fieldState.invalid}>
+                            <Label className="text-sm text-[#99A1AF]">Promotion Price <RequiredStar /></Label>
+                            <Input {...field} id={field.name} aria-invalid={fieldState.invalid} autoComplete="off" />
+                            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                          </Field>
+                        )} />
+                      </>
+                    )}
+
+                    <div className="flex gap-2 text-md items-center">
+                      <Eye className="text-primary" size={16} />
+                      <h1 className="text-[#F3F4F6]">Storefront Display</h1>
+                    </div>
+                    <div className="flex items-center gap-4 rounded-[10px] border border-[#3A3A3A] bg-[#1A1A1A] p-2 px-8">
+                      <Controller
+                        name="show_storefront"
+                        control={form.control}
+                        render={({ field, fieldState }) => (
+                          <>
+                            <div className="flex-none pt-1">
+                              <Checkbox checked={field.value} onCheckedChange={field.onChange} className="h-4 w-4" />
+                            </div>
+                            <div className="flex-1">
+                              <label className="text-sm font-medium text-[#D1D5DC]">Show on Online Storefront</label>
+                              <p className="text-sm text-[#6A7282]">Display promotional card with image, title, price</p>
+                              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                            </div>
+                          </>
+                        )}
+                      />
+                    </div>
+                  </div>
+                )}
 
               </div>
             </ScrollArea>

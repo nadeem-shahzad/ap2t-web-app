@@ -45,7 +45,6 @@ export default function CampsAndClinicsDetail({
 
     },
   });
-  console.log(data)
   const currentCamp = data
     ? {
       id: data.id,

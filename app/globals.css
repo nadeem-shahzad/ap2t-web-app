@@ -1,4 +1,12 @@
 @import "tailwindcss";
+
+:root [data-rmiz-modal-overlay="hidden"] {
+  background-color: rgba(9, 9, 9, 0);
+}
+
+:root [data-rmiz-modal-overlay="visible"] {
+  background-color: rgba(9, 9, 9, 0.96);
+}
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
