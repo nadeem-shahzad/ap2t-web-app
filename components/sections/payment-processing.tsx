@@ -11,11 +11,13 @@ import { toast } from 'sonner'
 
 export default function PaymentProcessingPage({ setStep }: { setStep: (val: number) => void }) {
     const { state, } = useKiosk()
-    const { player, session } = state
+    const { player, session, checkInType } = state
     const [isProcessing, setIsProcessing] = useState(false)
     const [error, setError] = useState(false)
     const [max, setMax] = useState(false)
     const hasCalled = useRef(false)
+    const isWalkIn = checkInType === 'walk-in'
+    const sessionLabel = isWalkIn ? 'walk-in' : 'pre-booked'
 
     useSafeEffect(() => {
         if (player?.id && session?.id && !hasCalled.current) {
@@ -84,7 +86,7 @@ export default function PaymentProcessingPage({ setStep }: { setStep: (val: numb
                 </h2>
 
                 <p className="mb-6 text-center text-foreground/60">
-                    {isProcessing && "Processing your pre-booked session payment..."}
+                    {isProcessing && `Processing your ${sessionLabel} session payment...`}
                     {!isProcessing && !error && "Your session payment has been processed"}
                     {error && "We couldn't process your payment. Please try again."}
                 </p>
@@ -170,8 +172,9 @@ export default function PaymentProcessingPage({ setStep }: { setStep: (val: numb
 
                         <div className="rounded-lg border border-info-text/30 bg-info-bg p-4">
                             <p className="text-sm text-info-text">
-                                Your pre-booked session had a pending payment. We're now charging
-                                the card on file to complete your check-in.
+                                {isWalkIn
+                                    ? "We're registering your walk-in and charging the card on file to complete your check-in."
+                                    : "Your pre-booked session had a pending payment. We're now charging the card on file to complete your check-in."}
                             </p>
                         </div>
                     </div>

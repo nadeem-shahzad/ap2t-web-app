@@ -11,15 +11,11 @@ import BackButton from '../back-button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog'
 
 export default function SessionSelectPage({ setStep }: { setStep: (val: number) => void }) {
-  const { state, setSession } = useKiosk()
+  const { state, setSession, setCheckInType } = useKiosk()
   const { player } = state
   const [sessions, setSessions] = useState<Session[] | null>([])
-  const [addLoading, setAddLoading] = useState(false)
+  const [addLoading] = useState(false)
   const [sessionForVariant, setSessionForVariant] = useState<Session | null>(null)
-
-  useEffect(() => {
-    fetchData()
-  }, [])
 
   async function fetchData() {
 
@@ -40,8 +36,9 @@ export default function SessionSelectPage({ setStep }: { setStep: (val: number) 
       return
     }
 
+    setCheckInType('walk-in')
     setSession(val)
-    setStep(2)
+    setStep(5)
 
     // try {
     //   setAddLoading(true)
@@ -52,16 +49,21 @@ export default function SessionSelectPage({ setStep }: { setStep: (val: number) 
     // }
   }
 
+  useEffect(() => {
+    fetchData()
+  }, [])
+
   function handleVariantSelect(variant: NonNullable<Session['variants']>[number]) {
     if (!sessionForVariant) return
 
+    setCheckInType('walk-in')
     setSession({
       ...sessionForVariant,
       price: variant.price,
       selectedVariant: variant,
     })
     setSessionForVariant(null)
-    setStep(2)
+    setStep(5)
   }
 
 

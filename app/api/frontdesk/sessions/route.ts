@@ -86,13 +86,27 @@ export async function GET() {
           price: finalPrice,
           original_price:session.price,
           status: session.status,
+          session_type: session.session_type,
           is_daily_payment: session.is_daily_payment,
           variants: session.variants,
         };
       })
       .filter(Boolean);
 
-    return Response.json(formatted);
+    // Pre-booked sessions are returned by the search route and are intentionally
+    // unaffected. These sessions are the choices presented to walk-in players.
+    const dayOfWeek = new Date().getDay();
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+    const walkInSessions = isWeekend
+      ? formatted.filter(
+          (session) =>
+            session &&
+            String(session.session_type).trim().toLowerCase() ===
+              "private session",
+        )
+      : formatted;
+
+    return Response.json(walkInSessions);
   } catch (error) {
     console.error(error);
     return Response.json(
