@@ -11,7 +11,9 @@ export async function sendInAppNotificationBackend(to: number, msg: string, rout
     `;
     const values = [to, msg, route];
     const result = await pool.query(query, values);
-    TriggerFirebaseForNotifications(to);
+    // Do not finish the notification workflow until Firestore has been updated.
+    // The client-side listener uses this document write as its refetch signal.
+    await TriggerFirebaseForNotifications(to);
 
     return result.rows[0];
   } catch (error) {

@@ -71,11 +71,16 @@ export async function PUT(req: NextRequest) {
           UPDATE notifications 
           SET ${fields.join(", ")}
           WHERE id = $${values.length}
+          RETURNING "to"
       `;
 
-        await pool.query(query, values);
+        const queryResult = await pool.query(query, values);
 
-        TriggerFirebaseForNotifications(user_id)
+        // Notify the notification's actual recipient. This keeps the Firestore
+        // document watched by useNotifications in sync even if the client omits
+        // or sends an incorrect user_id.
+        const recipientId = queryResult.rows[0]?.to ?? user_id;
+        await TriggerFirebaseForNotifications(recipientId)
 
 
         return NextResponse.json({ message: "Updated successfully" }, { status: 200 });

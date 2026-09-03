@@ -24,11 +24,23 @@ export default function NotificationSheet() {
     const router = useRouter()
     const { user } = useAuth()
     const [loading, setLoading] = useState(false)
+    const [loadingNotificationId, setLoadingNotificationId] = useState<number | null>(null)
     const [open, setOpen] = useState(false)
 
     async function handleClick(item: NotificationType) {
-        router.push(item?.route || "#")
-        await axios.put(`/notification?user_id=${user?.id}`, { read: true, id: item.id })
+        if (loadingNotificationId !== null) return
+
+        setLoadingNotificationId(item.id)
+        try {
+            // The PUT route writes the Firestore document watched by
+            // useNotifications; wait for it before leaving this screen.
+            await axios.put(`/notification?user_id=${user?.id}`, { read: true, id: item.id })
+        } catch (error) {
+            console.error("Failed to mark notification as read", error)
+        } finally {
+            setLoadingNotificationId(null)
+            router.push(item?.route || "#")
+        }
     }
 
     async function handleMarkAll() {
@@ -72,24 +84,28 @@ export default function NotificationSheet() {
                         <div className="px-2 space-y-2">
                             {notifications.map((item, i) => {
                                 const isRead = item.read;
+                                const isLoading = loadingNotificationId === item.id;
                                 return (
                                     <div
 
                                         key={i}
-                                        onClick={() => handleClick(item)}
+                                        onClick={() => !loading && handleClick(item)}
                                         className={`
-        p-3 border rounded-md cursor-pointer transition-all duration-200 w-full
+        p-3 border rounded-md transition-all duration-200 w-full
         ${isRead
                                                 ? "bg-[#141414] border-[#2A2A2A] opacity-70"
                                                 : "bg-[#1A1A1A] border-[#3A3A3A]"} 
-        hover:bg-[#242424] hover:border-[#4A4A4A] hover:scale-[1.01]
+        ${loading || loadingNotificationId !== null ? "cursor-not-allowed" : "cursor-pointer hover:bg-[#242424] hover:border-[#4A4A4A] hover:scale-[1.01]"}
       `}
                                     >
                                         <div className="flex gap-2">
                                             <div className="space-y-1">
-                                                <p className={`text-sm ${isRead ? "text-gray-400" : "text-white"}`}>
-                                                    {item?.title}
-                                                </p>
+                                                <div className="flex items-center gap-2">
+                                                    <p className={`text-sm ${isRead ? "text-gray-400" : "text-white"}`}>
+                                                        {item?.title}
+                                                    </p>
+                                                    {isLoading && <Spinner />}
+                                                </div>
 
                                                 <p className="text-xs text-white">
                                                     {item.msg}

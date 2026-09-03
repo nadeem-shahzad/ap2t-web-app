@@ -21,7 +21,7 @@ import { toast } from "sonner";
 export default function Page() {
   const searchParams = useSearchParams();
   const [tab, setTab] = React.useState<"login" | "signup">("login");
-  const { loading } = useAuth()
+  const { loading, isAuthenticated } = useAuth()
 
   useEffect(() => {
     const paramTab = searchParams.get("p");
@@ -46,9 +46,10 @@ export default function Page() {
   return (
     <section className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 sm:py-2">
 
-      {loading ?
-        <div className="flex flex-1 w-full items-center justify-center h-[90dvh]">
+      {loading || isAuthenticated ?
+        <div className="flex flex-1 flex-col gap-3 w-full items-center justify-center h-[90dvh]">
           <Spinner />
+          {isAuthenticated && <p className="text-sm text-muted-foreground">Redirecting to your dashboard…</p>}
         </div>
         :
         <Tabs

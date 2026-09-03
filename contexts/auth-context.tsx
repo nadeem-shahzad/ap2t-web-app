@@ -21,14 +21,16 @@ type AuthContextType = {
 
   user: DBUser | null;
   loading: boolean;
-  isAdmin: boolean
+  isAdmin: boolean;
+  isAuthenticated: boolean;
 };
 
 const AuthContext = createContext<AuthContextType>({
 
   user: null,
   loading: true,
-  isAdmin: false
+  isAdmin: false,
+  isAuthenticated: false,
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -91,9 +93,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
 
   const isAdmin = authData?.role === 'admin'
+  const isAuthenticated = Boolean(authData)
 
   return (
-    <AuthContext.Provider value={{ user, loading, isAdmin }}>
+    <AuthContext.Provider value={{ user, loading, isAdmin, isAuthenticated }}>
       {children}
     </AuthContext.Provider>
   );

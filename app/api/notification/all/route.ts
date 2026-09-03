@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
         await pool.query(`
             UPDATE notifications SET read = $1 WHERE "to" = $2`, [true, user_id])
 
-        TriggerFirebaseForNotifications(user_id)
+      await TriggerFirebaseForNotifications(user_id)
 
         return NextResponse.json({ message: "Done" }, { status: 200 })
 
