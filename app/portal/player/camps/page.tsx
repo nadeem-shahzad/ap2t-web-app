@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import moment from "moment";
 import { useEffect, useState } from "react";
+import Zoom from "react-medium-image-zoom";
 
 
 export default function Page() {
@@ -100,12 +101,14 @@ const RenderEachItem = ({ item, fetchData }: { item: PrmotionsType, fetchData: (
     return (
         <Card className="w-full sm:w-[380px] p-0 overflow-hidden">
             <div className="relative">
-                <img
-                    src={item.image}
-                    alt={item.name}
-
-                    className="w-full object-cover"
-                />
+                <Zoom>
+                    <img
+                        src={item.image || "/footballkick.jpg"}
+                        alt={item.name}
+                        onError={(event) => { event.currentTarget.src = "/footballkick.jpg"; }}
+                        className="w-full cursor-zoom-in object-cover"
+                    />
+                </Zoom>
 
 
                 <Badge className="absolute top-3 left-3 bg-active-text text-white font-normal">

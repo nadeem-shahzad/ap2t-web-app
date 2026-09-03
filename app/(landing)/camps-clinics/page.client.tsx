@@ -130,15 +130,14 @@ export default function CampsAndClinics({ data = [] }: { data?: CampClinicSessio
                                             )}
                                         </div>
 
-                                        {item.image && (
-                                            <Zoom>
-                                                <img
-                                                    src={item.image}
-                                                    alt={`${item.title} program`}
-                                                    className="h-[350px] w-full rounded-md object-contain"
-                                                />
-                                            </Zoom>
-                                        )}
+                                        <Zoom>
+                                            <img
+                                                src={item.image || "/footballkick.jpg"}
+                                                alt={`${item.title} program`}
+                                                className="h-[350px] w-full rounded-md object-contain"
+                                                onError={(event) => { event.currentTarget.src = "/footballkick.jpg"; }}
+                                            />
+                                        </Zoom>
 
                                         {/* Title */}
                                         <div className="text-base font-semibold text-white">

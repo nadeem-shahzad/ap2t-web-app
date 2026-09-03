@@ -125,12 +125,13 @@ export default function CampsAndClinicsDetail({
                   src={currentCamp.image}
                   alt={`${currentCamp.title} program`}
                   className="h-[600px] w-full rounded-md object-contain"
+                  onError={(event) => { event.currentTarget.src = "/footballkick.jpg"; }}
                 />
               </Zoom>
               :
 
               <CurvedImage
-                src={"/images/camps/hero.JPG"}
+                src={"/footballkick.jpg"}
                 alt="About hero"
                 curveDepth={mobile ? 10 : 20}
                 className="shadow-2xl"

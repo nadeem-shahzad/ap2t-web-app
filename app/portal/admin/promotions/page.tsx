@@ -20,6 +20,7 @@ import moment from "moment";
 import NextLink from "next/link";
 import { ReactNode, useEffect, useState } from "react";
 import { GoDotFill } from "react-icons/go";
+import Zoom from "react-medium-image-zoom";
 
 const allFilters = ["All", "Active", "Upcoming", "Archive"]
 
@@ -245,12 +246,14 @@ export default function Page() {
         {filteredData.map((item, i) => (
           <Card key={i} className="w-full sm:w-[380px] p-0 overflow-hidden">
             <div className="relative">
-              <img
-                src={item.image}
-                alt={item.name}
-
-                className="w-full object-cover"
-              />
+              <Zoom>
+                <img
+                  src={item.image || "/footballkick.jpg"}
+                  alt={item.name}
+                  onError={(event) => { event.currentTarget.src = "/footballkick.jpg"; }}
+                  className="w-full cursor-zoom-in object-cover"
+                />
+              </Zoom>
 
 
               <Badge className="absolute top-3 left-3 bg-active-text text-white font-normal">
