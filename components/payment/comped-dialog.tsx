@@ -1,20 +1,20 @@
-import axios from "@/lib/axios";
-import { PaymentItem } from "@/lib/types";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { DialogClose } from "@radix-ui/react-dialog";
-import { OctagonAlert } from "lucide-react";
-import { useState } from "react";
-import { Controller, useForm } from "react-hook-form";
-import z from "zod";
-import { RequiredStar } from "../required-star";
-import { Button } from "../ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
-import { Field, FieldError } from "../ui/field";
-import { Label } from "../ui/label";
-import { ScrollArea } from "../ui/scroll-area";
-import { Spinner } from "../ui/spinner";
-import { Textarea } from "../ui/textarea";
-import SelectCompCategory from "./select-comp-cateegory";
+import axios from '@/lib/axios';
+import { PaymentItem } from '@/lib/types';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { DialogClose } from '@radix-ui/react-dialog';
+import { OctagonAlert } from 'lucide-react';
+import { useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import z from 'zod';
+import { RequiredStar } from '../required-star';
+import { Button } from '../ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
+import { Field, FieldError } from '../ui/field';
+import { Label } from '../ui/label';
+import { ScrollArea } from '../ui/scroll-area';
+import { Spinner } from '../ui/spinner';
+import { Textarea } from '../ui/textarea';
+import SelectCompCategory from './select-comp-cateegory';
 
 type CompedDialogProps = {
   data: PaymentItem;
@@ -24,24 +24,13 @@ type CompedDialogProps = {
 };
 
 const compedSchema = z.object({
-  comped_category: z
-    .string()
-    .trim()
-    .min(1, "Category is required"),
+  comped_category: z.string().trim().min(1, 'Category is required'),
 
-  comped_reason: z
-    .string()
-    .trim()
-    .min(1, "Reason is required"),
+  comped_reason: z.string().trim().min(1, 'Reason is required'),
 });
 type compedSchemaValues = z.infer<typeof compedSchema>;
 
-export function CompedDialog({
-  open,
-  onOpenChange,
-  data,
-  onRefresh,
-}: CompedDialogProps) {
+export function CompedDialog({ open, onOpenChange, data, onRefresh }: CompedDialogProps) {
   const [loading, setLoading] = useState(false);
 
   async function handleUpdateStatus(values: compedSchemaValues) {
@@ -53,8 +42,8 @@ export function CompedDialog({
         id: data.id,
         comped_category: values.comped_category,
         comped_reason: values.comped_reason,
-        status: "comped",
-        method: "Nil",
+        status: 'comped',
+        method: 'Nil',
         paid_at: new Date(),
       });
       await onRefresh();
@@ -67,8 +56,8 @@ export function CompedDialog({
   const form = useForm<compedSchemaValues>({
     resolver: zodResolver(compedSchema),
     defaultValues: {
-      comped_category: "",
-      comped_reason: "",
+      comped_category: '',
+      comped_reason: '',
     },
   });
 
@@ -79,9 +68,7 @@ export function CompedDialog({
           <DialogTitle className="text-lg font-semibold text-[#F3F4F6]">
             Mark Payment as Comped
           </DialogTitle>
-          <p className="text-sm text-ghost-text">
-            This action is for accounting purposes
-          </p>
+          <p className="text-sm text-ghost-text">This action is for accounting purposes</p>
         </DialogHeader>
         <form onSubmit={form.handleSubmit(handleUpdateStatus)}>
           <ScrollArea className="h-[calc(100vh-250px)]">
@@ -109,14 +96,12 @@ export function CompedDialog({
                 <div className="space-y-1">
                   <h1 className="text-warning-text">Important</h1>
                   <p className="text-sm text-[#D1D5DC]">
-                    This will mark the payment as comped. A reason must be
-                    provided for accounting records.
+                    This will mark the payment as comped. A reason must be provided for accounting
+                    records.
                   </p>
                 </div>
               </div>
               <div className="space-y-2">
-
-
                 <Controller
                   name="comped_category"
                   control={form.control}
@@ -125,13 +110,8 @@ export function CompedDialog({
                       <Label className="text-sm text-[#99A1AF]">
                         Comp Category <RequiredStar />
                       </Label>
-                      <SelectCompCategory
-                        value={field.value}
-                        onChange={field.onChange}
-                      />
-                      {fieldState.invalid && (
-                        <FieldError errors={[fieldState.error]} />
-                      )}
+                      <SelectCompCategory value={field.value} onChange={field.onChange} />
+                      {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                     </Field>
                   )}
                 />
@@ -152,15 +132,12 @@ export function CompedDialog({
                         className="min-h-35 "
                         placeholder="Provide a detailed reason for comping this session (required for accounting records)..."
                       />
-                      {fieldState.invalid && (
-                        <FieldError errors={[fieldState.error]} />
-                      )}
+                      {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                     </Field>
                   )}
                 />
                 <p className="text-xs text-ghost-text">
-                  This note will be saved to the payment record and included in
-                  financial reports.
+                  This note will be saved to the payment record and included in financial reports.
                 </p>
               </div>
             </div>
@@ -170,11 +147,7 @@ export function CompedDialog({
               <DialogClose className="text-[12px] font-medium tracking-wider leading-none h-8 px-4 py-2 text-white border-2 border-border rounded-md hover:opacity-70 cursor-pointer flex flex-1 items-center justify-center">
                 Cancel
               </DialogClose>
-              <Button
-                type="submit"
-                disabled={loading}
-                className="bg-other-text text-white flex-1"
-              >
+              <Button type="submit" disabled={loading} className="bg-other-text text-white flex-1">
                 {loading && <Spinner className="text-white" />} Mark as Comped
               </Button>
             </div>

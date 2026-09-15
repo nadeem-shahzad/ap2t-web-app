@@ -1,16 +1,13 @@
-import axios from "@/lib/axios";
-import { SquareIntegrationState } from "@/lib/types";
-import { useCallback, useEffect, useRef, useState } from "react";
+import axios from '@/lib/axios';
+import { SquareIntegrationState } from '@/lib/types';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 type WorkerResponse = {
   success: boolean;
   encryptedString: string;
 };
 
-export default function useSquareConnection(
-  mode?: string,
-  state?: SquareIntegrationState
-) {
+export default function useSquareConnection(mode?: string, state?: SquareIntegrationState) {
   const [connected, setConnected] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -18,7 +15,7 @@ export default function useSquareConnection(
   const requestIdRef = useRef(0);
 
   const checkConnection = useCallback(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === 'undefined') return;
 
     setLoading(true);
 
@@ -42,16 +39,15 @@ export default function useSquareConnection(
       : undefined;
 
     const params = new URLSearchParams({
-      mode: String(mode ?? ""),
-      key: credentials?.key ?? "",
-      location: credentials?.location ?? "",
-      merchant: credentials?.merchant ?? "",
+      mode: String(mode ?? ''),
+      key: credentials?.key ?? '',
+      location: credentials?.location ?? '',
+      merchant: credentials?.merchant ?? '',
     });
 
-    const worker = new Worker(
-      new URL("../worker/squareConnection.worker.ts", import.meta.url),
-      { type: "module" }
-    );
+    const worker = new Worker(new URL('../worker/squareConnection.worker.ts', import.meta.url), {
+      type: 'module',
+    });
 
     workerRef.current = worker;
 
@@ -68,7 +64,7 @@ export default function useSquareConnection(
       }
 
       try {
-        const res = await axios.get("/square/check", {
+        const res = await axios.get('/square/check', {
           params: {
             data: encryptedString,
           },

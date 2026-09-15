@@ -1,15 +1,14 @@
+import pool from '@/lib/db';
+import moment from 'moment';
+import { NextRequest, NextResponse } from 'next/server';
 
-import pool from "@/lib/db";
-import moment from "moment";
-import { NextRequest, NextResponse } from "next/server";
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const searchParams = req.nextUrl.searchParams;
+  const type = searchParams.get('type');
+  const queryParams = [id];
 
-export async function GET(req: NextRequest, {params} : {params : Promise<{id : string}>}) {
-    const {id} = await params
-    const searchParams = req.nextUrl.searchParams;
-    const type = searchParams.get("type")
-    const queryParams = [id];
-
-    let query = `
+  let query = `
    SELECT
   s.*,
   u.first_name AS coach_first_name,
@@ -36,28 +35,24 @@ LEFT JOIN session_players sp
 WHERE s.apply_promotion IS TRUE
   `;
 
-    try {
-        if (type) {
-            query += ` AND s.type = $2`;
-            queryParams.push(type);
-        }
-        query += ` GROUP BY s.id, u.first_name, u.last_name, sp.user_id`;
-
-        const result = await pool.query(query, queryParams);
-
-        const filteredData = result.rows.filter((item) => {
-            const today = moment()
-            return today.isSameOrBefore(moment(item.promotion_end), "day");
-        })
-
-
-        return NextResponse.json(filteredData);
-    } catch (error) {
-        console.error("GET /api/admin/sessions error:", error);
-
-        return NextResponse.json(
-            { message: "Internal Server Error" },
-            { status: 500 },
-        );
+  try {
+    if (type) {
+      query += ` AND s.type = $2`;
+      queryParams.push(type);
     }
+    query += ` GROUP BY s.id, u.first_name, u.last_name, sp.user_id`;
+
+    const result = await pool.query(query, queryParams);
+
+    const filteredData = result.rows.filter((item) => {
+      const today = moment();
+      return today.isSameOrBefore(moment(item.promotion_end), 'day');
+    });
+
+    return NextResponse.json(filteredData);
+  } catch (error) {
+    console.error('GET /api/admin/sessions error:', error);
+
+    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
+  }
 }

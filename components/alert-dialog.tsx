@@ -6,28 +6,34 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle
-} from "@/components/ui/alert-dialog";
-import { ConfirmationProps } from "@/lib/types";
-import { Spinner } from "./ui/spinner";
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { ConfirmationProps } from '@/lib/types';
+import { Spinner } from './ui/spinner';
 
-
-const ConfirmationDialog = ({ title, description, onPressYes, onPressCancel, open, loading, children = null, valid = true }: ConfirmationProps) => {
+const ConfirmationDialog = ({
+  title,
+  description,
+  onPressYes,
+  onPressCancel,
+  open,
+  loading,
+  children = null,
+  valid = true,
+}: ConfirmationProps) => {
   return (
     <AlertDialog open={open}>
       {/* <AlertDialogTrigger >{children}</AlertDialogTrigger> */}
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
-          <AlertDialogDescription>
-            {description}
-          </AlertDialogDescription>
+          <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         {children}
         <AlertDialogFooter>
           <AlertDialogCancel onClick={onPressCancel}>Cancel</AlertDialogCancel>
           <AlertDialogAction disabled={!valid || loading} onClick={async () => await onPressYes()}>
-            {loading && <Spinner className="text-black"/>} Yes
+            {loading && <Spinner className="text-black" />} Yes
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -35,4 +41,4 @@ const ConfirmationDialog = ({ title, description, onPressYes, onPressCancel, ope
   );
 };
 
-export default ConfirmationDialog
+export default ConfirmationDialog;

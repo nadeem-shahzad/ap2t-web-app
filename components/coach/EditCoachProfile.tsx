@@ -1,40 +1,40 @@
-import AppCalendar from "@/components/app-calendar";
-import { Button } from "@/components/ui/button";
+import AppCalendar from '@/components/app-calendar';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogClose,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { Spinner } from "@/components/ui/spinner";
-import { Textarea } from "@/components/ui/textarea";
-import axios from "@/lib/axios";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Edit } from "lucide-react";
-import { useEffect, useState } from "react";
-import { Controller, useForm } from "react-hook-form";
-import { z } from "zod";
-import { RequiredStar } from "../required-star";
-import { Field, FieldDescription, FieldError, FieldLabel } from "../ui/field";
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { Spinner } from '@/components/ui/spinner';
+import { Textarea } from '@/components/ui/textarea';
+import axios from '@/lib/axios';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Edit } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { RequiredStar } from '../required-star';
+import { Field, FieldDescription, FieldError, FieldLabel } from '../ui/field';
 
 const coachSchema = z.object({
-  first_name: z.string().min(2, "First name is required"),
-  last_name: z.string().min(2, "Last name is required"),
+  first_name: z.string().min(2, 'First name is required'),
+  last_name: z.string().min(2, 'Last name is required'),
 
-  phone_no: z.string().min(6, "Phone is required"),
+  phone_no: z.string().min(6, 'Phone is required'),
 
   // zip_code: z.string().min(3, "Zip code required"),
 
   career_start: z.date({
-    error: "Career Start Date is required",
+    error: 'Career Start Date is required',
   }),
 
-  bio: z.string().min(2, "Biography required"),
+  bio: z.string().min(2, 'Biography required'),
   specialities: z.array(z.string()).default([]).optional(),
   certifications: z.array(z.string()).default([]).optional(),
 });
@@ -51,25 +51,25 @@ const EditCoachProfile = ({
 }) => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [specialityInput, setSpecialityInput] = useState("");
-  const [certificationInput, setCertificationInput] = useState("");
+  const [specialityInput, setSpecialityInput] = useState('');
+  const [certificationInput, setCertificationInput] = useState('');
 
   const form = useForm<coachSchemaValues>({
     resolver: zodResolver(coachSchema),
     defaultValues: {
       specialities: [],
       certifications: [],
-      bio: "",
+      bio: '',
       career_start: undefined,
-      first_name: "",
-      last_name: "",
-      phone_no: "",
+      first_name: '',
+      last_name: '',
+      phone_no: '',
       // zip_code: "",
     },
   });
 
-  const specialities = form.watch("specialities");
-  const certifications = form.watch("certifications");
+  const specialities = form.watch('specialities');
+  const certifications = form.watch('certifications');
 
   useEffect(() => {
     if (data) {
@@ -87,7 +87,6 @@ const EditCoachProfile = ({
   }, [data]);
 
   const changeCoach = async (values: coachSchemaValues) => {
-
     setLoading(true);
     try {
       await axios.put(`/user`, {
@@ -113,59 +112,59 @@ const EditCoachProfile = ({
   };
 
   const handleAddSpeciality = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key !== "Enter") return;
+    if (e.key !== 'Enter') return;
     e.preventDefault();
 
     const trimmed = specialityInput.trim();
     if (!trimmed) return;
-    if(!specialities) return
+    if (!specialities) return;
     if (!specialities.includes(trimmed)) {
-      form.setValue("specialities", [...specialities, trimmed], {
+      form.setValue('specialities', [...specialities, trimmed], {
         shouldValidate: true,
       });
     }
 
-    setSpecialityInput("");
+    setSpecialityInput('');
   };
 
   const handleRemoveSpeciality = (tag: string) => {
-    if(!specialities) return
+    if (!specialities) return;
     form.setValue(
-      "specialities",
+      'specialities',
       specialities.filter((t) => t !== tag),
-      { shouldValidate: true },
+      { shouldValidate: true }
     );
   };
 
   const handleAddCertification = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key !== "Enter") return;
+    if (e.key !== 'Enter') return;
     e.preventDefault();
 
     const trimmed = certificationInput.trim();
     if (!trimmed) return;
-    if(!certifications) return
+    if (!certifications) return;
     if (!certifications.includes(trimmed)) {
-      form.setValue("certifications", [...certifications, trimmed], {
+      form.setValue('certifications', [...certifications, trimmed], {
         shouldValidate: true,
       });
     }
 
-    setCertificationInput("");
+    setCertificationInput('');
   };
 
   const handleRemoveCertification = (tag: string) => {
-    if(!certifications) return
+    if (!certifications) return;
     form.setValue(
-      "certifications",
+      'certifications',
       certifications.filter((t) => t !== tag),
-      { shouldValidate: true },
+      { shouldValidate: true }
     );
   };
 
   return (
     <>
-      <Button onClick={() => setOpen(!open)} variant={"outline"}>
-        {" "}
+      <Button onClick={() => setOpen(!open)} variant={'outline'}>
+        {' '}
         <Edit /> Edit Profile
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
@@ -195,16 +194,13 @@ const EditCoachProfile = ({
                             placeholder="Coach"
                             autoComplete="off"
                           />
-                          {fieldState.invalid && (
-                            <FieldError errors={[fieldState.error]} />
-                          )}
+                          {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                         </Field>
                       )}
                     />
                   </div>
 
                   <div className="space-y-2">
-                    
                     <Controller
                       name="last_name"
                       control={form.control}
@@ -220,9 +216,7 @@ const EditCoachProfile = ({
                             placeholder="martinz"
                             autoComplete="off"
                           />
-                          {fieldState.invalid && (
-                            <FieldError errors={[fieldState.error]} />
-                          )}
+                          {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                         </Field>
                       )}
                     />
@@ -244,15 +238,12 @@ const EditCoachProfile = ({
                             placeholder="+1XXXXXXX"
                             autoComplete="off"
                           />
-                          {fieldState.invalid && (
-                            <FieldError errors={[fieldState.error]} />
-                          )}
+                          {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                         </Field>
                       )}
                     />
                   </div>
                   <div className="space-y-2">
-                    
                     <Controller
                       name="career_start"
                       control={form.control}
@@ -261,18 +252,12 @@ const EditCoachProfile = ({
                           <Label className="text-sm text-[#99A1AF]">
                             Career_start <RequiredStar />
                           </Label>
-                          
-                          <AppCalendar
-                            date={field.value}
-                            onChange={field.onChange}
-                          />
+
+                          <AppCalendar date={field.value} onChange={field.onChange} />
                           {fieldState.invalid && (
-                            <p className="text-xs text-red-500">
-                              {fieldState?.error?.message}
-                            </p>
+                            <p className="text-xs text-red-500">{fieldState?.error?.message}</p>
                           )}
                         </Field>
-                        
                       )}
                     />
                   </div>
@@ -304,25 +289,23 @@ const EditCoachProfile = ({
 
                 <div className="space-y-2">
                   <Controller
-                      name="bio"
-                      control={form.control}
-                      render={({ field, fieldState }) => (
-                        <Field data-invalid={fieldState.invalid}>
-                          <Label className="text-sm text-[#99A1AF]">
-                            Biography <RequiredStar />
-                          </Label>
-                          <Textarea
-                            {...field}
-                            id={field.name}
-                            aria-invalid={fieldState.invalid}
-                            autoComplete="off"
-                          />
-                          {fieldState.invalid && (
-                            <FieldError errors={[fieldState.error]} />
-                          )}
-                        </Field>
-                      )}
-                    />
+                    name="bio"
+                    control={form.control}
+                    render={({ field, fieldState }) => (
+                      <Field data-invalid={fieldState.invalid}>
+                        <Label className="text-sm text-[#99A1AF]">
+                          Biography <RequiredStar />
+                        </Label>
+                        <Textarea
+                          {...field}
+                          id={field.name}
+                          aria-invalid={fieldState.invalid}
+                          autoComplete="off"
+                        />
+                        {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                      </Field>
+                    )}
+                  />
                 </div>
 
                 <div className="space-y-2">
@@ -332,8 +315,7 @@ const EditCoachProfile = ({
                       placeholder="Type speciality and press Enter"
                       value={specialityInput}
                       onChange={(e) => setSpecialityInput(e.target.value)}
-                       onKeyDown={
-                        handleAddSpeciality}
+                      onKeyDown={handleAddSpeciality}
                     />
                     <div className="flex flex-wrap gap-2">
                       {specialities?.map((tag, idx) => (
@@ -356,9 +338,7 @@ const EditCoachProfile = ({
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-sm text-[#99A1AF]">
-                    Certifications
-                  </Label>
+                  <Label className="text-sm text-[#99A1AF]">Certifications</Label>
                   <div className="flex flex-col gap-2 border rounded-md p-2">
                     <Input
                       placeholder="Type certification and press Enter"
@@ -393,11 +373,7 @@ const EditCoachProfile = ({
                 <DialogClose className="text-[13px] font-medium leading-none px-4 py-2 bg-black text-white border-border rounded-md hover:opacity-70 cursor-pointer flex flex-1 items-center justify-center">
                   Cancel
                 </DialogClose>
-                <Button
-                  disabled={loading}
-                  type="submit"
-                  className="flex-1 text-[13px]"
-                >
+                <Button disabled={loading} type="submit" className="flex-1 text-[13px]">
                   {loading && <Spinner className="text-black" />} Save
                 </Button>
               </div>

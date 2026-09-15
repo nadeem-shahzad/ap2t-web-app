@@ -140,13 +140,10 @@
    ------------------------------ */
 
 /* kill white strip under weekday header */
-.fc-theme-standard
-  .fc-scrollgrid-section-header
-  td {
+.fc-theme-standard .fc-scrollgrid-section-header td {
   background: transparent !important;
   border: none !important;
 }
-
 
 /* =============================
    FULLCALENDAR EVENT STYLING
@@ -154,13 +151,13 @@
 
 /* event container */
 .fc .fc-daygrid-event {
-  background: var(--color-active-bg);       /* event background */
-  color: var(--color-active-text);             /* text color */
-  padding: 2px 6px;           /* inner padding */
-  font-size: 20px;            
-  margin-top: 4px;            /* spacing from date number or other events */
+  background: var(--color-active-bg); /* event background */
+  color: var(--color-active-text); /* text color */
+  padding: 2px 6px; /* inner padding */
+  font-size: 20px;
+  margin-top: 4px; /* spacing from date number or other events */
   cursor: pointer;
-  display: block;             /* full width of container */
+  display: block; /* full width of container */
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -168,16 +165,16 @@
 
 /* hover effect */
 .fc .fc-daygrid-event:hover {
-  background: #00C95033;        
+  background: #00c95033;
 }
 
 /* optional: add border for comped or pending */
-.fc .fc-daygrid-event[data-status="comped"] {
+.fc .fc-daygrid-event[data-status='comped'] {
   border: 1px dashed var(--color-active-bg);
   background: #1a1a1a;
   color: var(--color-active-bg);
 }
-.fc .fc-daygrid-event[data-status="pending"] {
+.fc .fc-daygrid-event[data-status='pending'] {
   border: 1px dashed #ffc107;
   background: #1a1a1a;
   color: #ffc107;

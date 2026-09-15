@@ -1,16 +1,22 @@
-"use client";
+'use client';
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { useDebounce } from "@/hooks/use-debounce";
-import axios from "@/lib/axios";
-import { Plus, Search } from "lucide-react";
-import { useEffect, useState } from "react";
-import { Spinner } from "../ui/spinner";
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { useDebounce } from '@/hooks/use-debounce';
+import axios from '@/lib/axios';
+import { Plus, Search } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Spinner } from '../ui/spinner';
 
 interface AddParentDialogProps {
   playerId: number | undefined;
@@ -27,15 +33,14 @@ interface parent {
 
 export function AddParentDialog({ playerId, onSuccess }: AddParentDialogProps) {
   const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState('');
   const [results, setResults] = useState<parent[]>([]);
   const [loading, setLoading] = useState(false);
   const [addingId, setAddingId] = useState<number | null>(null);
-  const debouncedSearch = useDebounce(search, 300)
+  const debouncedSearch = useDebounce(search, 300);
 
   useEffect(() => {
-    if (open)
-      fetchParents()
+    if (open) fetchParents();
   }, [open]);
 
   const fetchParents = async () => {
@@ -49,28 +54,35 @@ export function AddParentDialog({ playerId, onSuccess }: AddParentDialogProps) {
   };
 
   const addParents = async (parent_id: number | null) => {
-    setAddingId(parent_id)
+    setAddingId(parent_id);
     try {
       await axios.post(`/admin/players/${playerId}/parent`, {
         parent_id: parent_id,
       });
     } finally {
       onSuccess();
-      setOpen(false)
+      setOpen(false);
       setAddingId(null);
     }
   };
 
-  const filteredData = results.filter((item) => `${item.first_name} ${item.last_name}`?.toLocaleLowerCase()?.includes(debouncedSearch?.toLocaleLowerCase()))
+  const filteredData = results.filter((item) =>
+    `${item.first_name} ${item.last_name}`
+      ?.toLocaleLowerCase()
+      ?.includes(debouncedSearch?.toLocaleLowerCase())
+  );
 
   return (
-    <Dialog open={open} onOpenChange={(val) => {
-      setOpen(val);
-      if (!val) {
-        setSearch("");
-        setResults([]);
-      }
-    }}>
+    <Dialog
+      open={open}
+      onOpenChange={(val) => {
+        setOpen(val);
+        if (!val) {
+          setSearch('');
+          setResults([]);
+        }
+      }}
+    >
       <DialogTrigger asChild>
         <Button>
           <Plus />
@@ -79,9 +91,7 @@ export function AddParentDialog({ playerId, onSuccess }: AddParentDialogProps) {
       </DialogTrigger>
       <DialogContent className="bg-[#252525] border-[#3A3A3A] max-w-5xl p-0 gap-0">
         <DialogHeader className="border-b border-[#3A3A3A] p-4">
-          <DialogTitle className="text-[#F3F4F6] font-semibold text-lg">
-            Link Parent
-          </DialogTitle>
+          <DialogTitle className="text-[#F3F4F6] font-semibold text-lg">Link Parent</DialogTitle>
         </DialogHeader>
         <div className="p-4 space-y-4">
           <div className="space-y-2">
@@ -111,7 +121,10 @@ export function AddParentDialog({ playerId, onSuccess }: AddParentDialogProps) {
                     <div className="flex items-center gap-3">
                       <Avatar className="h-8 w-8">
                         <AvatarImage src={parent.picture} />
-                        <AvatarFallback>{parent.first_name[0]}{parent.last_name[0]}</AvatarFallback>
+                        <AvatarFallback>
+                          {parent.first_name[0]}
+                          {parent.last_name[0]}
+                        </AvatarFallback>
                       </Avatar>
                       <div>
                         <p className="text-sm font-medium text-[#E5E7EB]">
@@ -138,9 +151,7 @@ export function AddParentDialog({ playerId, onSuccess }: AddParentDialogProps) {
               </div>
             </ScrollArea>
           ) : (
-            <div className="text-center py-8 text-[#99A1AF]">
-              No parent found.
-            </div>
+            <div className="text-center py-8 text-[#99A1AF]">No parent found.</div>
           )}
         </div>
       </DialogContent>

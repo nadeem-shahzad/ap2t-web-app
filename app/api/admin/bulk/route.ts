@@ -1,29 +1,23 @@
-import { sendSingleEmail, sendSingleSMS } from "@/lib/notification-service";
-import { NextRequest, NextResponse } from "next/server";
-
+import { sendSingleEmail, sendSingleSMS } from '@/lib/notification-service';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
+  const { emails, msg, subject = 'Notification' } = await req.json();
 
-    const { emails, msg, subject = "Notification" } = await req.json()
+  if (!emails || !msg) return NextResponse.json({ message: 'Data missing' }, { status: 400 });
 
-    if (!emails || !msg) return NextResponse.json({ message: "Data missing" }, { status: 400 })
+  try {
+    await Promise.all(
+      emails.map(async (item: any) => {
+        const formattedMsg = msg
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>')
+          .replace(/\n/g, '<br/>');
 
-    try {
-
-        await Promise.all(
-            emails.map(async (item: any) => {
-                const formattedMsg = msg
-                    .replace(/&/g, "&amp;")
-                    .replace(/</g, "&lt;")
-                    .replace(/>/g, "&gt;")
-                    .replace(
-                        /(https?:\/\/[^\s]+)/g,
-                        '<a href="$1" target="_blank">$1</a>'
-                    )
-                    .replace(/\n/g, "<br/>");
-
-                // 👇 Email for player
-                const playerMessage = `
+        // 👇 Email for player
+        const playerMessage = `
 <!DOCTYPE html>
 <html>
   <body style="font-family: Arial; background:#f9fafb; padding:20px;">
@@ -40,12 +34,12 @@ export async function POST(req: NextRequest) {
 </html>
 `;
 
-                if (item?.email) {
-                    await sendSingleEmail(playerMessage, subject, item.email);
-                }
+        if (item?.email) {
+          await sendSingleEmail(playerMessage, subject, item.email);
+        }
 
-                if (item?.parent_email) {
-                    const parentMessage = `
+        if (item?.parent_email) {
+          const parentMessage = `
 <!DOCTYPE html>
 <html>
   <body style="font-family: Arial; background:#f9fafb; padding:20px;">
@@ -54,7 +48,7 @@ export async function POST(req: NextRequest) {
 
       <p>
   You are being notified as the parent/guardian of 
-  <strong>${item?.name || "Unknown"}</strong>.
+  <strong>${item?.name || 'Unknown'}</strong>.
 </p>
 
 <p>
@@ -73,14 +67,13 @@ export async function POST(req: NextRequest) {
 </html>
 `;
 
-                    await sendSingleEmail(parentMessage, subject, item.parent_email);
-                }
-            })
-        );
+          await sendSingleEmail(parentMessage, subject, item.parent_email);
+        }
+      })
+    );
 
-        return NextResponse.json({ message: "Email sent" }, { status: 200 })
-    } catch (error: any) {
-        return NextResponse.json({ message: error?.message || "Server Error" }, { status: 200 })
-    }
-
+    return NextResponse.json({ message: 'Email sent' }, { status: 200 });
+  } catch (error: any) {
+    return NextResponse.json({ message: error?.message || 'Server Error' }, { status: 200 });
+  }
 }

@@ -1,9 +1,7 @@
+'use client';
 
-
-"use client";
-
-import { useState } from "react";
-import { Spinner } from "@/components/ui/spinner";
+import { useState } from 'react';
+import { Spinner } from '@/components/ui/spinner';
 
 interface ReviewFormProps {
   token: any;
@@ -11,45 +9,41 @@ interface ReviewFormProps {
   error?: string;
 }
 
-export default function ReviewForm({
-  token,
-  isValid,
-  error: initialError,
-}: ReviewFormProps) {
+export default function ReviewForm({ token, isValid, error: initialError }: ReviewFormProps) {
   const [form, setForm] = useState({
-    title: "",
-    description: "",
-    name: "",
-    designation: "",
+    title: '',
+    description: '',
+    name: '',
+    designation: '',
     rating: 0,
   });
 
   const [hover, setHover] = useState(0);
   const [submitted, setSubmitted] = useState(false);
-  const [error, setError] = useState(initialError || "");
+  const [error, setError] = useState(initialError || '');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!isValid) {
-      setError("Invalid, expired, or already used link.");
+      setError('Invalid, expired, or already used link.');
       return;
     }
 
     if (form.rating === 0) {
-      setError("Please select a rating.");
+      setError('Please select a rating.');
       return;
     }
 
     setLoading(true);
-    setError("");
+    setError('');
 
     try {
-      const res = await fetch("/api/testimonials/review", {
-        method: "POST",
+      const res = await fetch('/api/testimonials/review', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({ ...form, token }),
       });
@@ -57,14 +51,14 @@ export default function ReviewForm({
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || "Something went wrong.");
+        setError(data.error || 'Something went wrong.');
         setLoading(false);
         return;
       }
 
       setSubmitted(true);
     } catch (err) {
-      setError("Failed to submit the review.");
+      setError('Failed to submit the review.');
     } finally {
       setLoading(false);
     }
@@ -75,9 +69,7 @@ export default function ReviewForm({
       <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a] text-white">
         <div className="bg-[#454545] p-8 rounded-2xl text-center">
           <h1 className="text-2xl font-semibold mb-2">Thank you!</h1>
-          <p className="text-[#a3a3a3]">
-            Your review has been submitted. You can close this page.
-          </p>
+          <p className="text-[#a3a3a3]">Your review has been submitted. You can close this page.</p>
         </div>
       </div>
     );
@@ -87,9 +79,7 @@ export default function ReviewForm({
       <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a] text-white">
         <div className="bg-[#454545] p-8 rounded-2xl text-center">
           <h1 className="text-2xl font-semibold mb-2">Invalid Link</h1>
-          <p className="text-[#a3a3a3]">
-            {error || "This review link is invalid or has expired."}
-          </p>
+          <p className="text-[#a3a3a3]">{error || 'This review link is invalid or has expired.'}</p>
         </div>
       </div>
     );
@@ -102,9 +92,7 @@ export default function ReviewForm({
         className="w-full max-w-xl bg-[#2a2a2a] rounded-2xl p-6 shadow-xl text-white"
       >
         <h2 className="text-lg font-medium mb-1">Leave a Review</h2>
-        <p className="text-xs text-[#888] mb-5">
-          Share your experience with us
-        </p>
+        <p className="text-xs text-[#888] mb-5">Share your experience with us</p>
 
         {error && (
           <div className="mb-4 text-sm text-red-400 bg-red-900/30 border border-red-700 p-3 rounded-lg">
@@ -119,9 +107,7 @@ export default function ReviewForm({
             required
             className="w-full bg-[#1a1a1a] border border-[#3a3a3a] rounded-lg px-3 py-2 text-sm outline-none"
             value={form.title}
-            onChange={(e) =>
-              setForm({ ...form, title: e.target.value })
-            }
+            onChange={(e) => setForm({ ...form, title: e.target.value })}
           />
         </div>
 
@@ -131,9 +117,7 @@ export default function ReviewForm({
             required
             className="w-full bg-[#1a1a1a] border border-[#3a3a3a] rounded-lg px-3 py-2 text-sm outline-none resize-y min-h-[90px]"
             value={form.description}
-            onChange={(e) =>
-              setForm({ ...form, description: e.target.value })
-            }
+            onChange={(e) => setForm({ ...form, description: e.target.value })}
           />
         </div>
 
@@ -145,23 +129,17 @@ export default function ReviewForm({
               required
               className="w-full bg-[#1a1a1a] border border-[#3a3a3a] rounded-lg px-3 py-2 text-sm outline-none"
               value={form.name}
-              onChange={(e) =>
-                setForm({ ...form, name: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
             />
           </div>
           <div>
-            <label className="text-xs text-[#bbb] block mb-1">
-              Designation
-            </label>
+            <label className="text-xs text-[#bbb] block mb-1">Designation</label>
             <input
               type="text"
               placeholder="e.g. Athlete, Parent"
               className="w-full bg-[#1a1a1a] border border-[#3a3a3a] rounded-lg px-3 py-2 text-sm outline-none"
               value={form.designation}
-              onChange={(e) =>
-                setForm({ ...form, designation: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, designation: e.target.value })}
             />
           </div>
         </div>
@@ -179,11 +157,7 @@ export default function ReviewForm({
                 className="text-2xl"
               >
                 <span
-                  className={
-                    (hover || form.rating) >= star
-                      ? "text-[#c8f020]"
-                      : "text-[#3a3a3a]"
-                  }
+                  className={(hover || form.rating) >= star ? 'text-[#c8f020]' : 'text-[#3a3a3a]'}
                 >
                   ★
                 </span>

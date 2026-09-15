@@ -1,20 +1,18 @@
-"use client"
+'use client';
 
-import { Button } from "@/components/ui/button"
-import { useAuth } from "@/contexts/auth-context"
-import { handleLogout } from "@/lib/logout"
-import { AlertCircle } from "lucide-react"
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/auth-context';
+import { handleLogout } from '@/lib/logout';
+import { AlertCircle } from 'lucide-react';
 
 export default function AccountInactivePage() {
+  const { user } = useAuth();
 
-  const {user} = useAuth()
-
-  if(!user) return null
+  if (!user) return null;
 
   return (
     <div className="flex h-screen w-screen items-center justify-center px-4">
       <div className="max-w-md w-full rounded-xl border border-red-700 bg-gray-800 p-8 text-center shadow-lg">
-
         {/* Icon */}
         <div className="mb-6 flex justify-center">
           <div className="flex h-20 w-20 items-center justify-center rounded-full bg-red-900/20">
@@ -23,13 +21,12 @@ export default function AccountInactivePage() {
         </div>
 
         {/* Title */}
-        <h2 className="mb-2 text-2xl font-bold text-red-500">
-          Account Inactive
-        </h2>
+        <h2 className="mb-2 text-2xl font-bold text-red-500">Account Inactive</h2>
 
         {/* Message */}
         <p className="mb-6 text-gray-300">
-          Your account has been marked as inactive. To restore access, please contact your administrator.
+          Your account has been marked as inactive. To restore access, please contact your
+          administrator.
         </p>
 
         {/* Buttons */}
@@ -44,5 +41,5 @@ export default function AccountInactivePage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

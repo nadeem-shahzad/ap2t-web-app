@@ -1,8 +1,7 @@
-import { ReactNode } from "react";
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
-import { Switch } from "../ui/switch";
-
+import { ReactNode } from 'react';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+import { Switch } from '../ui/switch';
 
 export const LocalSwitch = ({
   value,
@@ -20,9 +19,7 @@ export const LocalSwitch = ({
       <div className="flex items-center gap-4">
         <div className="space-y-0">
           <h1 className="text-sm text-[#E5E7EB]">{title}</h1>
-          {description && (
-            <p className="text-xs text-muted-foreground">{description}</p>
-          )}
+          {description && <p className="text-xs text-muted-foreground">{description}</p>}
         </div>
       </div>
 
@@ -34,7 +31,7 @@ export const LocalSwitch = ({
 export const LocalInput = ({
   Icon,
   title,
-  placeholder = "Type here...",
+  placeholder = 'Type here...',
   value,
   onChange,
   disabled = false,
@@ -48,9 +45,7 @@ export const LocalInput = ({
 }) => {
   return (
     <div className="space-y-1">
-      <Label className="text-xs font-normal tracking-wide text-[#D1D1D1]">
-        {title}
-      </Label>
+      <Label className="text-xs font-normal tracking-wide text-[#D1D1D1]">{title}</Label>
       <div
         className={`flex items-center gap-2 py-2 rounded-[12px] border border-[#3A3A3A] px-3 shadow-sm  bg-[#18181B]`}
       >
@@ -66,4 +61,3 @@ export const LocalInput = ({
     </div>
   );
 };
-

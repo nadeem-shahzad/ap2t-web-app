@@ -1,22 +1,22 @@
-"use client";
-import BackButton from "@/components/back-button";
-import CardStatus from "@/components/card-status";
-import { AddParticipantDialog } from "@/components/sessions/add-participant-dialog";
-import { EditSessionDialog } from "@/components/sessions/edit-session-dialog";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
+'use client';
+import BackButton from '@/components/back-button';
+import CardStatus from '@/components/card-status';
+import { AddParticipantDialog } from '@/components/sessions/add-participant-dialog';
+import { EditSessionDialog } from '@/components/sessions/edit-session-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogClose,
   DialogContent,
   DialogHeader,
-  DialogTitle
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Select,
   SelectContent,
@@ -25,17 +25,17 @@ import {
   SelectLabel,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
-import { Spinner } from "@/components/ui/spinner";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
-import { useAuth } from "@/contexts/auth-context";
-import { useIsMobile } from "@/hooks/use-mobile";
-import axios from "@/lib/axios";
-import { joinNames } from "@/lib/functions";
-import { SessionDataType } from "@/lib/types";
-import { Scrollbar } from "@radix-ui/react-scroll-area";
+} from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import { Spinner } from '@/components/ui/spinner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
+import { useAuth } from '@/contexts/auth-context';
+import { useIsMobile } from '@/hooks/use-mobile';
+import axios from '@/lib/axios';
+import { joinNames } from '@/lib/functions';
+import { SessionDataType } from '@/lib/types';
+import { Scrollbar } from '@radix-ui/react-scroll-area';
 import {
   Calendar,
   CheckCircle,
@@ -51,11 +51,11 @@ import {
   Phone,
   Plus,
   User,
-  Users
-} from "lucide-react";
-import moment from "moment";
-import { useEffect, useState } from "react";
-import { DiscountDialog } from "../payment/apply-discount";
+  Users,
+} from 'lucide-react';
+import moment from 'moment';
+import { useEffect, useState } from 'react';
+import { DiscountDialog } from '../payment/apply-discount';
 
 type noteType = {
   id: string;
@@ -63,21 +63,33 @@ type noteType = {
   content: string;
   created_at: string;
   important: boolean;
-}
+};
 
-export default function SessionMainPage({ id, back, back_title, admin = false, promotion = false }: { id: number, back: string, back_title: string, admin?: boolean, promotion?: boolean }) {
+export default function SessionMainPage({
+  id,
+  back,
+  back_title,
+  admin = false,
+  promotion = false,
+}: {
+  id: number;
+  back: string;
+  back_title: string;
+  admin?: boolean;
+  promotion?: boolean;
+}) {
   const [data, setData] = useState<SessionDataType>();
   const [rawSessionData, setRawSessionData] = useState<any>(null);
   const [allSessions, setAllSessions] = useState<any[]>([]);
-  const [tab, setTab] = useState("Participants");
+  const [tab, setTab] = useState('Participants');
   const isMobile = useIsMobile();
   const [loading, setLoading] = useState(false);
-  const { user, isAdmin } = useAuth()
+  const { user, isAdmin } = useAuth();
   const [participants, setParticipants] = useState<any[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
-  const [selectedSessionDate, setSelectedSessionDate] = useState("");
+  const [selectedSessionDate, setSelectedSessionDate] = useState('');
   const [dailyDataLoading, setDailyDataLoading] = useState(false);
-  const [notes, setNotes] = useState([])
+  const [notes, setNotes] = useState([]);
   const [paymentStats, setPaymentStats] = useState({
     total_revenue: 0,
     paid_amount: 0,
@@ -89,12 +101,12 @@ export default function SessionMainPage({ id, back, back_title, admin = false, p
       fetchData();
       fetchAllSessions();
       fetchParticipants();
-      fetchNotes()
+      fetchNotes();
       fetchPayments();
     }
   }, [id]);
 
-  const allowed = isAdmin ? true : user?.id === data?.coach_id ? true : false
+  const allowed = isAdmin ? true : user?.id === data?.coach_id ? true : false;
 
   const fetchData = async () => {
     try {
@@ -105,13 +117,13 @@ export default function SessionMainPage({ id, back, back_title, admin = false, p
         const d = result.data;
         setRawSessionData(d);
         if (d.is_daily_payment) {
-          setSelectedSessionDate(moment(new Date(d.date)).format("YYYY-MM-DD"));
+          setSelectedSessionDate(moment(new Date(d.date)).format('YYYY-MM-DD'));
         }
         setData({
           id: d.id,
           sessionName: d.name,
-          date: moment(new Date(d.date)).format("YYYY-MM-DD"),
-          end_date: moment(new Date(d.end_date)).format("YYYY-MM-DD"),
+          date: moment(new Date(d.date)).format('YYYY-MM-DD'),
+          end_date: moment(new Date(d.end_date)).format('YYYY-MM-DD'),
           time: `${d.start_time} - ${d.end_time}`,
           coachName: joinNames([d.coach_first_name, d.coach_last_name]),
           scehedule_preferences: d.coach?.coach_schedule_preference,
@@ -122,7 +134,7 @@ export default function SessionMainPage({ id, back, back_title, admin = false, p
           location: d.location,
           comped: d.comped,
           description: d.description,
-          coach_id: d.coach_id
+          coach_id: d.coach_id,
         } as any);
       }
     } finally {
@@ -132,7 +144,7 @@ export default function SessionMainPage({ id, back, back_title, admin = false, p
 
   const fetchAllSessions = async () => {
     try {
-      const result = await axios.get("/admin/sessions");
+      const result = await axios.get('/admin/sessions');
       if (result.data) {
         const mapped = result.data.map((s: any) => ({
           id: s.id,
@@ -140,7 +152,7 @@ export default function SessionMainPage({ id, back, back_title, admin = false, p
           type: s.session_type,
           date: s.date,
           time: `${s.start_time} - ${s.end_time}`,
-          status: s.status || "upcoming",
+          status: s.status || 'upcoming',
           end_date: s.end_date,
           original: s,
         }));
@@ -154,74 +166,77 @@ export default function SessionMainPage({ id, back, back_title, admin = false, p
   const fetchParticipants = async () => {
     try {
       const response = await axios.get(`/admin/sessions/${id}/participants`, {
-        params: rawSessionData?.is_daily_payment && selectedSessionDate ? { session_date: selectedSessionDate } : undefined,
+        params:
+          rawSessionData?.is_daily_payment && selectedSessionDate
+            ? { session_date: selectedSessionDate }
+            : undefined,
       });
       setParticipants(response.data);
     } catch (error) {
-      console.error("Error fetching participants", error);
+      console.error('Error fetching participants', error);
     }
   };
-
 
   const fetchPayments = async () => {
     try {
       const response = await axios.get(`/admin/sessions/${id}/payments`, {
-        params: rawSessionData?.is_daily_payment && selectedSessionDate ? { session_date: selectedSessionDate } : undefined,
+        params:
+          rawSessionData?.is_daily_payment && selectedSessionDate
+            ? { session_date: selectedSessionDate }
+            : undefined,
       });
       setPayments(response.data);
     } catch (error) {
-      console.error("Error fetching payments", error);
+      console.error('Error fetching payments', error);
     }
   };
 
   const fetchNotes = async () => {
     try {
-      const result = await axios.get(`/admin/sessions/${id}/note`)
+      const result = await axios.get(`/admin/sessions/${id}/note`);
 
-      const notesMapped = result.data?.map((note: any) => (
-        {
-          name: joinNames([note.writer_first_name, note.writer_last_name]),
-          content: note.note || "no content",
-          created_at: moment(new Date(note.created_at)).format("YYYY-MM-DD"),
-          id: note.id,
-          important: note.important || false
-        }
-      ))
-      setNotes(notesMapped || [])
+      const notesMapped = result.data?.map((note: any) => ({
+        name: joinNames([note.writer_first_name, note.writer_last_name]),
+        content: note.note || 'no content',
+        created_at: moment(new Date(note.created_at)).format('YYYY-MM-DD'),
+        id: note.id,
+        important: note.important || false,
+      }));
+      setNotes(notesMapped || []);
     } catch (error) {
-      console.error("Error fetching notes", error)
-      setNotes([])
+      console.error('Error fetching notes', error);
+      setNotes([]);
     }
-  }
+  };
 
   useEffect(() => {
-    const res = calculatePaymentStats(participants, payments)
-    setPaymentStats({ paid_amount: res.totalPaid, pending_amount: res.totalPending, total_revenue: res.totalAmount })
-  }, [participants, payments, data])
+    const res = calculatePaymentStats(participants, payments);
+    setPaymentStats({
+      paid_amount: res.totalPaid,
+      pending_amount: res.totalPending,
+      total_revenue: res.totalAmount,
+    });
+  }, [participants, payments, data]);
 
   useEffect(() => {
     if (rawSessionData?.is_daily_payment && selectedSessionDate) {
       setDailyDataLoading(true);
-      Promise.all([fetchParticipants(), fetchPayments()])
-        .finally(() => setDailyDataLoading(false));
+      Promise.all([fetchParticipants(), fetchPayments()]).finally(() => setDailyDataLoading(false));
     }
   }, [selectedSessionDate, rawSessionData?.is_daily_payment]);
 
-  function calculatePaymentStats(
-    participants: any[],
-    payments: any[],
-  ) {
+  function calculatePaymentStats(participants: any[], payments: any[]) {
     let totalAmount = 0;
     let totalPaid = 0;
     let totalPending = 0;
 
     const paymentMap = new Map();
-    payments.forEach(p => paymentMap.set(p.user_id, p));
+    payments.forEach((p) => paymentMap.set(p.user_id, p));
 
-    participants.forEach(participant => {
+    participants.forEach((participant) => {
       const payment = paymentMap.get(participant.player_id);
       if (payment) {
-        if (payment.status === "paid") {
+        if (payment.status === 'paid') {
           totalPaid += Number(payment?.amount || 0);
         } else if (payment.status === 'pending') {
           totalPending += Number(payment?.amount || 0);
@@ -233,18 +248,18 @@ export default function SessionMainPage({ id, back, back_title, admin = false, p
     return {
       totalAmount,
       totalPaid,
-      totalPending
+      totalPending,
     };
   }
-
-
 
   const stats = [
     {
       h: `${participants.length}/${data?.max_players || '-'}`,
-      p: rawSessionData?.is_daily_payment ? `Booked for ${selectedSessionDate}` : "Overall Enrolled",
+      p: rawSessionData?.is_daily_payment
+        ? `Booked for ${selectedSessionDate}`
+        : 'Overall Enrolled',
       icon: <Users />,
-      type: "info",
+      type: 'info',
     },
     // {
     //   h: `$${paymentStats.total_revenue.toFixed(2)}`,
@@ -254,15 +269,15 @@ export default function SessionMainPage({ id, back, back_title, admin = false, p
     // },
     {
       h: `$${paymentStats.paid_amount.toFixed(2)}`,
-      p: "Paid",
+      p: 'Paid',
       icon: <CheckCircle />,
-      type: "active",
+      type: 'active',
     },
     {
       h: `$${paymentStats.pending_amount.toFixed(2)}`,
-      p: "Pending",
+      p: 'Pending',
       icon: <CircleAlert />,
-      type: "warning",
+      type: 'warning',
     },
   ];
   return (
@@ -271,12 +286,16 @@ export default function SessionMainPage({ id, back, back_title, admin = false, p
 
       {rawSessionData?.is_daily_payment && (
         <div className="flex max-w-xs flex-col gap-2">
-          <Label className="flex items-center gap-2">Session Date {dailyDataLoading && <Spinner className="h-4 w-4" />}</Label>
+          <Label className="flex items-center gap-2">
+            Session Date {dailyDataLoading && <Spinner className="h-4 w-4" />}
+          </Label>
           <Input
             type="date"
             value={selectedSessionDate}
-            min={moment(new Date(rawSessionData.date)).format("YYYY-MM-DD")}
-            max={moment(new Date(rawSessionData.end_date || rawSessionData.date)).format("YYYY-MM-DD")}
+            min={moment(new Date(rawSessionData.date)).format('YYYY-MM-DD')}
+            max={moment(new Date(rawSessionData.end_date || rawSessionData.date)).format(
+              'YYYY-MM-DD'
+            )}
             onChange={(event) => setSelectedSessionDate(event.target.value)}
           />
         </div>
@@ -291,35 +310,39 @@ export default function SessionMainPage({ id, back, back_title, admin = false, p
                   {data?.sessionName}
                 </span>
                 <CardStatus value={data?.status} icon={true} />
-                {data?.comped && <CardStatus value={"comped"} icon={true} />}
+                {data?.comped && <CardStatus value={'comped'} icon={true} />}
               </div>
               <div className="flex gap-4">
+                {data && data?.status === 'upcoming' && allowed && (
+                  <StartSessionNow
+                    id={id}
+                    onRefresh={async () => {
+                      await fetchData();
+                    }}
+                  />
+                )}
 
-                {data && data?.status === "upcoming" && allowed &&
-                  <StartSessionNow id={id} onRefresh={async () => {
-                    await fetchData()
-                  }} />
-                }
-
-                {allowed && data && <EditSessionDialog
-                  coach_id={admin ? null : user?.id}
-                  sessionId={id}
-                  sessionData={rawSessionData}
-                  onSuccess={fetchData}
-                  promotion={promotion}
-                />}
+                {allowed && data && (
+                  <EditSessionDialog
+                    coach_id={admin ? null : user?.id}
+                    sessionId={id}
+                    sessionData={rawSessionData}
+                    onSuccess={fetchData}
+                    promotion={promotion}
+                  />
+                )}
               </div>
             </div>
-            <p className="text-sm text-muted-foreground">
-              {data?.description}
-            </p>
+            <p className="text-sm text-muted-foreground">{data?.description}</p>
 
             <div className="flex gap-4 flex-col sm:flex-row">
               <div className="flex-1 flex gap-3 items-center">
                 <Calendar className="h-4 w-4 text-ghost-text" />
                 <div className=" ">
                   <p className="text-xs text-ghost-text">Date</p>
-                  <h1 className="text-[#E5E7EB] text-sm">{data?.date} - {data?.end_date}</h1>
+                  <h1 className="text-[#E5E7EB] text-sm">
+                    {data?.date} - {data?.end_date}
+                  </h1>
                 </div>
               </div>
 
@@ -343,9 +366,7 @@ export default function SessionMainPage({ id, back, back_title, admin = false, p
                 <MapPin className="h-4 w-4 text-ghost-text" />
                 <div className=" ">
                   <p className="text-xs text-ghost-text">Location</p>
-                  <h1 className="text-[#E5E7EB] text-sm">
-                    {data?.location}
-                  </h1>
+                  <h1 className="text-[#E5E7EB] text-sm">{data?.location}</h1>
                 </div>
               </div>
             </div>
@@ -358,9 +379,7 @@ export default function SessionMainPage({ id, back, back_title, admin = false, p
                 >
                   <CardContent className="space-y-4 p-4">
                     <div className="flex gap-4 items-center">
-                      <div className={`text-${item.type}-text`}>
-                        {item.icon}
-                      </div>
+                      <div className={`text-${item.type}-text`}>{item.icon}</div>
                       <div className="flex flex-col gap-1">
                         <h1 className="font-semibold text-xl">{item.h}</h1>
                         <p className="text-[#B0B0B0] text-xs">{item.p}</p>
@@ -374,20 +393,17 @@ export default function SessionMainPage({ id, back, back_title, admin = false, p
           <Separator className="my-4" />
 
           <div className="flex gap-2 flex-wrap px-6">
-
-            {data && data.status !== "completed" && data.status !== "cancelled" && allowed && (
+            {data && data.status !== 'completed' && data.status !== 'cancelled' && allowed && (
               <Markbuttons
                 id={id}
                 onRefresh={async () => {
-                  await fetchData()
-                  await fetchParticipants()
+                  await fetchData();
+                  await fetchParticipants();
                 }}
               />
             )}
 
-            {data && !data?.comped && allowed &&
-              <MarkComped id={id} onRefresh={fetchData} />
-            }
+            {data && !data?.comped && allowed && <MarkComped id={id} onRefresh={fetchData} />}
           </div>
         </CardContent>
       </Card>
@@ -399,27 +415,28 @@ export default function SessionMainPage({ id, back, back_title, admin = false, p
             setTab(v);
           }}
         >
-          <ScrollArea
-            className={`overflow-x-auto ${isMobile && "max-w-[calc(100vw-64px)]"}`}
-          >
+          <ScrollArea className={`overflow-x-auto ${isMobile && 'max-w-[calc(100vw-64px)]'}`}>
             <TabsList className="bg-transparent relative flex gap-2 px-2">
-              {["Participants", "Payments", "Notes"].map((t) => (
+              {['Participants', 'Payments', 'Notes'].map((t) => (
                 <TabsTrigger
                   key={t}
                   value={t}
                   className="h-9 px-4 text-[12px] leading-tight tracking-tight"
                 >
-                  {t === "Participants" && (
+                  {t === 'Participants' && (
                     <div className="flex gap-2 items-center py-2">
-                      <User /> {rawSessionData?.is_daily_payment ? `Booked (${participants.length})` : `Overall Enrolled (${participants.length})`}
+                      <User />{' '}
+                      {rawSessionData?.is_daily_payment
+                        ? `Booked (${participants.length})`
+                        : `Overall Enrolled (${participants.length})`}
                     </div>
                   )}
-                  {t === "Payments" && (
+                  {t === 'Payments' && (
                     <div className="flex gap-2 items-center py-2">
                       <DollarSign /> Payments {`(${payments.length})`}
                     </div>
                   )}
-                  {t === "Notes" && (
+                  {t === 'Notes' && (
                     <div className="flex gap-2 items-center py-2">
                       <MessageSquare /> Notes {`(${notes.length})`}
                     </div>
@@ -432,48 +449,59 @@ export default function SessionMainPage({ id, back, back_title, admin = false, p
           <Separator />
 
           <TabsContent value="Participants" className="space-y-4 p-4">
-            {data?.status === "upcoming" && allowed && <AddParticipantDialog sessionId={Number(id)} variants={rawSessionData?.variants ?? []} session_date={rawSessionData?.is_daily_payment ? selectedSessionDate : undefined} enrolled_player_ids={rawSessionData?.is_daily_payment ? participants.map((participant) => participant.player_id) : []} onSuccess={async () => {
-              await fetchParticipants()
-              await fetchPayments()
-            }} />}
+            {data?.status === 'upcoming' && allowed && (
+              <AddParticipantDialog
+                sessionId={Number(id)}
+                variants={rawSessionData?.variants ?? []}
+                session_date={rawSessionData?.is_daily_payment ? selectedSessionDate : undefined}
+                enrolled_player_ids={
+                  rawSessionData?.is_daily_payment
+                    ? participants.map((participant) => participant.player_id)
+                    : []
+                }
+                onSuccess={async () => {
+                  await fetchParticipants();
+                  await fetchPayments();
+                }}
+              />
+            )}
             {participants.map((participent: any, i) => (
               <Card key={i} className="bg-[#1A1A1A] border border-border">
                 <CardContent className="space-y-2">
                   <div className="flex gap-2 items-center">
-                    <h1>{participent.first_name} {participent.last_name}</h1>
-                    {data?.status === 'upcoming' && < CardStatus
-                      value={participent?.status}
-                    />
-                    }
+                    <h1>
+                      {participent.first_name} {participent.last_name}
+                    </h1>
+                    {data?.status === 'upcoming' && <CardStatus value={participent?.status} />}
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <div className="flex gap-2 items-center">
-                      <User className="w-4 h-4 text-ghost-text" />{" "}
+                      <User className="w-4 h-4 text-ghost-text" />{' '}
                       <div className="flex text-sm text-ghost-text">
                         <p>Position: {participent.position}</p>
                       </div>
                     </div>
                     <div className="flex gap-2 items-center">
-                      <Mail className="w-4 h-4 text-ghost-text" />{" "}
-                      <p className="flex text-sm text-ghost-text">
-                        {participent.email}
-                      </p>
+                      <Mail className="w-4 h-4 text-ghost-text" />{' '}
+                      <p className="flex text-sm text-ghost-text">{participent.email}</p>
                     </div>
                     <div className="flex gap-2 items-center">
-                      <Phone className="w-4 h-4 text-ghost-text" />{" "}
-                      <p className="flex text-sm text-ghost-text">
-                        {participent.phone_no}
-                      </p>
+                      <Phone className="w-4 h-4 text-ghost-text" />{' '}
+                      <p className="flex text-sm text-ghost-text">{participent.phone_no}</p>
                     </div>
-
                   </div>
 
                   <Separator />
-                  {participent?.status === "pending" && data?.status === 'ongoing' && <AttendanceMarking player_id={participent.player_id} session_id={Number(id)} onRefresh={async () => {
-                    await fetchParticipants()
-                  }} />
-                  }
+                  {participent?.status === 'pending' && data?.status === 'ongoing' && (
+                    <AttendanceMarking
+                      player_id={participent.player_id}
+                      session_id={Number(id)}
+                      onRefresh={async () => {
+                        await fetchParticipants();
+                      }}
+                    />
+                  )}
                 </CardContent>
               </Card>
             ))}
@@ -490,42 +518,53 @@ export default function SessionMainPage({ id, back, back_title, admin = false, p
                 <Card key={i} className="bg-[#1A1A1A] border border-border">
                   <CardContent className="space-y-2">
                     <div className="flex gap-2 items-center">
-                      <h1>{payment.player_first_name} {payment.player_last_name}</h1>
-                      <CardStatus
-                        value={payment.status}
-                      />
+                      <h1>
+                        {payment.player_first_name} {payment.player_last_name}
+                      </h1>
+                      <CardStatus value={payment.status} />
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <div className="flex text-sm text-ghost-text gap-1">
-                        <p className="text-muted-foreground">Payment:</p>{" "}
+                        <p className="text-muted-foreground">Payment:</p>{' '}
                         <p className="text-[#D1D5DC]"> ${payment.amount}</p>
                       </div>
 
                       <div className="flex text-sm text-ghost-text gap-1">
-                        <p className="text-muted-foreground">Method:</p>{" "}
+                        <p className="text-muted-foreground">Method:</p>{' '}
                         <p className="text-[#D1D5DC]">{payment.method}</p>
                       </div>
                       <div className="flex text-sm text-ghost-text gap-1">
-                        <p className="text-muted-foreground">Date:</p>{" "}
-                        <p className="text-[#D1D5DC]">{payment.paid_at ? new Date(payment.paid_at).toLocaleDateString() : 'Pending'}</p>
+                        <p className="text-muted-foreground">Date:</p>{' '}
+                        <p className="text-[#D1D5DC]">
+                          {payment.paid_at
+                            ? new Date(payment.paid_at).toLocaleDateString()
+                            : 'Pending'}
+                        </p>
                       </div>
                       {rawSessionData?.is_daily_payment && (
                         <div className="flex text-sm text-ghost-text gap-1">
-                          <p className="text-muted-foreground">Session Date:</p>{" "}
-                          <p className="text-[#D1D5DC]">{payment.session_date ? moment(new Date(payment.session_date)).format("YYYY-MM-DD") : "-"}</p>
+                          <p className="text-muted-foreground">Session Date:</p>{' '}
+                          <p className="text-[#D1D5DC]">
+                            {payment.session_date
+                              ? moment(new Date(payment.session_date)).format('YYYY-MM-DD')
+                              : '-'}
+                          </p>
                         </div>
                       )}
                       <div className="flex text-sm text-ghost-text gap-1">
-                        <p className="text-muted-foreground">Transaction ID:</p>{" "}
+                        <p className="text-muted-foreground">Transaction ID:</p>{' '}
                         <p className="text-[#D1D5DC]">{payment.transaction_id}</p>
                       </div>
                     </div>
 
-                    {!['paid', 'comped'].includes(payment?.status) && isAdmin &&
-
-                      <DiscountDialog onRefresh={fetchPayments} original={data?.price || "0"} data={payment} />
-                    }
+                    {!['paid', 'comped'].includes(payment?.status) && isAdmin && (
+                      <DiscountDialog
+                        onRefresh={fetchPayments}
+                        original={data?.price || '0'}
+                        data={payment}
+                      />
+                    )}
                   </CardContent>
                 </Card>
               ))
@@ -535,9 +574,14 @@ export default function SessionMainPage({ id, back, back_title, admin = false, p
           <TabsContent value="Notes" className="space-y-4 p-4">
             <div className="flex justify-between items-center">
               <h1 className="text-lg ">Internal Notes</h1>
-              {allowed && <AddNoteDialog session_id={Number(id)} onRefresh={async () => {
-                await fetchNotes()
-              }} />}
+              {allowed && (
+                <AddNoteDialog
+                  session_id={Number(id)}
+                  onRefresh={async () => {
+                    await fetchNotes();
+                  }}
+                />
+              )}
             </div>
             {notes.map((note: noteType) => {
               return (
@@ -545,8 +589,8 @@ export default function SessionMainPage({ id, back, back_title, admin = false, p
                   key={note.id}
                   className={
                     note.important
-                      ? "bg-[#F0B1000D] border border-[#F0B1004D]"
-                      : " bg-[#1A1A1A] border border-border "
+                      ? 'bg-[#F0B1000D] border border-[#F0B1004D]'
+                      : ' bg-[#1A1A1A] border border-border '
                   }
                 >
                   <CardContent className="">
@@ -559,15 +603,11 @@ export default function SessionMainPage({ id, back, back_title, admin = false, p
                           </Badge>
                         )}
                       </div>
-                      <p className="text-sm text-muted-foreground">
-                        {note.created_at}
-                      </p>
+                      <p className="text-sm text-muted-foreground">{note.created_at}</p>
                       <div className="note-content break-all overflow-wrap-anywhere w-full">
                         {note.content}
                       </div>
-
                     </div>
-
                   </CardContent>
                 </Card>
               );
@@ -579,32 +619,34 @@ export default function SessionMainPage({ id, back, back_title, admin = false, p
   );
 }
 
-const Markbuttons = ({ id, onRefresh }: { id: number, onRefresh: () => Promise<void> }) => {
-  const [loadingStatus, setLoadingStatus] = useState("")
-  const markList = ["completed", "cancelled"]
+const Markbuttons = ({ id, onRefresh }: { id: number; onRefresh: () => Promise<void> }) => {
+  const [loadingStatus, setLoadingStatus] = useState('');
+  const markList = ['completed', 'cancelled'];
 
   const designType = {
     completed: {
-      design: "flex gap-2 dark:bg-active-bg text-active-text dark:border dark:border-active-text/32",
-      icon: <CircleCheckBig />
+      design:
+        'flex gap-2 dark:bg-active-bg text-active-text dark:border dark:border-active-text/32',
+      icon: <CircleCheckBig />,
     },
     cancelled: {
-      design: "flex gap-2 dark:bg-danger-bg text-danger-text dark:border dark:border-danger-text/32",
-      icon: <CircleX />
+      design:
+        'flex gap-2 dark:bg-danger-bg text-danger-text dark:border dark:border-danger-text/32',
+      icon: <CircleX />,
     },
-  }
+  };
 
   async function handleUpdateStatus(val: string) {
-    if (!id) return
-    setLoadingStatus(val)
+    if (!id) return;
+    setLoadingStatus(val);
     try {
       await axios.put(`/admin/sessions/${id}`, {
         status: val,
-        id
+        id,
       });
-      await onRefresh()
+      await onRefresh();
     } finally {
-      setLoadingStatus("")
+      setLoadingStatus('');
     }
   }
   return (
@@ -612,10 +654,10 @@ const Markbuttons = ({ id, onRefresh }: { id: number, onRefresh: () => Promise<v
       {markList.map((item) => (
         <Button
           key={item}
-          variant={"outline"}
+          variant={'outline'}
           className={designType[item as keyof typeof designType].design}
           onClick={() => {
-            handleUpdateStatus(item)
+            handleUpdateStatus(item);
           }}
         >
           {loadingStatus === item ? (
@@ -632,32 +674,33 @@ const Markbuttons = ({ id, onRefresh }: { id: number, onRefresh: () => Promise<v
         </Button>
       ))}
     </div>
-  )
-}
+  );
+};
 
-const MarkComped = ({ id, onRefresh }: { id: number, onRefresh: () => Promise<void> }) => {
-  const [loadingStatus, setLoadingStatus] = useState(false)
+const MarkComped = ({ id, onRefresh }: { id: number; onRefresh: () => Promise<void> }) => {
+  const [loadingStatus, setLoadingStatus] = useState(false);
   async function handleUpdateStatus() {
-    if (!id) return
-    setLoadingStatus(true)
+    if (!id) return;
+    setLoadingStatus(true);
     try {
       await axios.put(`/admin/sessions/${id}`, {
         comped: true,
-        id
+        id,
       });
-      await onRefresh()
+      await onRefresh();
     } finally {
-      setLoadingStatus(false)
+      setLoadingStatus(false);
     }
   }
   return (
     <div className="flex gap-2 flex-wrap">
       <Button
-
-        variant={"outline"}
-        className={"flex gap-2 dark:bg-warning-bg text-warning-text dark:border dark:border-warning-text/32"}
+        variant={'outline'}
+        className={
+          'flex gap-2 dark:bg-warning-bg text-warning-text dark:border dark:border-warning-text/32'
+        }
         onClick={() => {
-          handleUpdateStatus()
+          handleUpdateStatus();
         }}
       >
         {loadingStatus ? (
@@ -673,31 +716,31 @@ const MarkComped = ({ id, onRefresh }: { id: number, onRefresh: () => Promise<vo
         )}
       </Button>
     </div>
-  )
-}
+  );
+};
 
-const StartSessionNow = ({ id, onRefresh }: { id: number, onRefresh: () => Promise<void> }) => {
-  const [loadingStatus, setLoadingStatus] = useState(false)
+const StartSessionNow = ({ id, onRefresh }: { id: number; onRefresh: () => Promise<void> }) => {
+  const [loadingStatus, setLoadingStatus] = useState(false);
 
   async function handleUpdateStatus() {
-    if (!id) return
-    setLoadingStatus(true)
+    if (!id) return;
+    setLoadingStatus(true);
     try {
       await axios.put(`/admin/sessions/${id}`, {
-        status: "ongoing",
+        status: 'ongoing',
         date: new Date().toISOString(),
-        id
+        id,
       });
-      await onRefresh()
+      await onRefresh();
     } finally {
-      setLoadingStatus(false)
+      setLoadingStatus(false);
     }
   }
   return (
     <div className="flex gap-2 flex-wrap">
       <Button
         onClick={() => {
-          handleUpdateStatus()
+          handleUpdateStatus();
         }}
       >
         {loadingStatus ? (
@@ -713,77 +756,94 @@ const StartSessionNow = ({ id, onRefresh }: { id: number, onRefresh: () => Promi
         )}
       </Button>
     </div>
-  )
-}
+  );
+};
 
-
-const AttendanceMarking = ({ player_id, onRefresh, session_id }: { player_id: number, session_id: number, onRefresh: () => Promise<void> }) => {
-
-  const [loading, setLoaidng] = useState(false)
+const AttendanceMarking = ({
+  player_id,
+  onRefresh,
+  session_id,
+}: {
+  player_id: number;
+  session_id: number;
+  onRefresh: () => Promise<void>;
+}) => {
+  const [loading, setLoaidng] = useState(false);
 
   async function markAttendance(status: string) {
-    if (!player_id || !session_id) return
+    if (!player_id || !session_id) return;
 
-    setLoaidng(true)
+    setLoaidng(true);
     try {
-
-      await axios.post(`/admin/sessions/${session_id}/attendance`, { status, session_id, user_id: player_id })
-      await onRefresh()
-
+      await axios.post(`/admin/sessions/${session_id}/attendance`, {
+        status,
+        session_id,
+        user_id: player_id,
+      });
+      await onRefresh();
     } finally {
-      setLoaidng(false)
+      setLoaidng(false);
     }
-
   }
 
-  return (
-    loading ? <Spinner /> :
-      <div className="flex gap-4 flex-wrap">
+  return loading ? (
+    <Spinner />
+  ) : (
+    <div className="flex gap-4 flex-wrap">
+      <Button
+        className="dark:bg-active-bg text-active-text border dark:border-active-text/32"
+        onClick={() => {
+          markAttendance('present');
+        }}
+      >
+        <CheckCircle />
+        Mark Present
+      </Button>
+      <Button
+        className="dark:bg-danger-bg text-danger-text border dark:border-danger-text/32"
+        onClick={() => {
+          markAttendance('absent');
+        }}
+      >
+        <CircleX />
+        Mark Absent
+      </Button>
+    </div>
+  );
+};
 
-        <Button className="dark:bg-active-bg text-active-text border dark:border-active-text/32" onClick={() => {
-          markAttendance("present")
-        }}>
-          <CheckCircle />
-          Mark Present
-        </Button>
-        <Button className="dark:bg-danger-bg text-danger-text border dark:border-danger-text/32"
-          onClick={() => {
-            markAttendance("absent")
-          }}>
-          <CircleX />
-          Mark Absent
-        </Button>
-      </div>
-  )
-}
-
-const AddNoteDialog = ({ session_id, onRefresh }: { session_id: number, onRefresh: () => Promise<void> }) => {
-  const { user, } = useAuth()
+const AddNoteDialog = ({
+  session_id,
+  onRefresh,
+}: {
+  session_id: number;
+  onRefresh: () => Promise<void>;
+}) => {
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(false);
   const [data, setData] = useState({
-    note_type: "",
-    note: "",
+    note_type: '',
+    note: '',
     important: false,
-  })
+  });
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    if (!user?.id) return
-    setLoading(true)
+    e.preventDefault();
+    if (!user?.id) return;
+    setLoading(true);
     try {
       await axios.post(`/admin/sessions/${session_id}/note`, {
         ...data,
         user_id: user.id,
-        session_id
-      })
-      await onRefresh()
-      setOpen(false)
+        session_id,
+      });
+      await onRefresh();
+      setOpen(false);
     } finally {
-      setLoading(false)
-
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <>
@@ -806,7 +866,7 @@ const AddNoteDialog = ({ session_id, onRefresh }: { session_id: number, onRefres
                     className="data-[state=checked]:border-white data-[state=checked]:bg-primary data-[state=checked]:text-black dark:data-[state=checked]:border-white dark:data-[state=checked]:bg-primary"
                     checked={data.important}
                     onCheckedChange={(checked) => {
-                      setData({ ...data, important: checked === true })
+                      setData({ ...data, important: checked === true });
                     }}
                   />
                   <Label className="text-[#99A1AF] text-sm">Important</Label>
@@ -850,7 +910,10 @@ const AddNoteDialog = ({ session_id, onRefresh }: { session_id: number, onRefres
                 <DialogClose className="text-[13px] font-medium leading-none h-8 px-4 bg-black text-white border-border rounded-md hover:opacity-70 cursor-pointer flex flex-1 items-center justify-center">
                   Cancel
                 </DialogClose>
-                <Button type="submit" disabled={loading}> {loading && <Spinner className="text-black" />}  Add Note</Button>
+                <Button type="submit" disabled={loading}>
+                  {' '}
+                  {loading && <Spinner className="text-black" />} Add Note
+                </Button>
               </div>
             </div>
           </form>

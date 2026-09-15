@@ -1,17 +1,11 @@
-import { EmblaOptionsType } from 'embla-carousel'
-import useEmblaCarousel from 'embla-carousel-react'
+import { EmblaOptionsType } from 'embla-carousel';
+import useEmblaCarousel from 'embla-carousel-react';
 
-import { EmblaCarouselType } from 'embla-carousel'
-import { ChevronLeft, ChevronRight, Quote, Star, User } from 'lucide-react'
-import React, {
-  ComponentPropsWithRef,
-  ReactNode,
-  useCallback,
-  useEffect,
-  useState
-} from 'react'
-import { Avatar } from '../ui/avatar'
-import { Card, CardContent, CardFooter, CardHeader } from '../ui/card'
+import { EmblaCarouselType } from 'embla-carousel';
+import { ChevronLeft, ChevronRight, Quote, Star, User } from 'lucide-react';
+import React, { ComponentPropsWithRef, ReactNode, useCallback, useEffect, useState } from 'react';
+import { Avatar } from '../ui/avatar';
+import { Card, CardContent, CardFooter, CardHeader } from '../ui/card';
 
 export type ReviewLanding = {
   star: number;
@@ -24,42 +18,35 @@ export type ReviewLanding = {
 };
 
 type PropType = {
-  slides: ReviewLanding[]
-  options?: EmblaOptionsType
-  children: ReactNode
-}
+  slides: ReviewLanding[];
+  options?: EmblaOptionsType;
+  children: ReactNode;
+};
 
 const TestimonialSlider: React.FC<PropType> = (props) => {
-  const { slides, options, children } = props
-  const [emblaRef, emblaApi] = useEmblaCarousel(options)
+  const { slides, options, children } = props;
+  const [emblaRef, emblaApi] = useEmblaCarousel(options);
 
-  const {
-    prevBtnDisabled,
-    nextBtnDisabled,
-    onPrevButtonClick,
-    onNextButtonClick
-  } = usePrevNextButtons(emblaApi)
+  const { prevBtnDisabled, nextBtnDisabled, onPrevButtonClick, onNextButtonClick } =
+    usePrevNextButtons(emblaApi);
 
   return (
     <>
-      <div className='flex justify-between gap-4 flex-wrap items-start'>
-        <div>
-          {children}
-        </div>
+      <div className="flex justify-between gap-4 flex-wrap items-start">
+        <div>{children}</div>
         <div className="embla__controls">
           <div className="embla__buttons gap-2 flex">
-            <PrevButton onClick={onPrevButtonClick} disabled={prevBtnDisabled} >
-              <div className='h-7 w-7 flex items-center justify-center border rounded-full'>
+            <PrevButton onClick={onPrevButtonClick} disabled={prevBtnDisabled}>
+              <div className="h-7 w-7 flex items-center justify-center border rounded-full">
                 <ChevronLeft size={14} />
               </div>
             </PrevButton>
-            <NextButton onClick={onNextButtonClick} disabled={nextBtnDisabled} >
-              <div className='h-7 w-7 flex items-center justify-center border rounded-full'>
-                <ChevronRight size={14}/>
+            <NextButton onClick={onNextButtonClick} disabled={nextBtnDisabled}>
+              <div className="h-7 w-7 flex items-center justify-center border rounded-full">
+                <ChevronRight size={14} />
               </div>
             </NextButton>
           </div>
-
         </div>
       </div>
       <section className="embla responsive-slide">
@@ -72,10 +59,7 @@ const TestimonialSlider: React.FC<PropType> = (props) => {
                     <CardHeader>
                       <div className="flex gap-1">
                         {Array.from({ length: review.star }).map((_, i) => (
-                          <Star
-                            key={i}
-                            className="w-5 h-5 fill-primary text-[#FDC700]"
-                          />
+                          <Star key={i} className="w-5 h-5 fill-primary text-[#FDC700]" />
                         ))}
                       </div>
                     </CardHeader>
@@ -91,10 +75,8 @@ const TestimonialSlider: React.FC<PropType> = (props) => {
                           <Avatar className="flex items-center justify-center">{<User />}</Avatar>
 
                           <div>
-                            <h1 className='text-xl'>{review.person.name}</h1>
-                            <p className="text-sm text-[#A3A3A3]">
-                              {review.person.details}
-                            </p>
+                            <h1 className="text-xl">{review.person.name}</h1>
+                            <p className="text-sm text-[#A3A3A3]">{review.person.details}</p>
                           </div>
                         </div>
 
@@ -107,63 +89,58 @@ const TestimonialSlider: React.FC<PropType> = (props) => {
             ))}
           </div>
         </div>
-
-
       </section>
     </>
-  )
-}
-
-
-
+  );
+};
 
 type UsePrevNextButtonsType = {
-  prevBtnDisabled: boolean
-  nextBtnDisabled: boolean
-  onPrevButtonClick: () => void
-  onNextButtonClick: () => void
-}
+  prevBtnDisabled: boolean;
+  nextBtnDisabled: boolean;
+  onPrevButtonClick: () => void;
+  onNextButtonClick: () => void;
+};
 
 export const usePrevNextButtons = (
   emblaApi: EmblaCarouselType | undefined
 ): UsePrevNextButtonsType => {
-  const [prevBtnDisabled, setPrevBtnDisabled] = useState(true)
-  const [nextBtnDisabled, setNextBtnDisabled] = useState(true)
+  const [prevBtnDisabled, setPrevBtnDisabled] = useState(true);
+  const [nextBtnDisabled, setNextBtnDisabled] = useState(true);
 
   const onPrevButtonClick = useCallback(() => {
-    if (!emblaApi) return
-    emblaApi.scrollPrev()
-  }, [emblaApi])
+    if (!emblaApi) return;
+    emblaApi.scrollPrev();
+  }, [emblaApi]);
 
   const onNextButtonClick = useCallback(() => {
-    if (!emblaApi) return
-    emblaApi.scrollNext()
-  }, [emblaApi])
+    if (!emblaApi) return;
+    emblaApi.scrollNext();
+  }, [emblaApi]);
 
   const onSelect = useCallback((emblaApi: EmblaCarouselType) => {
-    setPrevBtnDisabled(!emblaApi.canScrollPrev())
-    setNextBtnDisabled(!emblaApi.canScrollNext())
-  }, [])
+    setPrevBtnDisabled(!emblaApi.canScrollPrev());
+    setNextBtnDisabled(!emblaApi.canScrollNext());
+  }, []);
 
   useEffect(() => {
-    if (!emblaApi) return
+    if (!emblaApi) return;
 
-    onSelect(emblaApi)
-    emblaApi.on('reInit', onSelect).on('select', onSelect)
-  }, [emblaApi, onSelect])
+    onSelect(emblaApi);
+    emblaApi.on('reInit', onSelect).on('select', onSelect);
+  }, [emblaApi, onSelect]);
 
   return {
     prevBtnDisabled,
     nextBtnDisabled,
     onPrevButtonClick,
-    onNextButtonClick
-  }
-}
+    onNextButtonClick,
+  };
+};
 
-type PropTypeBtn = ComponentPropsWithRef<'button'>
+type PropTypeBtn = ComponentPropsWithRef<'button'>;
 
 export const PrevButton: React.FC<PropTypeBtn> = (props) => {
-  const { children, ...restProps } = props
+  const { children, ...restProps } = props;
 
   return (
     <button
@@ -179,11 +156,11 @@ export const PrevButton: React.FC<PropTypeBtn> = (props) => {
       </svg> */}
       {children}
     </button>
-  )
-}
+  );
+};
 
 export const NextButton: React.FC<PropTypeBtn> = (props) => {
-  const { children, ...restProps } = props
+  const { children, ...restProps } = props;
 
   return (
     <button
@@ -199,67 +176,60 @@ export const NextButton: React.FC<PropTypeBtn> = (props) => {
       </svg> */}
       {children}
     </button>
-  )
-}
-
-
-
+  );
+};
 
 type UseDotButtonType = {
-  selectedIndex: number
-  scrollSnaps: number[]
-  onDotButtonClick: (index: number) => void
-}
+  selectedIndex: number;
+  scrollSnaps: number[];
+  onDotButtonClick: (index: number) => void;
+};
 
-export const useDotButton = (
-  emblaApi: EmblaCarouselType | undefined
-): UseDotButtonType => {
-  const [selectedIndex, setSelectedIndex] = useState(0)
-  const [scrollSnaps, setScrollSnaps] = useState<number[]>([])
+export const useDotButton = (emblaApi: EmblaCarouselType | undefined): UseDotButtonType => {
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [scrollSnaps, setScrollSnaps] = useState<number[]>([]);
 
   const onDotButtonClick = useCallback(
     (index: number) => {
-      if (!emblaApi) return
-      emblaApi.scrollTo(index)
+      if (!emblaApi) return;
+      emblaApi.scrollTo(index);
     },
     [emblaApi]
-  )
+  );
 
   const onInit = useCallback((emblaApi: EmblaCarouselType) => {
-    setScrollSnaps(emblaApi.scrollSnapList())
-  }, [])
+    setScrollSnaps(emblaApi.scrollSnapList());
+  }, []);
 
   const onSelect = useCallback((emblaApi: EmblaCarouselType) => {
-    setSelectedIndex(emblaApi.selectedScrollSnap())
-  }, [])
+    setSelectedIndex(emblaApi.selectedScrollSnap());
+  }, []);
 
   useEffect(() => {
-    if (!emblaApi) return
+    if (!emblaApi) return;
 
-    onInit(emblaApi)
-    onSelect(emblaApi)
-    emblaApi.on('reInit', onInit).on('reInit', onSelect).on('select', onSelect)
-  }, [emblaApi, onInit, onSelect])
+    onInit(emblaApi);
+    onSelect(emblaApi);
+    emblaApi.on('reInit', onInit).on('reInit', onSelect).on('select', onSelect);
+  }, [emblaApi, onInit, onSelect]);
 
   return {
     selectedIndex,
     scrollSnaps,
-    onDotButtonClick
-  }
-}
+    onDotButtonClick,
+  };
+};
 
-type PropTypeDot = ComponentPropsWithRef<'button'>
+type PropTypeDot = ComponentPropsWithRef<'button'>;
 
 export const DotButton: React.FC<PropTypeDot> = (props) => {
-  const { children, ...restProps } = props
+  const { children, ...restProps } = props;
 
   return (
     <button type="button" {...restProps}>
       {children}
     </button>
-  )
-}
+  );
+};
 
-
-
-export default TestimonialSlider
+export default TestimonialSlider;

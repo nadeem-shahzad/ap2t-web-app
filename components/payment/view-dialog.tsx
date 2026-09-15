@@ -1,26 +1,16 @@
-import {
-  Calendar,
-  Clock,
-  CreditCard,
-  DollarSign,
-  File,
-  ShieldCheck,
-  User,
-} from "lucide-react";
-import moment from "moment";
-import { GoDotFill } from "react-icons/go";
-import CardStatus from "../card-status";
-import { DialogClose, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
-import { ScrollArea } from "../ui/scroll-area";
-import { PaymentItem } from "@/lib/types";
+import { Calendar, Clock, CreditCard, DollarSign, File, ShieldCheck, User } from 'lucide-react';
+import moment from 'moment';
+import { GoDotFill } from 'react-icons/go';
+import CardStatus from '../card-status';
+import { DialogClose, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
+import { ScrollArea } from '../ui/scroll-area';
+import { PaymentItem } from '@/lib/types';
 
 export function ViewDialog({ data }: { data: PaymentItem }) {
   return (
     <DialogContent className="bg-[#252525] border border-border p-0 sm:max-w-4xl">
       <DialogHeader className="border-b border-border p-4">
-        <DialogTitle className="text-lg font-semibold text-[#F3F4F6]">
-          Payment Details
-        </DialogTitle>
+        <DialogTitle className="text-lg font-semibold text-[#F3F4F6]">Payment Details</DialogTitle>
         <p className="text-sm text-ghost-text">Transaction</p>
         <p className="text-sm text-ghost-text">{data.transaction_id}</p>
       </DialogHeader>
@@ -39,11 +29,7 @@ export function ViewDialog({ data }: { data: PaymentItem }) {
                 <ShieldCheck className="text-primary h-4 w-4" />
                 <p className="text-sm text-ghost-text">Status</p>
               </div>
-              <CardStatus
-
-                value={data.status}
-                className="w-20"
-              />
+              <CardStatus value={data.status} className="w-20" />
             </div>
           </div>
           <div className="space-y-2">
@@ -76,14 +62,18 @@ export function ViewDialog({ data }: { data: PaymentItem }) {
                   <Calendar />
                   <h1>Date</h1>
                 </div>
-                <h1 className="text-[#E5E7EB]">{data.created_at && moment(new Date(data.created_at)).format("YYYY-MM-DD")}</h1>
+                <h1 className="text-[#E5E7EB]">
+                  {data.created_at && moment(new Date(data.created_at)).format('YYYY-MM-DD')}
+                </h1>
               </div>
               <div className="bg-[#1A1A1A] border border-border rounded-[10px] flex justify-between p-4">
                 <div className="flex gap-2 text-[#99A1AF]">
                   <Clock />
                   <h1>Time</h1>
                 </div>
-                <h1 className="text-[#E5E7EB]">{data.created_at && moment(new Date(data.created_at)).format("hh:mm A")}</h1>
+                <h1 className="text-[#E5E7EB]">
+                  {data.created_at && moment(new Date(data.created_at)).format('hh:mm A')}
+                </h1>
               </div>
             </div>
           </div>
@@ -95,16 +85,16 @@ export function ViewDialog({ data }: { data: PaymentItem }) {
                   <CreditCard />
                 </div>
                 <div className="space-y-0">
-                  <h1 className="text-[#E5E7EB]">{data.method || "N/A"}</h1>
+                  <h1 className="text-[#E5E7EB]">{data.method || 'N/A'}</h1>
                   {/* <p className="text-xs text-[#99A1AF]">{data.methodDetail}</p> */}
                 </div>
               </div>
-              {data?.method !== 'Cash' &&
+              {data?.method !== 'Cash' && (
                 <div className="space-y-0">
                   <p className="text-xs text-ghost-text">Processed via</p>
                   <h1 className="text-[#E5E7EB]">Square</h1>
                 </div>
-              }
+              )}
             </div>
           </div>
           <div className="space-y-2">
@@ -113,9 +103,7 @@ export function ViewDialog({ data }: { data: PaymentItem }) {
             <div className="space-y-1">
               <div className="bg-[#1A1A1A] border border-border rounded-[10px] flex p-4 gap-2">
                 <GoDotFill className="text-active-text" />
-                <h1 className="text-[#D1D5DC]">
-                  Duplicate charge prevention verified
-                </h1>
+                <h1 className="text-[#D1D5DC]">Duplicate charge prevention verified</h1>
               </div>
               <div className="bg-[#1A1A1A] border border-border rounded-[10px] flex p-4 gap-2">
                 <GoDotFill className="text-active-text" />
@@ -123,9 +111,7 @@ export function ViewDialog({ data }: { data: PaymentItem }) {
               </div>
               <div className="bg-[#1A1A1A] border border-border rounded-[10px] flex p-4 gap-2">
                 <GoDotFill className="text-active-text" />
-                <h1 className="text-[#D1D5DC]">
-                  Card securely stored in Square vault
-                </h1>
+                <h1 className="text-[#D1D5DC]">Card securely stored in Square vault</h1>
               </div>
             </div>
           </div>

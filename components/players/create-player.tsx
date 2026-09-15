@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogClose,
@@ -8,52 +8,52 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import axios from "@/lib/axios";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus } from "lucide-react";
-import { useState } from "react";
-import { Controller, useForm } from "react-hook-form";
-import { toast } from "sonner";
-import { z } from "zod";
-import AppCalendar from "../app-calendar";
-import { RequiredStar } from "../required-star";
-import { Field, FieldError } from "../ui/field";
-import { Spinner } from "../ui/spinner";
-import SelectPosition from "./select-position";
-import SelectSkill from "./select-skill";
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import axios from '@/lib/axios';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Plus } from 'lucide-react';
+import { useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import { z } from 'zod';
+import AppCalendar from '../app-calendar';
+import { RequiredStar } from '../required-star';
+import { Field, FieldError } from '../ui/field';
+import { Spinner } from '../ui/spinner';
+import SelectPosition from './select-position';
+import SelectSkill from './select-skill';
 
 type CreatePlayerProps = {
   parent_id?: number | null | undefined | string;
   onRefresh?: () => Promise<void>;
-  placeholder?: string
+  placeholder?: string;
 };
 
 const playerSchema = z.object({
-  first_name: z.string().min(2, "First name is required"),
-  last_name: z.string().min(2, "Last name is required"),
+  first_name: z.string().min(2, 'First name is required'),
+  last_name: z.string().min(2, 'Last name is required'),
 
   email: z
     .string()
-    .email("Invalid email")
+    .email('Invalid email')
     .transform((val) => val.trim().toLowerCase()),
 
-  phone_no: z.string().min(6, "Phone is required"),
+  phone_no: z.string().min(6, 'Phone is required'),
 
-  zip_code: z.string().min(3, "Zip code required"),
+  zip_code: z.string().min(3, 'Zip code required'),
 
-  location: z.string().min(2, "Location required"),
+  location: z.string().min(2, 'Location required'),
 
   dob: z.date({
-    error: "Date of birth is required",
+    error: 'Date of birth is required',
   }),
 
-  position: z.string().min(1, "Select a position"),
+  position: z.string().min(1, 'Select a position'),
 
-  skillLevel: z.string().min(1, "Select skill level"),
+  skillLevel: z.string().min(1, 'Select skill level'),
 
   medicalNotes: z.string().optional(),
 });
@@ -62,25 +62,24 @@ type PlayerFormValues = z.infer<typeof playerSchema>;
 
 export function CreatePlayer({
   parent_id = null,
-  onRefresh = async () => { },
-  placeholder = "Add Player"
+  onRefresh = async () => {},
+  placeholder = 'Add Player',
 }: CreatePlayerProps) {
-
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const form = useForm<PlayerFormValues>({
     resolver: zodResolver(playerSchema),
     defaultValues: {
-      first_name: "",
-      last_name: "",
-      email: "",
-      phone_no: "",
+      first_name: '',
+      last_name: '',
+      email: '',
+      phone_no: '',
       dob: undefined,
-      zip_code: "",
-      location: "",
-      position: "",
-      skillLevel: "",
-      medicalNotes: "",
+      zip_code: '',
+      location: '',
+      position: '',
+      skillLevel: '',
+      medicalNotes: '',
     },
   });
 
@@ -88,7 +87,7 @@ export function CreatePlayer({
     try {
       setLoading(true);
 
-      await axios.post("/user", {
+      await axios.post('/user', {
         first_name: values.first_name,
         last_name: values.last_name,
         email: values.email,
@@ -96,13 +95,13 @@ export function CreatePlayer({
         birth_date: values.dob,
         zip_code: values.zip_code,
         location: values.location,
-        role: "player",
+        role: 'player',
         parent_id,
         position: values.position,
         skill_level: values.skillLevel,
         medical_notes: values.medicalNotes,
       });
-      toast.success("Player created!")
+      toast.success('Player created!');
       await onRefresh();
       form.reset();
       setOpen(false);
@@ -123,9 +122,7 @@ export function CreatePlayer({
         <DialogContent className="sm:max-w-[550px] bg-[#252525]">
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <DialogHeader className="pb-4">
-              <DialogTitle className="text-sm font-normal">
-                Add Player Information
-              </DialogTitle>
+              <DialogTitle className="text-sm font-normal">Add Player Information</DialogTitle>
             </DialogHeader>
 
             <div className="grid gap-4 py-4 border-t">
@@ -146,9 +143,7 @@ export function CreatePlayer({
                           placeholder="john"
                           autoComplete="off"
                         />
-                        {fieldState.invalid && (
-                          <FieldError errors={[fieldState.error]} />
-                        )}
+                        {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                       </Field>
                     )}
                   />
@@ -169,9 +164,7 @@ export function CreatePlayer({
                           placeholder="doe"
                           autoComplete="off"
                         />
-                        {fieldState.invalid && (
-                          <FieldError errors={[fieldState.error]} />
-                        )}
+                        {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                       </Field>
                     )}
                   />
@@ -193,9 +186,7 @@ export function CreatePlayer({
                         placeholder="example@ap2t.com"
                         autoComplete="off"
                       />
-                      {fieldState.invalid && (
-                        <FieldError errors={[fieldState.error]} />
-                      )}
+                      {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                     </Field>
                   )}
                 />
@@ -217,9 +208,7 @@ export function CreatePlayer({
                           placeholder="2873"
                           autoComplete="off"
                         />
-                        {fieldState.invalid && (
-                          <FieldError errors={[fieldState.error]} />
-                        )}
+                        {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                       </Field>
                     )}
                   />
@@ -240,9 +229,7 @@ export function CreatePlayer({
                           placeholder="LA ,USA"
                           autoComplete="off"
                         />
-                        {fieldState.invalid && (
-                          <FieldError errors={[fieldState.error]} />
-                        )}
+                        {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                       </Field>
                     )}
                   />
@@ -259,14 +246,9 @@ export function CreatePlayer({
                           Date Of Birth <RequiredStar />
                         </Label>
 
-                        <AppCalendar
-                          date={field.value}
-                          onChange={field.onChange}
-                        />
+                        <AppCalendar date={field.value} onChange={field.onChange} />
                         {fieldState.invalid && (
-                          <p className="text-xs text-red-500">
-                            {fieldState?.error?.message}
-                          </p>
+                          <p className="text-xs text-red-500">{fieldState?.error?.message}</p>
                         )}
                       </Field>
                     )}
@@ -289,9 +271,7 @@ export function CreatePlayer({
                           placeholder="+1XXXXXX"
                           autoComplete="off"
                         />
-                        {fieldState.invalid && (
-                          <FieldError errors={[fieldState.error]} />
-                        )}
+                        {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                       </Field>
                     )}
                   />
@@ -313,9 +293,7 @@ export function CreatePlayer({
                           placeholder="Select position"
                         />
                         {fieldState.invalid && (
-                          <p className="text-xs text-red-500">
-                            {fieldState?.error?.message}
-                          </p>
+                          <p className="text-xs text-red-500">{fieldState?.error?.message}</p>
                         )}
                       </Field>
                     )}
@@ -339,9 +317,7 @@ export function CreatePlayer({
                         />
 
                         {fieldState.invalid && (
-                          <p className="text-xs text-red-500">
-                            {fieldState?.error?.message}
-                          </p>
+                          <p className="text-xs text-red-500">{fieldState?.error?.message}</p>
                         )}
                       </Field>
                     )}
@@ -366,9 +342,7 @@ export function CreatePlayer({
                         autoComplete="off"
                         className="min-h-[100px]"
                       />
-                      {fieldState.invalid && (
-                        <FieldError errors={[fieldState.error]} />
-                      )}
+                      {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                     </Field>
                   )}
                 />
@@ -382,7 +356,7 @@ export function CreatePlayer({
                 </Button>
               </DialogClose>
               <Button disabled={loading} type="submit">
-                {" "}
+                {' '}
                 {loading && <Spinner className="text-black" />}Add Player
               </Button>
             </DialogFooter>

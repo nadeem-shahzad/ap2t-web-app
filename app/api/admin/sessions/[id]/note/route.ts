@@ -1,11 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
-import pool from "@/lib/db";
+import { NextRequest, NextResponse } from 'next/server';
+import pool from '@/lib/db';
 
-
-export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id: sessionId } = await params;
 
   try {
@@ -23,45 +19,38 @@ export async function GET(
       [sessionId]
     );
 
-    return NextResponse.json(rows , { status: 200 });
+    return NextResponse.json(rows, { status: 200 });
   } catch (error) {
     console.error(error);
-    return NextResponse.json(
-      { message: "Failed to fetch notes" },
-      { status: 500 }
-    );
+    return NextResponse.json({ message: 'Failed to fetch notes' }, { status: 500 });
   }
 }
 
-
-
 export async function POST(req: NextRequest) {
-
-
   try {
     const data = await req.json();
     if (!data || Object.keys(data).length === 0) {
-      return NextResponse.json({ message: "Required parameters missing" }, { status: 400 });
+      return NextResponse.json({ message: 'Required parameters missing' }, { status: 400 });
     }
 
     const fields = Object.keys(data);
     const values = Object.values(data);
-    const placeholders = fields.map((_, i) => `$${i + 1}`).join(", ");
+    const placeholders = fields.map((_, i) => `$${i + 1}`).join(', ');
 
     await pool.query(
-      `INSERT INTO notes (${fields.join(",")})
+      `INSERT INTO notes (${fields.join(',')})
        VALUES (${placeholders})
        `,
       values
     );
 
-    return NextResponse.json({ message: "Note added" }, { status: 200 })
+    return NextResponse.json({ message: 'Note added' }, { status: 200 });
   } catch (error: any) {
     return NextResponse.json(
-      { message: error?.message || "Internal Server Error" },
+      { message: error?.message || 'Internal Server Error' },
       { status: 500 }
     );
   }
 }
 
-export const revalidate = 0
+export const revalidate = 0;

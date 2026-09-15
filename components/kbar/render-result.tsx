@@ -9,15 +9,9 @@ export default function RenderResults() {
       items={results}
       onRender={({ item, active }) =>
         typeof item === 'string' ? (
-          <div className='px-4 py-2 text-lg uppercase opacity-70'>
-            {item}
-          </div>
+          <div className="px-4 py-2 text-lg uppercase opacity-70">{item}</div>
         ) : (
-          <ResultItem
-            action={item}
-            active={active}
-            currentRootActionId={rootActionId ?? ''}
-          />
+          <ResultItem action={item} active={active} currentRootActionId={rootActionId ?? ''} />
         )
       }
     />

@@ -1,59 +1,52 @@
-"use client";
+'use client';
 
-import { toast } from "sonner";
-import { Button } from "../ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle
-} from "../ui/dialog";
-import { useEffect, useState } from "react";
-import { Spinner } from "../ui/spinner";
-import axios from "@/lib/axios";
+import { toast } from 'sonner';
+import { Button } from '../ui/button';
+import { Dialog, DialogContent, DialogTitle } from '../ui/dialog';
+import { useEffect, useState } from 'react';
+import { Spinner } from '../ui/spinner';
+import axios from '@/lib/axios';
 
 export default function GetSupportDialog({ email }: { email: string | undefined }) {
-  const [localEmail, setLocalEmail] = useState("")
+  const [localEmail, setLocalEmail] = useState('');
 
-  const [loading, setLoading] = useState(false)
-  const [open, setOpen] = useState(false)
+  const [loading, setLoading] = useState(false);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    if (email) setLocalEmail(email)
-  }, [email])
+    if (email) setLocalEmail(email);
+  }, [email]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
-    setLoading(true)
+    setLoading(true);
 
     const formData = new FormData(e.currentTarget);
 
     const data = {
-      firstName: formData.get("firstName"),
-      lastName: formData.get("lastName"),
-      phone: formData.get("phone"),
+      firstName: formData.get('firstName'),
+      lastName: formData.get('lastName'),
+      phone: formData.get('phone'),
       email: localEmail,
-      message: formData.get("message"),
+      message: formData.get('message'),
     };
 
     try {
-      await axios.post(`/support?type=support`, data)
-      toast.success("Message sent to support team..");
-      setOpen(false)
+      await axios.post(`/support?type=support`, data);
+      toast.success('Message sent to support team..');
+      setOpen(false);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-
-
-  };
-
+  }
 
   return (
     <>
       <div className="flex flex-col gap-1 w-full bg-primary rounded-xl p-4">
         <p className="text-xs text-[#282828]">Need Help?</p>
         <p className="text-md text-[#282828]">Contact Support</p>
-        <Button className="bg-black text-primary rounded-xl" onClick={()=> setOpen(true)}>
+        <Button className="bg-black text-primary rounded-xl" onClick={() => setOpen(true)}>
           Get Support
         </Button>
       </div>
@@ -106,7 +99,7 @@ export default function GetSupportDialog({ email }: { email: string | undefined 
             />
 
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading && <Spinner className="text-black" />}  Send Message
+              {loading && <Spinner className="text-black" />} Send Message
             </Button>
           </form>
         </DialogContent>

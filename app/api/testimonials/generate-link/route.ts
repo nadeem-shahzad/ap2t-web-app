@@ -1,16 +1,13 @@
-import pool from "@/lib/db";
-import crypto from "crypto";
-import { NextRequest, NextResponse } from "next/server";
+import pool from '@/lib/db';
+import crypto from 'crypto';
+import { NextRequest, NextResponse } from 'next/server';
 
 function generateToken() {
-  return crypto.randomBytes(32).toString("hex");
+  return crypto.randomBytes(32).toString('hex');
 }
 
 export async function POST(req: NextRequest) {
-
-  const expiredLinks = await pool.query(
-    `SELECT * FROM review_links WHERE used IS FALSE`,
-  );
+  const expiredLinks = await pool.query(`SELECT * FROM review_links WHERE used IS FALSE`);
 
   const allExpiredLinks = expiredLinks.rows.filter(
     (item) => item.expires_at && new Date(item.expires_at) < new Date()
@@ -22,7 +19,7 @@ export async function POST(req: NextRequest) {
   }
 
   const token = generateToken();
-  const body = await req.json()
+  const body = await req.json();
 
   const expiresAt = new Date();
   expiresAt.setHours(expiresAt.getHours() + 24);

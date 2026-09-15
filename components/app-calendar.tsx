@@ -1,10 +1,10 @@
-import { cn } from "@/lib/utils";
-import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
-import { useState } from "react";
-import { Button } from "./ui/button";
-import { Calendar } from "./ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+import { CalendarIcon } from 'lucide-react';
+import { useState } from 'react';
+import { Button } from './ui/button';
+import { Calendar } from './ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 
 const AppCalendar = ({
   date,
@@ -22,18 +22,14 @@ const AppCalendar = ({
     <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
       <PopoverTrigger asChild>
         <Button
-          variant={"outline"}
+          variant={'outline'}
           className={cn(
-            "w-full h-9 rounded-md dark:bg-[#1A1A1A]",
-            !date && "text-muted-foreground",
-            className,
+            'w-full h-9 rounded-md dark:bg-[#1A1A1A]',
+            !date && 'text-muted-foreground',
+            className
           )}
         >
-          {date ? (
-            format(date, "PPP")
-          ) : (
-            <p className="text-[14px] font-normal">Pick a date</p>
-          )}
+          {date ? format(date, 'PPP') : <p className="text-[14px] font-normal">Pick a date</p>}
           <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -43,7 +39,7 @@ const AppCalendar = ({
           className="z-20"
           mode="single"
           selected={date || undefined}
-          onSelect={(e : any) => {
+          onSelect={(e: any) => {
             onChange(e);
             setIsCalendarOpen(false);
           }}

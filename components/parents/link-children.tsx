@@ -1,17 +1,32 @@
-"use client";
+'use client';
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { useDebounce } from "@/hooks/use-debounce";
-import axios from "@/lib/axios";
-import { Plus, Search } from "lucide-react";
-import { useEffect, useState } from "react";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../ui/alert-dialog";
-import { Spinner } from "../ui/spinner";
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { useDebounce } from '@/hooks/use-debounce';
+import axios from '@/lib/axios';
+import { Plus, Search } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../ui/alert-dialog';
+import { Spinner } from '../ui/spinner';
 
 interface LinkChildrenDialogProps {
   parent_id: number | null | undefined | string;
@@ -28,16 +43,15 @@ interface Player {
 
 export function LinkChildrenDialog({ parent_id, onSuccess }: LinkChildrenDialogProps) {
   const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState('');
   const [results, setResults] = useState<Player[]>([]);
   const [loading, setLoading] = useState(false);
   const [addingId, setAddingId] = useState<number | null>(null);
-  const [cont, setCont] = useState<null | number>(null)
-  const debouncedSearch = useDebounce(search, 300)
+  const [cont, setCont] = useState<null | number>(null);
+  const debouncedSearch = useDebounce(search, 300);
 
   useEffect(() => {
-    if (open)
-      fetchPlayers()
+    if (open) fetchPlayers();
   }, [open]);
 
   const fetchPlayers = async () => {
@@ -54,11 +68,13 @@ export function LinkChildrenDialog({ parent_id, onSuccess }: LinkChildrenDialogP
     setAddingId(playerId);
 
     try {
-      const response = await axios.get(`/admin/players/${playerId}/parent/check?parent=${parent_id}`);
+      const response = await axios.get(
+        `/admin/players/${playerId}/parent/check?parent=${parent_id}`
+      );
       if (response.data?.continueToSave) {
-        await continueToSave(playerId)
+        await continueToSave(playerId);
       } else {
-        setCont(playerId)
+        setCont(playerId);
       }
     } finally {
       setAddingId(null);
@@ -73,23 +89,30 @@ export function LinkChildrenDialog({ parent_id, onSuccess }: LinkChildrenDialogP
         parent_id: parent_id,
       });
       await onSuccess();
-      setOpen(false)
+      setOpen(false);
     } finally {
       setAddingId(null);
     }
   }
 
-  const filteredData = results.filter((item) => `${item.first_name} ${item.last_name}`?.toLocaleLowerCase()?.includes(debouncedSearch?.toLocaleLowerCase()))
+  const filteredData = results.filter((item) =>
+    `${item.first_name} ${item.last_name}`
+      ?.toLocaleLowerCase()
+      ?.includes(debouncedSearch?.toLocaleLowerCase())
+  );
 
   return (
     <>
-      <Dialog open={open} onOpenChange={(val) => {
-        setOpen(val);
-        if (!val) {
-          setSearch("");
-          setResults([]);
-        }
-      }}>
+      <Dialog
+        open={open}
+        onOpenChange={(val) => {
+          setOpen(val);
+          if (!val) {
+            setSearch('');
+            setResults([]);
+          }
+        }}
+      >
         <DialogTrigger asChild>
           <Button>
             <Plus />
@@ -130,7 +153,10 @@ export function LinkChildrenDialog({ parent_id, onSuccess }: LinkChildrenDialogP
                       <div className="flex items-center gap-3">
                         <Avatar className="h-8 w-8">
                           <AvatarImage src={player.picture} />
-                          <AvatarFallback>{player.first_name[0]}{player.last_name[0]}</AvatarFallback>
+                          <AvatarFallback>
+                            {player.first_name[0]}
+                            {player.last_name[0]}
+                          </AvatarFallback>
                         </Avatar>
                         <div>
                           <p className="text-sm font-medium text-[#E5E7EB]">
@@ -146,20 +172,14 @@ export function LinkChildrenDialog({ parent_id, onSuccess }: LinkChildrenDialogP
                         onClick={() => addChildren(player.id)}
                         disabled={addingId === player.id}
                       >
-                        {addingId === player.id ? (
-                          <Spinner />
-                        ) : (
-                          <Plus className="h-4 w-4" />
-                        )}
+                        {addingId === player.id ? <Spinner /> : <Plus className="h-4 w-4" />}
                       </Button>
                     </div>
                   ))}
                 </div>
               </ScrollArea>
             ) : (
-              <div className="text-center py-8 text-[#99A1AF]">
-                No children found.
-              </div>
+              <div className="text-center py-8 text-[#99A1AF]">No children found.</div>
             )}
           </div>
         </DialogContent>
@@ -175,21 +195,25 @@ export function LinkChildrenDialog({ parent_id, onSuccess }: LinkChildrenDialogP
           </AlertDialogHeader>
 
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => {
-              setAddingId(null)
-              setCont(null)
-            }}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={async () => {
-              continueToSave(cont)
-              setCont(null)
-            }}>
+            <AlertDialogCancel
+              onClick={() => {
+                setAddingId(null);
+                setCont(null);
+              }}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                continueToSave(cont);
+                setCont(null);
+              }}
+            >
               Yes
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
     </>
-
   );
 }

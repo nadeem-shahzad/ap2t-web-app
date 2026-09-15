@@ -1,15 +1,11 @@
-import pool from "@/lib/db";
-import { NextRequest, NextResponse } from "next/server";
+import pool from '@/lib/db';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const month  = req.nextUrl.searchParams.get("month")
-const queryParams : (string | number | null)[] = [id]
+  const month = req.nextUrl.searchParams.get('month');
+  const queryParams: (string | number | null)[] = [id];
   try {
-    
     let query = `
        SELECT
       s.*,
@@ -49,26 +45,22 @@ const queryParams : (string | number | null)[] = [id]
       AND sp.user_id = $1
   `;
 
-  if(month){
-     queryParams.push(month ? `${month}-01T00:00:00Z` : null)
-    query += ` 
+    if (month) {
+      queryParams.push(month ? `${month}-01T00:00:00Z` : null);
+      query += ` 
     WHERE
       s.date < DATE_TRUNC('month', COALESCE($2::timestamptz, NOW())) + INTERVAL '1 month'
       AND COALESCE(s.end_date, s.date) >= DATE_TRUNC('month', COALESCE($2::timestamptz, NOW()))
-    `
-   
-  }
+    `;
+    }
 
-  query += ` ORDER BY s.date ASC`
+    query += ` ORDER BY s.date ASC`;
 
     const result = await pool.query(query, queryParams);
     return NextResponse.json(result.rows);
   } catch (error) {
-    console.error("GET /api/admin/sessions error:", error);
-    return NextResponse.json(
-      { message: "Internal Server Error" },
-      { status: 500 }
-    );
+    console.error('GET /api/admin/sessions error:', error);
+    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
   }
 }
-export const revalidate = 0
+export const revalidate = 0;

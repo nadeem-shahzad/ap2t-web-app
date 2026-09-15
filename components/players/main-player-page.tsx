@@ -1,21 +1,21 @@
-"use client";
-import CardStatus from "@/components/card-status";
-import { BarChart } from "@/components/charts/bar-chart";
-import { AddCoachNotes } from "@/components/players/add-coach-notes";
-import { EditInfo } from "@/components/players/edit-info";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAuth } from "@/contexts/auth-context";
-import { useIsMobile } from "@/hooks/use-mobile";
-import axios from "@/lib/axios";
-import { getYear, joinNames } from "@/lib/functions";
-import { PlayerResponse, SessionData, SquareSavedCard } from "@/lib/types";
-import { Scrollbar } from "@radix-ui/react-scroll-area";
+'use client';
+import CardStatus from '@/components/card-status';
+import { BarChart } from '@/components/charts/bar-chart';
+import { AddCoachNotes } from '@/components/players/add-coach-notes';
+import { EditInfo } from '@/components/players/edit-info';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAuth } from '@/contexts/auth-context';
+import { useIsMobile } from '@/hooks/use-mobile';
+import axios from '@/lib/axios';
+import { getYear, joinNames } from '@/lib/functions';
+import { PlayerResponse, SessionData, SquareSavedCard } from '@/lib/types';
+import { Scrollbar } from '@radix-ui/react-scroll-area';
 import {
   Bookmark,
   Calendar,
@@ -33,19 +33,25 @@ import {
   TrendingUp,
   User,
   UserX,
-} from "lucide-react";
-import moment from "moment";
-import Link from "next/link";
-import { ReactNode, useEffect, useState } from "react";
-import { IoIosStar, IoIosStarOutline } from "react-icons/io";
-import getInitials from "../parents/get-initials";
-import { DiscountDialog } from "../payment/apply-discount";
-import PaymentMethodSteps from "../square/payment-method-steps";
-import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogOverlay, DialogTitle } from "../ui/dialog";
-import { Skeleton } from "../ui/skeleton";
-import { Spinner } from "../ui/spinner";
-
-
+} from 'lucide-react';
+import moment from 'moment';
+import Link from 'next/link';
+import { ReactNode, useEffect, useState } from 'react';
+import { IoIosStar, IoIosStarOutline } from 'react-icons/io';
+import getInitials from '../parents/get-initials';
+import { DiscountDialog } from '../payment/apply-discount';
+import PaymentMethodSteps from '../square/payment-method-steps';
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogOverlay,
+  DialogTitle,
+} from '../ui/dialog';
+import { Skeleton } from '../ui/skeleton';
+import { Spinner } from '../ui/spinner';
 
 export default function MainPlayerPage({
   id,
@@ -57,23 +63,23 @@ export default function MainPlayerPage({
   admin?: boolean;
 }) {
   const [data, setData] = useState<PlayerResponse | undefined>();
-  const [tab, setTab] = useState("Session History");
+  const [tab, setTab] = useState('Session History');
   const { user } = useAuth();
   const isMobile = useIsMobile();
   const [loading, setLoading] = useState(true);
   const [statusLoading, setStatusLoading] = useState(false);
-  const [cardInformation, setCardInformation] = useState<SquareSavedCard | undefined>()
+  const [cardInformation, setCardInformation] = useState<SquareSavedCard | undefined>();
 
   useEffect(() => {
     if (user?.id && id) {
-      fetchData()
-      fetchCardInformation()
-    };
+      fetchData();
+      fetchCardInformation();
+    }
   }, [id, user]);
 
   async function fetchCardInformation() {
     const result = await axios.get(`/user/card?id=${id}`);
-    setCardInformation(result.data)
+    setCardInformation(result.data);
   }
 
   const setStatus = async (status: string) => {
@@ -109,13 +115,11 @@ export default function MainPlayerPage({
   };
 
   function pendingString() {
-    const totalPendingCount = calculateTotalPendingPayments(
-      data?.sessions_data,
-    );
+    const totalPendingCount = calculateTotalPendingPayments(data?.sessions_data);
     const totalPendingValue = calculatePendingStats(data?.sessions_data);
 
     if (totalPendingCount && totalPendingCount > 0) {
-      return `${totalPendingCount} session${totalPendingCount > 1 ? "s" : ""} pending payment${totalPendingCount > 1 ? "s" : ""} totalling $${totalPendingValue}`;
+      return `${totalPendingCount} session${totalPendingCount > 1 ? 's' : ''} pending payment${totalPendingCount > 1 ? 's' : ''} totalling $${totalPendingValue}`;
     } else null;
   }
 
@@ -125,9 +129,7 @@ export default function MainPlayerPage({
   const totalAttended = calculateTotalAttendedSessions(data?.sessions_data);
   const totalPendingCount = calculateTotalPendingPayments(data?.sessions_data);
   const totalCompedCount = calculateTotalCompedPayments(data?.sessions_data);
-  const totalSessionsCount = data?.sessions_data?.length
-    ? data?.sessions_data.length
-    : 0;
+  const totalSessionsCount = data?.sessions_data?.length ? data?.sessions_data.length : 0;
 
   if (loading) {
     return (
@@ -141,8 +143,6 @@ export default function MainPlayerPage({
     );
   }
 
-
-
   return (
     <div className="flex flex-col w-full gap-6">
       {back}
@@ -152,7 +152,7 @@ export default function MainPlayerPage({
           <div className="w-full flex justify-between">
             <div className="flex flex-col gap-2">
               <span className="flex gap-2 text-xl items-center">
-                {joinNames([data?.first_name, data?.last_name])}{" "}
+                {joinNames([data?.first_name, data?.last_name])}{' '}
                 <span>
                   <CardStatus value={data?.status} icon={true} />
                 </span>
@@ -171,28 +171,21 @@ export default function MainPlayerPage({
                 </span>
                 <span className="inline-flex gap-2">
                   <User size={14} />
-                  Parent:{" "}
+                  Parent:{' '}
                   {data?.parent_id
-                    ? joinNames([
-                      data?.attach_parent?.first_name,
-                      data?.attach_parent?.last_name,
-                    ])
-                    : "N/A"}
+                    ? joinNames([data?.attach_parent?.first_name, data?.attach_parent?.last_name])
+                    : 'N/A'}
                 </span>
                 <span className="inline-flex gap-2">
-                  <Clock size={14} /> Joined:{" "}
-                  {data?.created_at &&
-                    moment(new Date(data?.created_at)).format("YYYY-MM-DD")}
+                  <Clock size={14} /> Joined:{' '}
+                  {data?.created_at && moment(new Date(data?.created_at)).format('YYYY-MM-DD')}
                 </span>
               </div>
             </div>
             <div className=" flex gap-4">
               {admin &&
-                (data?.status === "active" ? (
-                  <Button
-                    variant="destructive"
-                    onClick={() => setStatus("inactive")}
-                  >
+                (data?.status === 'active' ? (
+                  <Button variant="destructive" onClick={() => setStatus('inactive')}>
                     {statusLoading ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -206,7 +199,7 @@ export default function MainPlayerPage({
                     )}
                   </Button>
                 ) : (
-                  <Button onClick={() => setStatus("active")}>
+                  <Button onClick={() => setStatus('active')}>
                     {statusLoading ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -221,14 +214,12 @@ export default function MainPlayerPage({
                   </Button>
                 ))}
 
-              {data && (
-                <EditInfo player_id={id} data={data} onRefresh={fetchData} />
-              )}
+              {data && <EditInfo player_id={id} data={data} onRefresh={fetchData} />}
             </div>
           </div>
           <div className="mt-4 flex w-full justify-between flex-wrap gap-2">
             <HeaderCard
-              title={String(attendancePercent) + "%"}
+              title={String(attendancePercent) + '%'}
               description="Attendance"
               icon={
                 <div className="rounded-[8px] flex w-8 h-8 items-center justify-center bg-success-bg">
@@ -280,7 +271,7 @@ export default function MainPlayerPage({
         </CardContent>
       </Card>
 
-      {data?.parent_id &&
+      {data?.parent_id && (
         <Card className="w-full rounded-[12px] bg-[#252525]">
           <CardContent className="space-y-4">
             {/* {data && !data?.parent_id && (
@@ -289,12 +280,11 @@ export default function MainPlayerPage({
 
             <div className="w-full flex justify-between">
               <p className="text-[18px] text-white">Linked Parent</p>
-              {admin && <Link
-                target="blank"
-                href={`/portal/admin/parents/${data?.parent_id}`}
-              >
-                <Button>View Parent Profile</Button>
-              </Link>}
+              {admin && (
+                <Link target="blank" href={`/portal/admin/parents/${data?.parent_id}`}>
+                  <Button>View Parent Profile</Button>
+                </Link>
+              )}
             </div>
 
             <div className="flex gap-4">
@@ -302,24 +292,16 @@ export default function MainPlayerPage({
                 <AvatarImage src={data.attach_parent?.picture} />
                 <AvatarFallback className="bg-primary text-black">
                   {getInitials(
-                    joinNames([
-                      data.attach_parent?.first_name,
-                      data.attach_parent?.last_name,
-                    ]),
+                    joinNames([data.attach_parent?.first_name, data.attach_parent?.last_name])
                   )}
                 </AvatarFallback>
               </Avatar>
 
               <div>
                 <p className="text-md">
-                  {joinNames([
-                    data.attach_parent?.first_name,
-                    data.attach_parent?.last_name,
-                  ])}
+                  {joinNames([data.attach_parent?.first_name, data.attach_parent?.last_name])}
                 </p>
-                <p className="text-xs text-muted-foreground">
-                  Primary Contact
-                </p>
+                <p className="text-xs text-muted-foreground">Primary Contact</p>
               </div>
             </div>
 
@@ -331,28 +313,21 @@ export default function MainPlayerPage({
 
               <div className="flex gap-1 items-center">
                 <Phone size={12} className="text-[#99A1AF]" />
-                <p className="text-[#D1D5DC]">
-                  {data.attach_parent?.phone_no}
-                </p>
+                <p className="text-[#D1D5DC]">{data.attach_parent?.phone_no}</p>
               </div>
 
               <div className="flex gap-1 items-center">
                 <Info size={12} className="text-[#99A1AF]" />
-                <p className="text-[#D1D5DC]">
-                  Emergency: {data.attach_parent?.phone_no}
-                </p>
+                <p className="text-[#D1D5DC]">Emergency: {data.attach_parent?.phone_no}</p>
               </div>
 
               <div className="flex gap-1 items-center">
                 <MapPin size={12} className="text-[#99A1AF]" />
-                <p className="text-[#D1D5DC]">
-                  {data.attach_parent?.location}
-                </p>
+                <p className="text-[#D1D5DC]">{data.attach_parent?.location}</p>
               </div>
             </div>
 
             <Separator />
-
 
             {data?.profile?.medical_notes && (
               <Card className="bg-alternative-bg p-3 border-alternative-text/30">
@@ -373,7 +348,7 @@ export default function MainPlayerPage({
             )}
           </CardContent>
         </Card>
-      }
+      )}
 
       <div className="w-full rounded-[12px] bg-[#252525] p-2 border-[#3A3A3A]">
         <Tabs
@@ -382,16 +357,14 @@ export default function MainPlayerPage({
             setTab(v);
           }}
         >
-          <ScrollArea
-            className={`overflow-x-auto ${isMobile && "max-w-[calc(100vw-64px)]"}`}
-          >
+          <ScrollArea className={`overflow-x-auto ${isMobile && 'max-w-[calc(100vw-64px)]'}`}>
             <TabsList className="bg-transparent relative flex gap-2">
               {[
-                "Session History",
-                "Attendance Timeline",
-                "Payment Status",
-                "Coach Notes",
-                "Payment Method"
+                'Session History',
+                'Attendance Timeline',
+                'Payment Status',
+                'Coach Notes',
+                'Payment Method',
               ].map((t, i) => (
                 <TabsTrigger
                   key={t}
@@ -410,7 +383,7 @@ export default function MainPlayerPage({
                   )}
                   {i === 2 && (
                     <div className="flex gap-2 items-center py-2">
-                      <DollarSign /> {t}{" "}
+                      <DollarSign /> {t}{' '}
                       {totalPendingCount > 0 ? (
                         <div className="w-4 h-4 text-xs leading-none flex items-center justify-center bg-[#FDC700] text-black rounded-full">
                           {totalPendingCount}
@@ -447,28 +420,26 @@ export default function MainPlayerPage({
                         <p>{item.name}</p>
                         <CardStatus value={item.status} icon={true} />
 
-                        <CardStatus
-                          value={item.payment_detail?.status || "pending"}
-                        />
+                        <CardStatus value={item.payment_detail?.status || 'pending'} />
                       </div>
                       <span className="flex gap-1 items-center">
                         <p className="text-md">
-                          {item?.payment_detail?.status === "comped"
-                            ? "Free"
+                          {item?.payment_detail?.status === 'comped'
+                            ? 'Free'
                             : `$${item?.payment_detail?.amount}`}
                         </p>
-                        {item?.payment_detail?.original_price && <span className="text-sm line-through text-muted-foreground">${item?.payment_detail?.original_price}</span>}
+                        {item?.payment_detail?.original_price && (
+                          <span className="text-sm line-through text-muted-foreground">
+                            ${item?.payment_detail?.original_price}
+                          </span>
+                        )}
                       </span>
-
                     </div>
 
                     <div className="flex gap-2 items-center text-xs text-muted-foreground flex-wrap">
                       <div className="flex gap-2">
                         <Calendar size={14} />
-                        <p>
-                          {item?.date &&
-                            moment(new Date(item?.date)).format("YYYY-MM-DD")}
-                        </p>
+                        <p>{item?.date && moment(new Date(item?.date)).format('YYYY-MM-DD')}</p>
                       </div>
                       <div className="flex gap-2">
                         <Clock size={14} />
@@ -478,13 +449,7 @@ export default function MainPlayerPage({
                       </div>
                       <div className="flex gap-2">
                         <User size={14} />
-                        <p>
-                          Coach{" "}
-                          {joinNames([
-                            item?.coach_first_name,
-                            item?.coach_last_name,
-                          ])}
-                        </p>
+                        <p>Coach {joinNames([item?.coach_first_name, item?.coach_last_name])}</p>
                       </div>
                     </div>
                     {item?.note_detail &&
@@ -499,8 +464,6 @@ export default function MainPlayerPage({
                       ))}
 
                     <RenderRating item={item} user_id={id} onRefresh={fetchData} />
-
-
                   </CardContent>
                 </Card>
               ))}
@@ -508,15 +471,9 @@ export default function MainPlayerPage({
 
           <TabsContent value="Attendance Timeline" className="space-y-4 p-2">
             <p>Last 12 weeks</p>
-            <p className="text-muted-foreground text-xs">
-              Track attendance patterns over time
-            </p>
+            <p className="text-muted-foreground text-xs">Track attendance patterns over time</p>
 
-            <BarChart
-              chartData={CHECKINS_12WEEKS_DATA}
-              yaxis={"checkins"}
-              xaxis={"time"}
-            />
+            <BarChart chartData={CHECKINS_12WEEKS_DATA} yaxis={'checkins'} xaxis={'time'} />
           </TabsContent>
 
           <TabsContent value="Payment Status" className="space-y-4 p-2">
@@ -529,9 +486,7 @@ export default function MainPlayerPage({
                       <Label className="text-alternative-text text-[14px] leading-none">
                         Pending Payments
                       </Label>
-                      <p className="text-[#D1D5DC] text-xs">
-                        {pendingString()}
-                      </p>
+                      <p className="text-[#D1D5DC] text-xs">{pendingString()}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -545,15 +500,13 @@ export default function MainPlayerPage({
                     <div className="flex justify-between gap-4 flex-wrap">
                       <div className="flex gap-4 items-center text-sm">
                         <p>{item.name}</p>
-                        <CardStatus
-                          value={item.payment_detail?.status || "pending"}
-                        />
+                        <CardStatus value={item.payment_detail?.status || 'pending'} />
                       </div>
                       <p
-                        className={`text-md ${item.payment_detail?.status !== "paid" && item.payment_detail?.status !== "comped" && "text-alternative-text"}`}
+                        className={`text-md ${item.payment_detail?.status !== 'paid' && item.payment_detail?.status !== 'comped' && 'text-alternative-text'}`}
                       >
-                        {item.payment_detail?.status === "comped"
-                          ? "Free"
+                        {item.payment_detail?.status === 'comped'
+                          ? 'Free'
                           : `$${item?.payment_detail?.amount}`}
                       </p>
                     </div>
@@ -561,25 +514,22 @@ export default function MainPlayerPage({
                     <div className="flex gap-2 items-center text-xs text-muted-foreground flex-wrap">
                       <div className="flex gap-2">
                         <Calendar size={14} />
-                        <p>
-                          {item?.date &&
-                            moment(new Date(item?.date)).format("YYYY-MM-DD")}
-                        </p>
+                        <p>{item?.date && moment(new Date(item?.date)).format('YYYY-MM-DD')}</p>
                       </div>
                       <div className="flex gap-2">
                         <User size={14} />
-                        <p>
-                          Coach{" "}
-                          {joinNames([
-                            item?.coach_first_name,
-                            item?.coach_last_name,
-                          ])}
-                        </p>
+                        <p>Coach {joinNames([item?.coach_first_name, item?.coach_last_name])}</p>
                       </div>
                     </div>
 
-                    {item?.payment_detail?.status && !['paid', 'comped'].includes(item?.payment_detail?.status) &&
-                      <DiscountDialog data={item?.payment_detail} onRefresh={fetchData} original={item?.price} />}
+                    {item?.payment_detail?.status &&
+                      !['paid', 'comped'].includes(item?.payment_detail?.status) && (
+                        <DiscountDialog
+                          data={item?.payment_detail}
+                          onRefresh={fetchData}
+                          original={item?.price}
+                        />
+                      )}
                   </CardContent>
                 </Card>
               ))}
@@ -591,7 +541,8 @@ export default function MainPlayerPage({
                 <p>Coach Feedback & Notes</p>
                 <p className="text-muted-foreground text-xs">
                   {data?.all_notes &&
-                    data?.all_notes.length > 0 && `${data?.all_notes.length} notes from coaches`}
+                    data?.all_notes.length > 0 &&
+                    `${data?.all_notes.length} notes from coaches`}
                 </p>
               </div>
               {admin && <AddCoachNotes player_id={id} onRefresh={fetchData} />}
@@ -602,13 +553,7 @@ export default function MainPlayerPage({
                 <Card key={i} className="bg-black">
                   <CardContent className="space-y-2">
                     <div className="flex gap-4 items-center text-sm">
-                      <p>
-                        Coach{" "}
-                        {joinNames([
-                          item?.coach_first_name,
-                          item?.coach_last_name,
-                        ])}
-                      </p>
+                      <p>Coach {joinNames([item?.coach_first_name, item?.coach_last_name])}</p>
 
                       <div className="flex gap-1">
                         <div className="flex gap-1">
@@ -616,11 +561,8 @@ export default function MainPlayerPage({
                             i < (item?.rating || 0) ? (
                               <IoIosStar className="text-primary" key={i} />
                             ) : (
-                              <IoIosStarOutline
-                                key={i}
-                                className="text-muted-foreground"
-                              />
-                            ),
+                              <IoIosStarOutline key={i} className="text-muted-foreground" />
+                            )
                           )}
                         </div>
                       </div>
@@ -629,25 +571,22 @@ export default function MainPlayerPage({
                     <div className="flex gap-2 items-center text-xs text-muted-foreground">
                       <Calendar size={14} />
                       <p>
-                        {item?.created_at &&
-                          moment(new Date(item.created_at)).format(
-                            "YYYY-MM-DD",
-                          )}
+                        {item?.created_at && moment(new Date(item.created_at)).format('YYYY-MM-DD')}
                       </p>
                       <MessageSquare size={14} />
                       <p>{item?.session_name}</p>
                     </div>
 
-                    <p className="text-xs text-[#D1D5DC] break-all whitespace-pre-wrap">{item?.note}</p>
+                    <p className="text-xs text-[#D1D5DC] break-all whitespace-pre-wrap">
+                      {item?.note}
+                    </p>
                   </CardContent>
                 </Card>
               ))}
           </TabsContent>
 
           <TabsContent value="Payment Method" className="space-y-4 p-2">
-
             <PaymentMethodSteps id={id} data={cardInformation} onRefresh={fetchCardInformation} />
-
           </TabsContent>
         </Tabs>
       </div>
@@ -656,8 +595,8 @@ export default function MainPlayerPage({
 }
 
 const HeaderCard = ({
-  title = "",
-  description = "",
+  title = '',
+  description = '',
   icon = null,
 }: {
   title: string;
@@ -683,8 +622,7 @@ function calculateTotalPendingPayments(sessions: SessionData[] | undefined) {
   if (!sessions) return 0;
 
   return sessions.reduce((count, session) => {
-    const isPending =
-      !session.payment_detail || session.payment_detail.status === "pending";
+    const isPending = !session.payment_detail || session.payment_detail.status === 'pending';
 
     return isPending ? count + 1 : count;
   }, 0);
@@ -694,7 +632,7 @@ function calculateTotalCompedPayments(sessions: SessionData[] | undefined) {
   if (!sessions) return 0;
 
   return sessions.reduce((count, session) => {
-    const isComped = session?.payment_detail?.status === "comped";
+    const isComped = session?.payment_detail?.status === 'comped';
 
     return isComped ? count + 1 : count;
   }, 0);
@@ -703,12 +641,10 @@ function calculateTotalCompedPayments(sessions: SessionData[] | undefined) {
 function calculatePendingStats(sessions: SessionData[] | undefined) {
   if (!sessions) return 0;
   return sessions.reduce((total, session) => {
-    const isPending =
-      !session.payment_detail || session.payment_detail.status === "pending";
+    const isPending = !session.payment_detail || session.payment_detail.status === 'pending';
 
     if (!isPending) return total;
-    const amount =
-      session?.payment_detail?.amount;
+    const amount = session?.payment_detail?.amount;
 
     return total + Number(amount || 0);
   }, 0);
@@ -717,15 +653,13 @@ function calculatePendingStats(sessions: SessionData[] | undefined) {
 function calculateAttendancePercentage(sessions: SessionData[] | undefined) {
   if (!sessions) return 0;
 
-  const completedSessions = sessions.filter((s) => s.status === "completed");
+  const completedSessions = sessions.filter((s) => s.status === 'completed');
 
   if (completedSessions.length === 0) return 0;
 
   const presentCount = completedSessions.reduce((acc, session) => {
     const attendanceRecords = session.attendance_detail || [];
-    const isPresent = attendanceRecords.some(
-      (a: any) => a.status === "present",
-    );
+    const isPresent = attendanceRecords.some((a: any) => a.status === 'present');
     return acc + (isPresent ? 1 : 0);
   }, 0);
 
@@ -735,14 +669,12 @@ function calculateAttendancePercentage(sessions: SessionData[] | undefined) {
 function calculateTotalAttendedSessions(sessions: SessionData[] | undefined) {
   if (!sessions) return 0;
 
-  const completedSessions = sessions.filter((s) => s.status === "completed");
+  const completedSessions = sessions.filter((s) => s.status === 'completed');
 
   return completedSessions.reduce((count, session) => {
     const attendanceRecords = session.attendance_detail || [];
 
-    const hasPresent = attendanceRecords.some(
-      (a: any) => a.status === "present",
-    );
+    const hasPresent = attendanceRecords.some((a: any) => a.status === 'present');
 
     return hasPresent ? count + 1 : count;
   }, 0);
@@ -756,13 +688,13 @@ function generate12WeekCheckins(sessions: SessionData[] | undefined) {
     // if (session.status !== "completed") return false;
 
     const attendance = session.attendance_detail || [];
-    return attendance.some((a: any) => a.status === "present");
+    return attendance.some((a: any) => a.status === 'present');
   });
 
   const weekMap: Record<string, number> = {};
 
   validSessions.forEach((session) => {
-    const weekKey = moment(session.date).startOf("week").format("YYYY-MM-DD");
+    const weekKey = moment(session.date).startOf('week').format('YYYY-MM-DD');
 
     weekMap[weekKey] = (weekMap[weekKey] || 0) + 1;
   });
@@ -784,32 +716,36 @@ function generate12WeekCheckins(sessions: SessionData[] | undefined) {
   }));
 }
 
+const RenderRating = ({
+  item,
+  user_id,
+  onRefresh,
+}: {
+  item: SessionData;
+  user_id: number | undefined;
+  onRefresh: () => Promise<void>;
+}) => {
+  const [open, setOpen] = useState(false);
+  const [rating, setRating] = useState(0);
+  const [loading, setLoading] = useState(false);
 
-const RenderRating = ({ item, user_id, onRefresh }: { item: SessionData, user_id: number | undefined, onRefresh: () => Promise<void> }) => {
-
-  const [open, setOpen] = useState(false)
-  const [rating, setRating] = useState(0)
-  const [loading, setLoading] = useState(false)
-
-  if (item?.status !== 'completed' || !user_id) return null
-  if (item?.session_rating && item.session_rating > 0) return null
+  if (item?.status !== 'completed' || !user_id) return null;
+  if (item?.session_rating && item.session_rating > 0) return null;
   async function handleSubmit() {
-
-    if (!item?.id || !user_id) return
-    setLoading(true)
+    if (!item?.id || !user_id) return;
+    setLoading(true);
     try {
-      await axios.put(`/player/${user_id}/sessions/${item.id}/rating`, { rating })
-      await onRefresh()
-      handleClose(false)
+      await axios.put(`/player/${user_id}/sessions/${item.id}/rating`, { rating });
+      await onRefresh();
+      handleClose(false);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-
   }
 
   function handleClose(val: boolean) {
-    setOpen(val)
-    setRating(0)
+    setOpen(val);
+    setRating(0);
   }
 
   return (
@@ -822,29 +758,17 @@ const RenderRating = ({ item, user_id, onRefresh }: { item: SessionData, user_id
         <DialogOverlay />
         <DialogContent className="sm:max-w-[550px] bg-[#252525]">
           <DialogHeader className="pb-4 border-b">
-            <DialogTitle className="text-sm font-normal">
-              Rate Your Session
-            </DialogTitle>
+            <DialogTitle className="text-sm font-normal">Rate Your Session</DialogTitle>
           </DialogHeader>
 
-
-
-
           <div className="grid gap-4">
-
-
-
             <div className="grid gap-2">
               <Label htmlFor="performance" className="text-xs text-muted-foreground">
                 Performance & Rating
               </Label>
               <div className="flex gap-1">
                 {Array.from({ length: 5 }).map((_, i) => (
-                  <span
-                    key={i}
-                    onClick={() => setRating(i + 1)}
-                    className="cursor-pointer"
-                  >
+                  <span key={i} onClick={() => setRating(i + 1)} className="cursor-pointer">
                     {i < rating ? (
                       <IoIosStar className="text-primary" size={20} />
                     ) : (
@@ -854,7 +778,6 @@ const RenderRating = ({ item, user_id, onRefresh }: { item: SessionData, user_id
                 ))}
               </div>
             </div>
-
           </div>
 
           <DialogFooter>
@@ -863,11 +786,12 @@ const RenderRating = ({ item, user_id, onRefresh }: { item: SessionData, user_id
                 Cancel
               </Button>
             </DialogClose>
-            <Button onClick={handleSubmit} disabled={loading} type="submit">{loading && <Spinner className="text-black" />} Submit</Button>
+            <Button onClick={handleSubmit} disabled={loading} type="submit">
+              {loading && <Spinner className="text-black" />} Submit
+            </Button>
           </DialogFooter>
-
         </DialogContent>
       </Dialog>
     </>
-  )
-}
+  );
+};

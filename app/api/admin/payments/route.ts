@@ -1,11 +1,10 @@
-import pool from "@/lib/db";
-import { GetProfileImage, joinNames } from "@/lib/functions";
-import { sendPaymentReciept } from "@/lib/notification-service";
-import { NextRequest, NextResponse } from "next/server";
+import pool from '@/lib/db';
+import { GetProfileImage, joinNames } from '@/lib/functions';
+import { sendPaymentReciept } from '@/lib/notification-service';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET() {
   try {
-
     const paymentsRes = await pool.query(
       `
       SELECT 
@@ -27,7 +26,7 @@ export async function GET() {
       `
     );
 
-     const paymentsData = await Promise.all(
+    const paymentsData = await Promise.all(
       paymentsRes.rows.map(async (row: any) => {
         let playerPictureUrl = await GetProfileImage(row.player_picture);
         return {
@@ -39,15 +38,12 @@ export async function GET() {
       })
     );
 
-    const totalRevenue = paymentsData.filter((item) => item.status === 'paid').reduce(
-      (sum, item) => sum + Number(item.amount || 0),
-      0
-    );
-    const totalPending = paymentsData.filter((item) => item.status !== 'paid').length
-    const totalComped = paymentsData.filter((item) => item.status == 'comped').length
-    const totalFailed = paymentsData.filter((item) => item.status == 'failed').length
-
-   
+    const totalRevenue = paymentsData
+      .filter((item) => item.status === 'paid')
+      .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+    const totalPending = paymentsData.filter((item) => item.status !== 'paid').length;
+    const totalComped = paymentsData.filter((item) => item.status == 'comped').length;
+    const totalFailed = paymentsData.filter((item) => item.status == 'failed').length;
 
     return NextResponse.json({
       totalRevenue,
@@ -58,53 +54,51 @@ export async function GET() {
     });
   } catch (error: any) {
     console.error(error);
+    return NextResponse.json({ message: error.message || 'Server error' }, { status: 500 });
+  }
+}
+
+export async function PUT(req: NextRequest) {
+  try {
+    const data = await req.json();
+    const { id, ...updates } = data;
+
+    if (!id) {
+      return NextResponse.json({ message: 'ID is required' }, { status: 400 });
+    }
+
+    const fields: any[] = [];
+    const values: any[] = [];
+
+    Object.entries(updates).forEach(([key, value], index) => {
+      if (value !== undefined) {
+        fields.push(`${key} = $${index + 1}`);
+        values.push(value);
+      }
+    });
+
+    if (fields.length === 0) {
+      return NextResponse.json({ message: 'No valid data provided for update' }, { status: 400 });
+    }
+
+    values.push(id);
+    const query = `
+          UPDATE payments 
+          SET ${fields.join(', ')}
+          WHERE id = $${values.length}
+      `;
+
+    await pool.query(query, values);
+
+    await sendPaymentReciept(data);
+
+    return NextResponse.json({ message: 'Updated successfully' }, { status: 200 });
+  } catch (error: any) {
+    console.log('Error updating data:', error?.message);
     return NextResponse.json(
-      { message: error.message || "Server error" },
+      { message: error?.message || 'Internal Server Error' },
       { status: 500 }
     );
   }
 }
-
-
-export async function PUT(req: NextRequest) {
-    try {
-        const data = await req.json();
-        const { id, ...updates } = data;
-
-        if (!id) {
-            return NextResponse.json({ message: "ID is required" }, { status: 400 });
-        }
-
-        const fields: any[] = [];
-        const values: any[] = [];
-
-        Object.entries(updates).forEach(([key, value], index) => {
-            if (value !== undefined) {
-                fields.push(`${key} = $${index + 1}`);
-                values.push(value);
-            }
-        });
-
-        if (fields.length === 0) {
-            return NextResponse.json({ message: "No valid data provided for update" }, { status: 400 });
-        }
-
-        values.push(id);
-        const query = `
-          UPDATE payments 
-          SET ${fields.join(", ")}
-          WHERE id = $${values.length}
-      `;
-
-        await pool.query(query, values);
-
-        await sendPaymentReciept(data)
-
-
-        return NextResponse.json({ message: "Updated successfully" }, { status: 200 });
-    } catch (error: any) {
-        console.log("Error updating data:", error?.message);
-        return NextResponse.json({ message: error?.message || "Internal Server Error" }, { status: 500 });
-    }
-}
-export const revalidate = 0
+export const revalidate = 0;

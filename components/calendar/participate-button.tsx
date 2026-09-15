@@ -1,8 +1,8 @@
-import { useState } from "react";
-import axios from "@/lib/axios";
-import { Button } from "../ui/button";
-import { Spinner } from "../ui/spinner";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
+import { useState } from 'react';
+import axios from '@/lib/axios';
+import { Button } from '../ui/button';
+import { Spinner } from '../ui/spinner';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 
 type SessionVariant = { id: number; hour: number; price: string | number };
 
@@ -12,7 +12,7 @@ const ParticipateButton = ({
   onSuccess,
   variants = [],
   session_date,
-  label = "Participate",
+  label = 'Participate',
   buttonVariant,
 }: {
   player_id?: string | null;
@@ -21,7 +21,7 @@ const ParticipateButton = ({
   variants?: SessionVariant[];
   session_date?: string;
   label?: string;
-  buttonVariant?: "default" | "outline";
+  buttonVariant?: 'default' | 'outline';
 }) => {
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
@@ -60,9 +60,7 @@ const ParticipateButton = ({
           <DialogHeader>
             <DialogTitle>Select session duration</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            Choose the option you want to reserve.
-          </p>
+          <p className="text-sm text-muted-foreground">Choose the option you want to reserve.</p>
           <div className="space-y-2">
             {variants.map((variant) => (
               <Button
@@ -73,7 +71,9 @@ const ParticipateButton = ({
                 onClick={() => handleEnroll(variant.id)}
                 disabled={loading}
               >
-                <span>{variant.hour} {variant.hour === 1 ? "hour" : "hours"}</span>
+                <span>
+                  {variant.hour} {variant.hour === 1 ? 'hour' : 'hours'}
+                </span>
                 {loadingVariantId === variant.id ? (
                   <Spinner className="text-white" />
                 ) : (

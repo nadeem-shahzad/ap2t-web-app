@@ -1,6 +1,6 @@
-"use server"
-import pool from "@/lib/db";
-import { TriggerFirebaseForNotifications } from "@/lib/triggerFirebase";
+'use server';
+import pool from '@/lib/db';
+import { TriggerFirebaseForNotifications } from '@/lib/triggerFirebase';
 
 export async function sendInAppNotificationBackend(to: number, msg: string, route: string) {
   try {
@@ -17,6 +17,6 @@ export async function sendInAppNotificationBackend(to: number, msg: string, rout
 
     return result.rows[0];
   } catch (error) {
-    console.log("Error sending notification:", error);
+    console.log('Error sending notification:', error);
   }
 }

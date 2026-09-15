@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogClose,
@@ -8,35 +8,34 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import axios from "@/lib/axios";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { SquarePen } from "lucide-react";
-import { useEffect, useState } from "react";
-import { Controller, useForm } from "react-hook-form";
-import { z } from "zod";
-import AppCalendar from "../app-calendar";
-import { RequiredStar } from "../required-star";
-import { Field, FieldError } from "../ui/field";
-import { Spinner } from "../ui/spinner";
-import SelectPosition from "./select-position";
-import SelectSkill from "./select-skill";
-import { PlayerResponse } from "@/lib/types";
-
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import axios from '@/lib/axios';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { SquarePen } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { z } from 'zod';
+import AppCalendar from '../app-calendar';
+import { RequiredStar } from '../required-star';
+import { Field, FieldError } from '../ui/field';
+import { Spinner } from '../ui/spinner';
+import SelectPosition from './select-position';
+import SelectSkill from './select-skill';
+import { PlayerResponse } from '@/lib/types';
 
 const playerSchema = z.object({
-  first_name: z.string().min(2, "First name is required"),
-  last_name: z.string().min(2, "Last name is required"),
-  phone_no: z.string().min(6, "Phone is required"),
-  zip_code: z.string().min(3, "Zip code required"),
+  first_name: z.string().min(2, 'First name is required'),
+  last_name: z.string().min(2, 'Last name is required'),
+  phone_no: z.string().min(6, 'Phone is required'),
+  zip_code: z.string().min(3, 'Zip code required'),
   dob: z.date({
-    error: "Date of birth is required",
+    error: 'Date of birth is required',
   }),
-  position: z.string().min(1, "Select a position"),
-  skillLevel: z.string().min(1, "Select skill level"),
+  position: z.string().min(1, 'Select a position'),
+  skillLevel: z.string().min(1, 'Select skill level'),
   medicalNotes: z.string().optional(),
 });
 
@@ -57,14 +56,14 @@ export function EditInfo({
   const form = useForm<PlayerFormValues>({
     resolver: zodResolver(playerSchema),
     defaultValues: {
-      first_name: "",
-      last_name: "",
-      phone_no: "",
+      first_name: '',
+      last_name: '',
+      phone_no: '',
       dob: undefined,
-      zip_code: "",
-      position: "",
-      skillLevel: "",
-      medicalNotes: "",
+      zip_code: '',
+      position: '',
+      skillLevel: '',
+      medicalNotes: '',
     },
   });
 
@@ -72,14 +71,14 @@ export function EditInfo({
     if (!open || !data) return;
 
     form.reset({
-      first_name: data.first_name ?? "",
-      last_name: data.last_name ?? "",
-      phone_no: data.phone_no ?? "",
-      zip_code: data.zip_code ?? "",
+      first_name: data.first_name ?? '',
+      last_name: data.last_name ?? '',
+      phone_no: data.phone_no ?? '',
+      zip_code: data.zip_code ?? '',
       dob: data.birth_date ? new Date(data.birth_date) : undefined,
-      position: data.profile?.position ?? "",
-      skillLevel: data.profile?.skill_level ?? "",
-      medicalNotes: data.profile?.medical_notes ?? "",
+      position: data.profile?.position ?? '',
+      skillLevel: data.profile?.skill_level ?? '',
+      medicalNotes: data.profile?.medical_notes ?? '',
     });
   }, [open, data, form.reset]);
 
@@ -112,21 +111,15 @@ export function EditInfo({
 
   return (
     <>
-      <Button
-        variant="outline"
-        className="bg-black dark:bg-black"
-        onClick={() => setOpen(true)}
-      >
+      <Button variant="outline" className="bg-black dark:bg-black" onClick={() => setOpen(true)}>
         <SquarePen className="mr-2" /> Edit Info
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-[550px] bg-[#252525]">
-          <form onSubmit={form.handleSubmit(onSubmit, (errors) => console.log("errors", errors))}>
+          <form onSubmit={form.handleSubmit(onSubmit, (errors) => console.log('errors', errors))}>
             <DialogHeader className="pb-4">
-              <DialogTitle className="text-sm font-normal">
-                Edit Player Information
-              </DialogTitle>
+              <DialogTitle className="text-sm font-normal">Edit Player Information</DialogTitle>
             </DialogHeader>
 
             <div className="grid gap-4 py-4 border-t">
@@ -147,9 +140,7 @@ export function EditInfo({
                           placeholder="john"
                           autoComplete="off"
                         />
-                        {fieldState.invalid && (
-                          <FieldError errors={[fieldState.error]} />
-                        )}
+                        {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                       </Field>
                     )}
                   />
@@ -170,9 +161,7 @@ export function EditInfo({
                           placeholder="doe"
                           autoComplete="off"
                         />
-                        {fieldState.invalid && (
-                          <FieldError errors={[fieldState.error]} />
-                        )}
+                        {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                       </Field>
                     )}
                   />
@@ -195,9 +184,7 @@ export function EditInfo({
                           onChange={field.onChange}
                         />
                         {fieldState.invalid && (
-                          <p className="text-xs text-red-500">
-                            {fieldState?.error?.message}
-                          </p>
+                          <p className="text-xs text-red-500">{fieldState?.error?.message}</p>
                         )}
                       </Field>
                     )}
@@ -220,9 +207,7 @@ export function EditInfo({
                           placeholder="+1XXXXXXXX"
                           autoComplete="off"
                         />
-                        {fieldState.invalid && (
-                          <FieldError errors={[fieldState.error]} />
-                        )}
+                        {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                       </Field>
                     )}
                   />
@@ -244,9 +229,7 @@ export function EditInfo({
                           placeholder="Select position"
                         />
                         {fieldState.invalid && (
-                          <p className="text-xs text-red-500">
-                            {fieldState?.error?.message}
-                          </p>
+                          <p className="text-xs text-red-500">{fieldState?.error?.message}</p>
                         )}
                       </Field>
                     )}
@@ -270,9 +253,7 @@ export function EditInfo({
                         />
 
                         {fieldState.invalid && (
-                          <p className="text-xs text-red-500">
-                            {fieldState?.error?.message}
-                          </p>
+                          <p className="text-xs text-red-500">{fieldState?.error?.message}</p>
                         )}
                       </Field>
                     )}
@@ -296,9 +277,7 @@ export function EditInfo({
                         placeholder="2873"
                         autoComplete="off"
                       />
-                      {fieldState.invalid && (
-                        <FieldError errors={[fieldState.error]} />
-                      )}
+                      {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                     </Field>
                   )}
                 />
@@ -321,9 +300,7 @@ export function EditInfo({
                         autoComplete="off"
                         className="min-h-[100px]"
                       />
-                      {fieldState.invalid && (
-                        <FieldError errors={[fieldState.error]} />
-                      )}
+                      {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                     </Field>
                   )}
                 />
@@ -337,7 +314,7 @@ export function EditInfo({
                 </Button>
               </DialogClose>
               <Button disabled={loading} type="submit">
-                {" "}
+                {' '}
                 {loading && <Spinner className="text-black" />}Save
               </Button>
             </DialogFooter>

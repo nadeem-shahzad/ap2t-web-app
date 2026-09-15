@@ -1,29 +1,29 @@
-"use client";
+'use client';
 
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { useAuth } from "@/contexts/auth-context";
-import { useDebounce } from "@/hooks/use-debounce";
-import { useIsMobile } from "@/hooks/use-mobile";
-import axios from "@/lib/axios";
-import { auth } from "@/lib/firebase";
-import { joinNames } from "@/lib/functions";
-import { signOut } from "firebase/auth";
-import { ChevronDown } from "lucide-react";
-import { usePathname } from "next/navigation";
-import { useRouter } from "nextjs-toploader/app";
-import { ReactNode, useEffect, useState } from "react";
-import InputWithIcon from "./input-with-icon";
-import NotificationSheet from "./notification-sheet";
-import RenderAvatar from "./render-avatar";
-import { Button } from "./ui/button";
-import { ScrollArea } from "./ui/scroll-area";
-import { Separator } from "./ui/separator";
-import { Spinner } from "./ui/spinner";
+} from '@/components/ui/dropdown-menu';
+import { useAuth } from '@/contexts/auth-context';
+import { useDebounce } from '@/hooks/use-debounce';
+import { useIsMobile } from '@/hooks/use-mobile';
+import axios from '@/lib/axios';
+import { auth } from '@/lib/firebase';
+import { joinNames } from '@/lib/functions';
+import { signOut } from 'firebase/auth';
+import { ChevronDown } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import { useRouter } from 'nextjs-toploader/app';
+import { ReactNode, useEffect, useState } from 'react';
+import InputWithIcon from './input-with-icon';
+import NotificationSheet from './notification-sheet';
+import RenderAvatar from './render-avatar';
+import { Button } from './ui/button';
+import { ScrollArea } from './ui/scroll-area';
+import { Separator } from './ui/separator';
+import { Spinner } from './ui/spinner';
 
 interface PopupItem {
   id: string | number;
@@ -31,22 +31,19 @@ interface PopupItem {
   route: string;
 }
 
-
 export default function DashboardHeader({ trigger }: { trigger?: ReactNode }) {
-
-  const { user } = useAuth()
-  const pathname = usePathname()
-  const showPopup = pathname?.includes("admin")
+  const { user } = useAuth();
+  const pathname = usePathname();
+  const showPopup = pathname?.includes('admin');
 
   const logout = async () => {
     try {
       await signOut(auth);
-      console.log("User logged out successfully");
+      console.log('User logged out successfully');
     } catch (error) {
-      console.error("Error logging out:", error);
+      console.error('Error logging out:', error);
     }
   };
-
 
   return (
     <div className="flex flex-1 w-full h-full px-4">
@@ -60,11 +57,12 @@ export default function DashboardHeader({ trigger }: { trigger?: ReactNode }) {
           <Separator orientation="vertical" />
           <div>
             <p className="text-xs text-white text-right">{user?.first_name}</p>
-            <p className="text-xs text-muted-foreground text-right">
-              {user?.email}
-            </p>
+            <p className="text-xs text-muted-foreground text-right">{user?.email}</p>
           </div>
-          <RenderAvatar fallback={joinNames([user?.first_name, user?.last_name])} img={user?.picture} />
+          <RenderAvatar
+            fallback={joinNames([user?.first_name, user?.last_name])}
+            img={user?.picture}
+          />
 
           <DropdownMenu>
             <DropdownMenuTrigger>
@@ -72,7 +70,9 @@ export default function DashboardHeader({ trigger }: { trigger?: ReactNode }) {
             </DropdownMenuTrigger>
             <DropdownMenuContent>
               <DropdownMenuItem className="dark:hover:bg-transparent">
-                <Button onClick={() => logout()} className="w-full">Logout</Button>
+                <Button onClick={() => logout()} className="w-full">
+                  Logout
+                </Button>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -84,7 +84,7 @@ export default function DashboardHeader({ trigger }: { trigger?: ReactNode }) {
 
 const PopupSearch = () => {
   const [data, setData] = useState<PopupItem[]>([]);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search, 500);
   const [loading, setLoading] = useState(false);
   const isMobile = useIsMobile();
@@ -101,7 +101,9 @@ const PopupSearch = () => {
   async function fetchData() {
     setLoading(true);
     try {
-      const response = await axios.get(`/admin/all-search?query=${encodeURIComponent(debouncedSearch)}`);
+      const response = await axios.get(
+        `/admin/all-search?query=${encodeURIComponent(debouncedSearch)}`
+      );
       setData(response.data);
     } catch (err) {
       console.error(err);
@@ -113,7 +115,7 @@ const PopupSearch = () => {
 
   const handleClick = (route: string) => {
     router.push(route);
-    setSearch("");
+    setSearch('');
     setData([]);
   };
 
@@ -122,7 +124,7 @@ const PopupSearch = () => {
       <InputWithIcon
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        className={isMobile ? "hidden" : "w-100"}
+        className={isMobile ? 'hidden' : 'w-100'}
         placeholder="Search player, coaches, sessions..."
       />
 

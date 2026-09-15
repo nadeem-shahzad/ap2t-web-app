@@ -1,10 +1,8 @@
-import { SquareClient, SquareEnvironment } from "square";
-import { GetSquare } from "./square-creds";
-
+import { SquareClient, SquareEnvironment } from 'square';
+import { GetSquare } from './square-creds';
 
 export async function getSquareClient() {
   const { apiKey, mode } = await GetSquare();
-
 
   const client = new SquareClient({
     token: apiKey!,

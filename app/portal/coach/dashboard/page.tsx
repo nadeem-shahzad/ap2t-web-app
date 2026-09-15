@@ -1,12 +1,9 @@
-"use client"
+'use client';
 
-import MainCoachPage from "@/components/coach/main-coach-page";
-import { useAuth } from "@/contexts/auth-context";
+import MainCoachPage from '@/components/coach/main-coach-page';
+import { useAuth } from '@/contexts/auth-context';
 
-
-export default function Page(){
-    const {user}=useAuth()
-    return(
-        <MainCoachPage id={user?.id} />
-    )
+export default function Page() {
+  const { user } = useAuth();
+  return <MainCoachPage id={user?.id} />;
 }

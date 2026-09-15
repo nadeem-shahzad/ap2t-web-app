@@ -1,5 +1,5 @@
 // src/workers/squareConnection.worker.ts
-import { EncryptString } from "@/lib/functions";
+import { EncryptString } from '@/lib/functions';
 
 self.onmessage = (event: MessageEvent<string>) => {
   try {
@@ -12,7 +12,7 @@ self.onmessage = (event: MessageEvent<string>) => {
   } catch {
     self.postMessage({
       success: false,
-      encryptedString: "",
+      encryptedString: '',
     });
   }
 };

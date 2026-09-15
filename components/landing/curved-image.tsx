@@ -1,20 +1,26 @@
-import { cn } from "@/lib/utils"
+import { cn } from '@/lib/utils';
 
 interface CurvedImageProps {
-  src: string
-  alt: string
-  className?: string
-  imageClassName?:string
-  curveDepth?: number
-  borderRadius?: number
+  src: string;
+  alt: string;
+  className?: string;
+  imageClassName?: string;
+  curveDepth?: number;
+  borderRadius?: number;
 }
 
-export function CurvedImage({ src, alt, className, curveDepth = 40, borderRadius = 10, imageClassName }: CurvedImageProps) {
-  
-  const cornerPercent = borderRadius / 1000
+export function CurvedImage({
+  src,
+  alt,
+  className,
+  curveDepth = 40,
+  borderRadius = 10,
+  imageClassName,
+}: CurvedImageProps) {
+  const cornerPercent = borderRadius / 1000;
 
   return (
-    <div className={cn("relative w-full overflow-hidden", className)}>
+    <div className={cn('relative w-full overflow-hidden', className)}>
       <svg width="0" height="0" className="absolute">
         <defs>
           <clipPath id="curved-clip" clipPathUnits="objectBoundingBox">
@@ -41,15 +47,15 @@ export function CurvedImage({ src, alt, className, curveDepth = 40, borderRadius
         </defs>
       </svg>
       <img
-        src={src || "/placeholder.svg"}
+        src={src || '/placeholder.svg'}
         alt={alt}
-        className={cn("w-full h-[500px] object-cover object-center", imageClassName)}
+        className={cn('w-full h-[500px] object-cover object-center', imageClassName)}
         style={{
-          clipPath: "url(#curved-clip)",
-          transform: "translateZ(0)",
-          WebkitTransform: "translateZ(0)",
+          clipPath: 'url(#curved-clip)',
+          transform: 'translateZ(0)',
+          WebkitTransform: 'translateZ(0)',
         }}
       />
     </div>
-  )
+  );
 }

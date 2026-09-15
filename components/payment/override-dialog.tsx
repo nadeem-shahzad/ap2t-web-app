@@ -1,26 +1,20 @@
-import axios from "@/lib/axios";
-import { PaymentItem } from "@/lib/types";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { DialogClose } from "@radix-ui/react-dialog";
-import moment from "moment";
-import { useState } from "react";
-import { Controller, useForm } from "react-hook-form";
-import z from "zod";
-import { RequiredStar } from "../required-star";
-import { Button } from "../ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
-import { Field, FieldError } from "../ui/field";
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
-import { ScrollArea } from "../ui/scroll-area";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
-import { Spinner } from "../ui/spinner";
+import axios from '@/lib/axios';
+import { PaymentItem } from '@/lib/types';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { DialogClose } from '@radix-ui/react-dialog';
+import moment from 'moment';
+import { useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import z from 'zod';
+import { RequiredStar } from '../required-star';
+import { Button } from '../ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
+import { Field, FieldError } from '../ui/field';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+import { ScrollArea } from '../ui/scroll-area';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Spinner } from '../ui/spinner';
 
 type CompedDialogProps = {
   data: PaymentItem;
@@ -29,21 +23,16 @@ type CompedDialogProps = {
   onOpenChange: (val: boolean) => void;
 };
 
-const METHOD_OPTIONS = ["Debit / Credit Card", "Cash", "Online"];
+const METHOD_OPTIONS = ['Debit / Credit Card', 'Cash', 'Online'];
 
 const overrideSchema = z.object({
-  method: z.string().trim().min(1, "method is required"),
+  method: z.string().trim().min(1, 'method is required'),
 
-  transaction_id: z.string().trim().min(1, "transection id is required"),
+  transaction_id: z.string().trim().min(1, 'transection id is required'),
 });
 type overrideSchemaValues = z.infer<typeof overrideSchema>;
 
-export function OverrideDialog({
-  open,
-  onOpenChange,
-  data,
-  onRefresh,
-}: CompedDialogProps) {
+export function OverrideDialog({ open, onOpenChange, data, onRefresh }: CompedDialogProps) {
   const [loading, setLoading] = useState(false);
 
   async function handleUpdateStatus(values: overrideSchemaValues) {
@@ -55,7 +44,7 @@ export function OverrideDialog({
         id: data.id,
         method: values.method,
         transaction_id: values.transaction_id,
-        status: "paid",
+        status: 'paid',
         paid_at: new Date(),
       });
       await onRefresh();
@@ -68,11 +57,11 @@ export function OverrideDialog({
   const form = useForm<overrideSchemaValues>({
     resolver: zodResolver(overrideSchema),
     defaultValues: {
-      method: "",
-      transaction_id: "",
+      method: '',
+      transaction_id: '',
     },
   });
-  const method = form.watch("method");
+  const method = form.watch('method');
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -81,9 +70,7 @@ export function OverrideDialog({
           <DialogTitle className="text-lg font-semibold text-[#F3F4F6]">
             Mark Payment as Paid
           </DialogTitle>
-          <p className="text-sm text-ghost-text">
-            This action is for accounting purposes
-          </p>
+          <p className="text-sm text-ghost-text">This action is for accounting purposes</p>
         </DialogHeader>
         <form onSubmit={form.handleSubmit(handleUpdateStatus)}>
           <ScrollArea className="h-[calc(100vh-250px)]">
@@ -120,13 +107,10 @@ export function OverrideDialog({
                         value={field.value}
                         onValueChange={(v) => {
                           field.onChange(v);
-                          if (v === "Cash") {
-                            form.setValue(
-                              "transaction_id",
-                              moment().valueOf().toString(),
-                            );
+                          if (v === 'Cash') {
+                            form.setValue('transaction_id', moment().valueOf().toString());
                           } else {
-                            form.setValue("transaction_id", "")
+                            form.setValue('transaction_id', '');
                           }
                         }}
                       >
@@ -141,9 +125,7 @@ export function OverrideDialog({
                           ))}
                         </SelectContent>
                       </Select>
-                      {fieldState.invalid && (
-                        <FieldError errors={[fieldState.error]} />
-                      )}
+                      {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                     </Field>
                   )}
                 />
@@ -159,13 +141,11 @@ export function OverrideDialog({
                         Transaction Id <RequiredStar />
                       </Label>
                       <Input
-                        disabled={method === "Cash"}
+                        disabled={method === 'Cash'}
                         value={field.value}
                         onChange={field.onChange}
                       />
-                      {fieldState.invalid && (
-                        <FieldError errors={[fieldState.error]} />
-                      )}
+                      {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                     </Field>
                   )}
                 />

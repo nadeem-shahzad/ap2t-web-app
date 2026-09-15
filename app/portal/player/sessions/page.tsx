@@ -1,53 +1,47 @@
-"use client";
-import SessionCalendar from "@/components/calendar/session-calendar";
-import PrivateSessionInquiryDialog from "@/components/players/privateSessionInquiry";
-import ReserveComponent from "@/components/players/reserveDialog";
-import { Button } from "@/components/ui/button";
-import { useAuth } from "@/contexts/auth-context";
-import axios from "@/lib/axios";
-import { joinNames } from "@/lib/functions";
-import { ReserveProps, SessionProps } from "@/lib/types";
-import { Calendar, List } from "lucide-react";
-import moment, { Moment } from "moment";
-import { ReactNode, useEffect, useState } from "react";
+'use client';
+import SessionCalendar from '@/components/calendar/session-calendar';
+import PrivateSessionInquiryDialog from '@/components/players/privateSessionInquiry';
+import ReserveComponent from '@/components/players/reserveDialog';
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/auth-context';
+import axios from '@/lib/axios';
+import { joinNames } from '@/lib/functions';
+import { ReserveProps, SessionProps } from '@/lib/types';
+import { Calendar, List } from 'lucide-react';
+import moment, { Moment } from 'moment';
+import { ReactNode, useEffect, useState } from 'react';
 
 export default function Page() {
-
   const [sessions, setSessions] = useState<SessionProps[]>([]);
-  const [reserves, setReserves] = useState<SessionProps[]>([])
+  const [reserves, setReserves] = useState<SessionProps[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentMonth, setCurrentMonth] = useState<Moment>(moment())
-  const [tab, setTab] = useState<"daily" | "monthly">("daily")
-  const { user } = useAuth()
+  const [currentMonth, setCurrentMonth] = useState<Moment>(moment());
+  const [tab, setTab] = useState<'daily' | 'monthly'>('daily');
+  const { user } = useAuth();
 
   useEffect(() => {
     if (user?.id) {
       fetchDataMonthly();
-      fetchDataDaily()
+      fetchDataDaily();
     }
   }, [user, currentMonth]);
 
   async function fetchData() {
-    if (!user?.id) return
-    await Promise.all([fetchDataDaily(), fetchDataMonthly()])
+    if (!user?.id) return;
+    await Promise.all([fetchDataDaily(), fetchDataMonthly()]);
   }
 
   const fetchDataMonthly = async () => {
-    setLoading(true)
-    const month = currentMonth
-      ? currentMonth.format("YYYY-MM")
-      : null;
+    setLoading(true);
+    const month = currentMonth ? currentMonth.format('YYYY-MM') : null;
     try {
-      const result = await axios.get(`/player/${user?.id}/sessions`,
-        {
-          params: { month }
-        }
-      );
+      const result = await axios.get(`/player/${user?.id}/sessions`, {
+        params: { month },
+      });
       if (result.data) {
         const mappedSessions = result.data.map((s: any) => {
-
-          let finalPrice = s.price
-          let promotion = false
+          let finalPrice = s.price;
+          let promotion = false;
           if (
             s.apply_promotion &&
             s.promotion_price &&
@@ -57,17 +51,17 @@ export default function Page() {
             moment(s.promotion_end).isAfter(moment())
           ) {
             finalPrice = s.promotion_price;
-            promotion = true
+            promotion = true;
           }
 
-          return ({
+          return {
             id: s.id,
             sessionName: s.name,
             type: s.session_type,
-            date: moment(new Date(s.date)).format("YYYY-MM-DD"),
+            date: moment(new Date(s.date)).format('YYYY-MM-DD'),
             time: `${s.start_time} - ${s.end_time}`,
             coachName: joinNames([s.coach_first_name, s.coach_last_name]),
-            coachPicture : s.coach_picture || "",
+            coachPicture: s.coach_picture || '',
             price: finalPrice,
             original_price: s.price,
             promotion: promotion,
@@ -77,29 +71,27 @@ export default function Page() {
             enrolled: s?.enrolled,
             is_daily_payment: s?.is_daily_payment ?? false,
             enrolled_dates: s?.enrolled_dates ?? [],
-            end_date: s?.end_date ? moment(new Date(s.end_date)).format("YYYY-MM-DD") : null
-          })
+            end_date: s?.end_date ? moment(new Date(s.end_date)).format('YYYY-MM-DD') : null,
+          };
         });
         setSessions(mappedSessions);
       }
     } catch (error) {
-      console.error("Error fetching sessions", error);
+      console.error('Error fetching sessions', error);
     } finally {
       setLoading(false);
     }
   };
 
   const fetchDataDaily = async () => {
-
     setLoading(true);
 
     try {
       const result = await axios.get(`/player/${user?.id}/sessions`);
-       if (result.data) {
+      if (result.data) {
         const mappedSessions = result.data.map((s: any) => {
-
-          let finalPrice = s.price
-          let promotion = false
+          let finalPrice = s.price;
+          let promotion = false;
           if (
             s.apply_promotion &&
             s.promotion_price &&
@@ -109,17 +101,17 @@ export default function Page() {
             moment(s.promotion_end).isAfter(moment())
           ) {
             finalPrice = s.promotion_price;
-            promotion = true
+            promotion = true;
           }
 
-          return ({ 
+          return {
             id: s.id,
             sessionName: s.name,
             type: s.session_type,
-            date: moment(new Date(s.date)).format("YYYY-MM-DD"),
+            date: moment(new Date(s.date)).format('YYYY-MM-DD'),
             time: `${s.start_time}`,
             coachName: joinNames([s.coach_first_name, s.coach_last_name]),
-            coachPicture : s.coach_picture || "",
+            coachPicture: s.coach_picture || '',
             price: finalPrice,
             original_price: s.price,
             promotion: promotion,
@@ -129,9 +121,9 @@ export default function Page() {
             enrolled: s?.enrolled,
             is_daily_payment: s?.is_daily_payment ?? false,
             enrolled_dates: s?.enrolled_dates ?? [],
-            end_date: s?.end_date ? moment(new Date(s.end_date)).format("YYYY-MM-DD") : null,
-            location : s?.location || ""
-          })
+            end_date: s?.end_date ? moment(new Date(s.end_date)).format('YYYY-MM-DD') : null,
+            location: s?.location || '',
+          };
         });
         setReserves(mappedSessions);
       }
@@ -140,8 +132,6 @@ export default function Page() {
     }
   };
 
-
-
   return (
     <div className="flex flex-col w-full gap-4">
       <Header>
@@ -149,36 +139,55 @@ export default function Page() {
           <div className="flex gap-4 items-center flex-wrap">
             <div className="!bg-[#252525] border border-border rounded-[10px] flex flex-wrap items-center p-[2px]">
               <Button
-                onClick={() => setTab("daily")}
-                variant={tab === "daily" ? "default" : "ghost"}
+                onClick={() => setTab('daily')}
+                variant={tab === 'daily' ? 'default' : 'ghost'}
                 className="h-7 "
               >
-                {" "}
+                {' '}
                 <List />
                 Daily
               </Button>
               <Button
-                onClick={() => setTab("monthly")}
-                variant={tab === "monthly" ? "default" : "ghost"}
+                onClick={() => setTab('monthly')}
+                variant={tab === 'monthly' ? 'default' : 'ghost'}
                 className="h-7"
               >
                 <Calendar /> Monthly
               </Button>
             </div>
-            <PrivateSessionInquiryDialog email={user?.email} firstName={user?.first_name} lastName={user?.last_name} />
+            <PrivateSessionInquiryDialog
+              email={user?.email}
+              firstName={user?.first_name}
+              lastName={user?.last_name}
+            />
           </div>
         </div>
       </Header>
 
-      {tab === "daily" && <ReserveComponent sessions={reserves} player_id={user?.id} onSuccess={fetchData} loading={loading} />}
+      {tab === 'daily' && (
+        <ReserveComponent
+          sessions={reserves}
+          player_id={user?.id}
+          onSuccess={fetchData}
+          loading={loading}
+        />
+      )}
 
-      {tab === 'monthly' &&
-        <SessionCalendar currentMonth={currentMonth} setCurrentMonth={setCurrentMonth} player_id={user?.id} sessions={sessions} onSuccess={fetchData} loading={loading} />}
+      {tab === 'monthly' && (
+        <SessionCalendar
+          currentMonth={currentMonth}
+          setCurrentMonth={setCurrentMonth}
+          player_id={user?.id}
+          sessions={sessions}
+          onSuccess={fetchData}
+          loading={loading}
+        />
+      )}
     </div>
   );
 }
 
-const Header = ({ children, }: { children: ReactNode, }) => {
+const Header = ({ children }: { children: ReactNode }) => {
   return (
     <div className="flex w-full gap-4 justify-between flex-wrap items-center">
       <div className="space-y-2">
@@ -186,7 +195,7 @@ const Header = ({ children, }: { children: ReactNode, }) => {
         <span className="text-xs text-muted-foreground flex items-center">
           <span>Available sessions </span>
           <span className="text-warning-text inline-flex">
-            {" "}
+            {' '}
             {/* <Dot size={16} /> 1 pending payments */}
           </span>
         </span>

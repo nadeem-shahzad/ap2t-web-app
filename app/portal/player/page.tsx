@@ -1,7 +1,5 @@
-import { redirect } from "next/navigation";
+import { redirect } from 'next/navigation';
 
-
-export default function Page(){
-
-    redirect("/portal/player/dashboard")
+export default function Page() {
+  redirect('/portal/player/dashboard');
 }

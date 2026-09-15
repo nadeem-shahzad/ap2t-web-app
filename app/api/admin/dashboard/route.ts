@@ -1,8 +1,6 @@
-import pool from "@/lib/db";
-import { joinNames } from "@/lib/functions";
-import { NextResponse } from "next/server";
-
-
+import pool from '@/lib/db';
+import { joinNames } from '@/lib/functions';
+import { NextResponse } from 'next/server';
 
 function percentageChange(today: number, yesterday: number) {
   if (yesterday === 0) return today > 0 ? 100 : 0;
@@ -11,8 +9,6 @@ function percentageChange(today: number, yesterday: number) {
 
 export async function GET() {
   try {
-    
-    
     const attendanceTodayRes = await pool.query(
       `SELECT COUNT(*) AS total_check_ins
        FROM attendance
@@ -32,7 +28,6 @@ export async function GET() {
     const checkInsDifference = totalCheckIns - yesterdayCheckIns;
     const checkInsChangePercentage = percentageChange(totalCheckIns, yesterdayCheckIns);
 
-    
     const revenueTodayRes = await pool.query(
       `SELECT COALESCE(SUM(amount), 0) AS total_revenue
    FROM payments
@@ -51,17 +46,14 @@ export async function GET() {
     );
     const yesterdayRevenue = Number(revenueYesterdayRes.rows[0]?.total_revenue || 0);
 
-    
     const revenueChangePercentage = percentageChange(totalRevenue, yesterdayRevenue);
 
-
-    
-    
     const pendingTodayRes = await pool.query(
       `SELECT COUNT(*) AS pending_count
        FROM payments
        WHERE status != ANY($1::text[])
-         AND DATE(created_at AT TIME ZONE 'UTC') = DATE(NOW() AT TIME ZONE 'UTC')`, [["paid", "comped"]]
+         AND DATE(created_at AT TIME ZONE 'UTC') = DATE(NOW() AT TIME ZONE 'UTC')`,
+      [['paid', 'comped']]
     );
     const pendingToday = Number(pendingTodayRes.rows[0]?.pending_count || 0);
 
@@ -69,13 +61,14 @@ export async function GET() {
       `SELECT COUNT(*) AS pending_count
        FROM payments
        WHERE status != ANY($1::text[])
-         AND DATE(created_at AT TIME ZONE 'UTC') = DATE(NOW() AT TIME ZONE 'UTC') - INTERVAL '1 day'`, [["paid", "comped"]]
+         AND DATE(created_at AT TIME ZONE 'UTC') = DATE(NOW() AT TIME ZONE 'UTC') - INTERVAL '1 day'`,
+      [['paid', 'comped']]
     );
     const pendingYesterday = Number(pendingYesterdayRes.rows[0]?.pending_count || 0);
 
     const pendingChangePercentage = percentageChange(pendingToday, pendingYesterday);
 
-        const sessionsDataRes = await pool.query(
+    const sessionsDataRes = await pool.query(
       `SELECT s.id, s.session_type, s.name, s.start_time, s.end_time, s.coach_id, s.status, s.date, s.end_date,
               u.first_name AS coach_first_name,
               u.last_name AS coach_last_name
@@ -83,7 +76,8 @@ export async function GET() {
        LEFT JOIN users u ON s.coach_id = u.id
        WHERE s.status = ANY($1 :: text[])
          AND DATE(s.date AT TIME ZONE 'UTC') <= DATE(NOW() AT TIME ZONE 'UTC')
-         AND DATE(COALESCE(s.end_date, s.date) AT TIME ZONE 'UTC') >= DATE(NOW() AT TIME ZONE 'UTC')`, [["upcoming", "ongoing"]]
+         AND DATE(COALESCE(s.end_date, s.date) AT TIME ZONE 'UTC') >= DATE(NOW() AT TIME ZONE 'UTC')`,
+      [['upcoming', 'ongoing']]
     );
     const upcomingToday = sessionsDataRes.rows.length;
 
@@ -93,7 +87,7 @@ export async function GET() {
        WHERE s.status = ANY($1 :: text[])
          AND DATE(s.date AT TIME ZONE 'UTC') <= DATE(NOW() AT TIME ZONE 'UTC') - INTERVAL '1 day'
          AND DATE(COALESCE(s.end_date, s.date) AT TIME ZONE 'UTC') >= DATE(NOW() AT TIME ZONE 'UTC') - INTERVAL '1 day'`,
-      [["upcoming", "ongoing"]]
+      [['upcoming', 'ongoing']]
     );
     const upcomingYesterday = Number(upcomingYesterdayRes.rows[0]?.total || 0);
     const upcomingChangePercentage = percentageChange(upcomingToday, upcomingYesterday);
@@ -103,15 +97,12 @@ export async function GET() {
       coach_name: joinNames([s.coach_first_name, s.coach_last_name]),
     }));
 
-    
-    
     const attendanceDataRes = await pool.query(
       `SELECT *
        FROM attendance
        WHERE status = 'present'`
     );
     const attendanceData = attendanceDataRes.rows;
-
 
     const paymentQuery = await pool.query(`
     SELECT
@@ -141,17 +132,16 @@ export async function GET() {
   WHERE pa.payment_id = p.id
     AND DATE(pa.acted_at AT TIME ZONE 'UTC') = DATE(NOW() AT TIME ZONE 'UTC')
 )
-    ORDER BY p.created_at DESC;`)
+    ORDER BY p.created_at DESC;`);
 
-    const enhancedData = paymentQuery.rows.map((item)=>{
-      return (
-        {...item,
-          parent_name : joinNames([item.parent_first_name, item.parent_last_name]),
-          player_name : joinNames([item.user_first_name, item.user_last_name]),
-        }
-      )
-    })
-    
+    const enhancedData = paymentQuery.rows.map((item) => {
+      return {
+        ...item,
+        parent_name: joinNames([item.parent_first_name, item.parent_last_name]),
+        player_name: joinNames([item.user_first_name, item.user_last_name]),
+      };
+    });
+
     return NextResponse.json({
       totalCheckIns,
       checkInsDifference,
@@ -164,14 +154,11 @@ export async function GET() {
       upcomingChangePercentage: Number(upcomingChangePercentage.toFixed(0)),
       attendanceData,
       sessionsData,
-      paymentAlerts : enhancedData
+      paymentAlerts: enhancedData,
     });
   } catch (error: any) {
     console.error(error);
-    return NextResponse.json(
-      { message: error.message || "Server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ message: error.message || 'Server error' }, { status: 500 });
   }
 }
-export const revalidate = 0
+export const revalidate = 0;

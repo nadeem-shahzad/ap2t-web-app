@@ -1,10 +1,7 @@
-import pool from "@/lib/db";
-import { NextRequest, NextResponse } from "next/server";
+import pool from '@/lib/db';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id: player_id } = await params;
 
   try {
@@ -23,10 +20,7 @@ export async function GET(
     );
 
     if (playerResult.rows.length === 0) {
-      return NextResponse.json(
-        { message: "player not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ message: 'player not found' }, { status: 404 });
     }
 
     const player = playerResult.rows[0];
@@ -95,7 +89,6 @@ export async function GET(
       [player_id]
     );
 
-
     // ---------------- PAYMENT DATA ----------------
     const paymentsResult = await pool.query(
       `
@@ -128,26 +121,20 @@ ORDER BY n.created_at DESC
       [player_id]
     );
 
-
     // ---------------- FINAL RESPONSE ----------------
     return NextResponse.json({
       ...player,
       attach_parent,
       sessions_data: sessionsResult.rows,
       payment_data: paymentsResult.rows,
-      all_notes: allNotes.rows
+      all_notes: allNotes.rows,
     });
-
   } catch (error) {
-    console.error("GET /api/player/[id] error:", error);
+    console.error('GET /api/player/[id] error:', error);
 
-    return NextResponse.json(
-      { message: "Internal Server Error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
   }
 }
-
 
 export async function PUT(req: NextRequest) {
   try {
@@ -155,7 +142,7 @@ export async function PUT(req: NextRequest) {
     const { id, ...updates } = data;
 
     if (!id) {
-      return NextResponse.json({ message: "ID is required" }, { status: 400 });
+      return NextResponse.json({ message: 'ID is required' }, { status: 400 });
     }
 
     const fields: any[] = [];
@@ -169,25 +156,26 @@ export async function PUT(req: NextRequest) {
     });
 
     if (fields.length === 0) {
-      return NextResponse.json({ message: "No valid data provided for update" }, { status: 400 });
+      return NextResponse.json({ message: 'No valid data provided for update' }, { status: 400 });
     }
 
     values.push(id);
     const query = `
           UPDATE players 
-          SET ${fields.join(", ")}
+          SET ${fields.join(', ')}
           WHERE user_id = $${values.length}
       `;
 
     await pool.query(query, values);
 
-
-    return NextResponse.json({ message: "Updated successfully" }, { status: 200 });
+    return NextResponse.json({ message: 'Updated successfully' }, { status: 200 });
   } catch (error: any) {
-    console.log("Error updating data:", error?.message);
-    return NextResponse.json({ message: error?.message || "Internal Server Error" }, { status: 500 });
+    console.log('Error updating data:', error?.message);
+    return NextResponse.json(
+      { message: error?.message || 'Internal Server Error' },
+      { status: 500 }
+    );
   }
 }
 
-
-export const revalidate = 0
+export const revalidate = 0;

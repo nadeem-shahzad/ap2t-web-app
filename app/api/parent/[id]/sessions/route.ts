@@ -1,30 +1,26 @@
-import pool from "@/lib/db";
-import { NextRequest, NextResponse } from "next/server";
+import pool from '@/lib/db';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(
-    req: NextRequest,
-    { params }: { params: { id: string } }
-) {
-    const { id } = await params;
-     const month  = req.nextUrl.searchParams.get("month")
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+  const { id } = await params;
+  const month = req.nextUrl.searchParams.get('month');
 
-
-    try {
-        const childrenQuery = await pool.query(
-            `
+  try {
+    const childrenQuery = await pool.query(
+      `
     SELECT p.user_id, u.first_name, u.last_name
     FROM players p
     JOIN users u ON u.id = p.user_id
     WHERE p.parent_id = $1
     `,
-            [id]
-        );
+      [id]
+    );
 
-        const children = childrenQuery.rows;
+    const children = childrenQuery.rows;
 
-        const childrenIds = children.map(c => c.user_id);
+    const childrenIds = children.map((c) => c.user_id);
 
-        const query = `
+    const query = `
     SELECT
       s.*,
       u.first_name AS coach_first_name,
@@ -84,18 +80,18 @@ export async function GET(
     ORDER BY s.date ASC
   `;
 
-        const result = await pool.query(query, [
-            childrenIds.length ? childrenIds : [null],  month ? `${month}-01T00:00:00Z` : null
-        ]);
+    const result = await pool.query(query, [
+      childrenIds.length ? childrenIds : [null],
+      month ? `${month}-01T00:00:00Z` : null,
+    ]);
 
-        return NextResponse.json(result.rows, { status: 200 });
-
-    } catch (error: any) {
-        console.error(error);
-        return NextResponse.json(
-            { message: error?.message || "Something went wrong" },
-            { status: 500 }
-        );
-    }
+    return NextResponse.json(result.rows, { status: 200 });
+  } catch (error: any) {
+    console.error(error);
+    return NextResponse.json(
+      { message: error?.message || 'Something went wrong' },
+      { status: 500 }
+    );
+  }
 }
-export const revalidate = 0
+export const revalidate = 0;

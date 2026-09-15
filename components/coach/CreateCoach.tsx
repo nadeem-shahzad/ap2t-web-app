@@ -1,45 +1,45 @@
-import AppCalendar from "@/components/app-calendar";
-import { Button } from "@/components/ui/button";
+import AppCalendar from '@/components/app-calendar';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogClose,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { Spinner } from "@/components/ui/spinner";
-import { Textarea } from "@/components/ui/textarea";
-import axios from "@/lib/axios";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus } from "lucide-react";
-import { useState } from "react";
-import { Controller, useForm } from "react-hook-form";
-import { z } from "zod";
-import { Field, FieldError } from "../ui/field";
-import { RequiredStar } from "../required-star";
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { Spinner } from '@/components/ui/spinner';
+import { Textarea } from '@/components/ui/textarea';
+import axios from '@/lib/axios';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Plus } from 'lucide-react';
+import { useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { Field, FieldError } from '../ui/field';
+import { RequiredStar } from '../required-star';
 
 const coachSchema = z.object({
-  first_name: z.string().min(2, "First name is required"),
-  last_name: z.string().min(2, "Last name is required"),
+  first_name: z.string().min(2, 'First name is required'),
+  last_name: z.string().min(2, 'Last name is required'),
 
   email: z
     .string()
-    .email("Invalid email")
+    .email('Invalid email')
     .transform((val) => val.trim().toLowerCase()),
 
-  phone_no: z.string().min(6, "Phone is required"),
+  phone_no: z.string().min(6, 'Phone is required'),
 
   // zip_code: z.string().min(3, "Zip code required"),
 
   career_start: z.date({
-    error: "Date of birth is required",
+    error: 'Date of birth is required',
   }),
 
-  bio: z.string().min(2, "Biography required"),
+  bio: z.string().min(2, 'Biography required'),
 });
 type coachSchemaValues = z.infer<typeof coachSchema>;
 
@@ -50,21 +50,21 @@ const CreateCoach = ({ onRefresh }: { onRefresh: () => Promise<void> }) => {
   const form = useForm<coachSchemaValues>({
     resolver: zodResolver(coachSchema),
     defaultValues: {
-      first_name: "",
-      last_name: "",
-      email: "",
-      phone_no: "",
+      first_name: '',
+      last_name: '',
+      email: '',
+      phone_no: '',
       career_start: undefined,
-      bio: "",
+      bio: '',
       // zip_code: "",
     },
   });
 
   const addCoach = async (values: coachSchemaValues) => {
     setLoading(true);
-    
+
     try {
-      await axios.post("/user", {
+      await axios.post('/user', {
         first_name: values.first_name,
         last_name: values.last_name,
         email: values.email,
@@ -72,7 +72,7 @@ const CreateCoach = ({ onRefresh }: { onRefresh: () => Promise<void> }) => {
         career_start: values.career_start,
         bio: values.bio,
         // zip_code: values.zip_code,
-        role: "coach",
+        role: 'coach',
       });
 
       await onRefresh();
@@ -116,9 +116,7 @@ const CreateCoach = ({ onRefresh }: { onRefresh: () => Promise<void> }) => {
                             placeholder="Coach"
                             autoComplete="off"
                           />
-                          {fieldState.invalid && (
-                            <FieldError errors={[fieldState.error]} />
-                          )}
+                          {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                         </Field>
                       )}
                     />
@@ -139,9 +137,7 @@ const CreateCoach = ({ onRefresh }: { onRefresh: () => Promise<void> }) => {
                             placeholder="martinz"
                             autoComplete="off"
                           />
-                          {fieldState.invalid && (
-                            <FieldError errors={[fieldState.error]} />
-                          )}
+                          {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                         </Field>
                       )}
                     />
@@ -164,9 +160,7 @@ const CreateCoach = ({ onRefresh }: { onRefresh: () => Promise<void> }) => {
                             placeholder="martinz"
                             autoComplete="off"
                           />
-                          {fieldState.invalid && (
-                            <FieldError errors={[fieldState.error]} />
-                          )}
+                          {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                         </Field>
                       )}
                     />
@@ -198,7 +192,7 @@ const CreateCoach = ({ onRefresh }: { onRefresh: () => Promise<void> }) => {
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-2">
-                   <Controller
+                    <Controller
                       name="phone_no"
                       control={form.control}
                       render={({ field, fieldState }) => (
@@ -213,9 +207,7 @@ const CreateCoach = ({ onRefresh }: { onRefresh: () => Promise<void> }) => {
                             placeholder="+1XXXXXX"
                             autoComplete="off"
                           />
-                          {fieldState.invalid && (
-                            <FieldError errors={[fieldState.error]} />
-                          )}
+                          {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                         </Field>
                       )}
                     />
@@ -229,18 +221,12 @@ const CreateCoach = ({ onRefresh }: { onRefresh: () => Promise<void> }) => {
                           <Label className="text-sm text-[#99A1AF]">
                             Career_start <RequiredStar />
                           </Label>
-                          
-                          <AppCalendar
-                            date={field.value}
-                            onChange={field.onChange}
-                          />
+
+                          <AppCalendar date={field.value} onChange={field.onChange} />
                           {fieldState.invalid && (
-                            <p className="text-xs text-red-500">
-                              {fieldState?.error?.message}
-                            </p>
+                            <p className="text-xs text-red-500">{fieldState?.error?.message}</p>
                           )}
                         </Field>
-                        
                       )}
                     />
                   </div>
@@ -248,26 +234,24 @@ const CreateCoach = ({ onRefresh }: { onRefresh: () => Promise<void> }) => {
 
                 <div className="space-y-2">
                   <Controller
-                      name="bio"
-                      control={form.control}
-                      render={({ field, fieldState }) => (
-                        <Field data-invalid={fieldState.invalid}>
-                          <Label className="text-sm text-[#99A1AF]">
-                            Biography <RequiredStar />
-                          </Label>
-                          <Textarea
-                            {...field}
-                            id={field.name}
-                            aria-invalid={fieldState.invalid}
-                            autoComplete="off"
-                            className="min-h-[170px]"
-                          />
-                          {fieldState.invalid && (
-                            <FieldError errors={[fieldState.error]} />
-                          )}
-                        </Field>
-                      )}
-                    />
+                    name="bio"
+                    control={form.control}
+                    render={({ field, fieldState }) => (
+                      <Field data-invalid={fieldState.invalid}>
+                        <Label className="text-sm text-[#99A1AF]">
+                          Biography <RequiredStar />
+                        </Label>
+                        <Textarea
+                          {...field}
+                          id={field.name}
+                          aria-invalid={fieldState.invalid}
+                          autoComplete="off"
+                          className="min-h-[170px]"
+                        />
+                        {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                      </Field>
+                    )}
+                  />
                 </div>
               </div>
             </ScrollArea>
@@ -277,11 +261,7 @@ const CreateCoach = ({ onRefresh }: { onRefresh: () => Promise<void> }) => {
                 <DialogClose className="text-[13px] font-medium leading-none h-8 px-4 py-2 bg-black text-white border-border rounded-md hover:opacity-70 cursor-pointer flex flex-1 items-center justify-center">
                   Cancel
                 </DialogClose>
-                <Button
-                  disabled={loading}
-                  type="submit"
-                  className="flex-1 text-[13px]"
-                >
+                <Button disabled={loading} type="submit" className="flex-1 text-[13px]">
                   {loading && <Spinner className="text-black" />} Add Coach
                 </Button>
               </div>

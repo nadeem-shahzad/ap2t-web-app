@@ -1,29 +1,27 @@
-import { NextRequest, NextResponse } from "next/server";
-import pool from "@/lib/db";
+import { NextRequest, NextResponse } from 'next/server';
+import pool from '@/lib/db';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const userid = searchParams.get("user_id");
+  const userid = searchParams.get('user_id');
 
   if (!userid) {
-    return NextResponse.json({ message: "User ID is required" }, { status: 400 });
+    return NextResponse.json({ message: 'User ID is required' }, { status: 400 });
   }
 
   try {
-    const userResult = await pool.query(`SELECT id, first_name, last_name, email, picture, phone_no, location, birth_date FROM users WHERE id = $1`, [
-      userid,
-    ]);
+    const userResult = await pool.query(
+      `SELECT id, first_name, last_name, email, picture, phone_no, location, birth_date FROM users WHERE id = $1`,
+      [userid]
+    );
 
     if (userResult.rows.length === 0) {
-      return NextResponse.json({ message: "User not found" }, { status: 404 });
+      return NextResponse.json({ message: 'User not found' }, { status: 404 });
     }
 
     const user = userResult.rows[0];
 
-    let settingsResult = await pool.query(
-      `SELECT * FROM settings WHERE user_id = $1`,
-      [userid],
-    );
+    let settingsResult = await pool.query(`SELECT * FROM settings WHERE user_id = $1`, [userid]);
 
     const settings = settingsResult.rows[0];
 
@@ -32,15 +30,12 @@ export async function GET(req: NextRequest) {
         user,
         settings,
       },
-      { status: 200 },
+      { status: 200 }
     );
   } catch (error) {
     console.error(error);
 
-    return NextResponse.json(
-      { message: "Internal server error" },
-      { status: 500 },
-    );
+    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -49,11 +44,10 @@ export async function PATCH(req: NextRequest) {
   try {
     const isTestMode = !!data.mode;
 
-    
-    const merchantCol  = isTestMode ? "test_merchant_id" : "live_merchant_id";
-    const locationCol  = isTestMode ? "test_location_id" : "live_location_id";
-    const apiKeyCol    = isTestMode ? "test_api_key"     : "live_api_key";
-    const webhookCol   = isTestMode ? "test_webhook"     : "live_webhook";
+    const merchantCol = isTestMode ? 'test_merchant_id' : 'live_merchant_id';
+    const locationCol = isTestMode ? 'test_location_id' : 'live_location_id';
+    const apiKeyCol = isTestMode ? 'test_api_key' : 'live_api_key';
+    const webhookCol = isTestMode ? 'test_webhook' : 'live_webhook';
 
     const query = `
 INSERT INTO settings (
@@ -138,7 +132,7 @@ RETURNING *;
       data.manage_promotions,
       data.system_settings,
       data.view_report,
-      data.test_merchant_id, 
+      data.test_merchant_id,
       data.test_location_id,
       data.test_api_key,
       data.test_webhook,
@@ -152,13 +146,9 @@ RETURNING *;
     const result = await pool.query(query, values);
 
     return NextResponse.json(result.rows[0]);
-
   } catch (error) {
-    console.error("PATCH /api/settings error:", error);
-    return NextResponse.json(
-      { message: "Internal server error" },
-      { status: 500 }
-    );
+    console.error('PATCH /api/settings error:', error);
+    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
   }
 }
-export const revalidate = 0
+export const revalidate = 0;

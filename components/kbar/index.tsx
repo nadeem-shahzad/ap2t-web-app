@@ -1,26 +1,18 @@
-"use client";
-import { admin_nav_items } from "@/lib/constants";
-import { startHolyLoader } from "holy-loader";
-import {
-  KBarAnimator,
-  KBarPortal,
-  KBarPositioner,
-  KBarProvider,
-  KBarSearch,
-} from "kbar";
-import { useRouter } from "next/navigation";
-import { ReactNode, useMemo, useState } from "react";
-import RenderResults from "./render-result";
+'use client';
+import { admin_nav_items } from '@/lib/constants';
+import { startHolyLoader } from 'holy-loader';
+import { KBarAnimator, KBarPortal, KBarPositioner, KBarProvider, KBarSearch } from 'kbar';
+import { useRouter } from 'next/navigation';
+import { ReactNode, useMemo, useState } from 'react';
+import RenderResults from './render-result';
 
-export default function KBar({ children } : {children : ReactNode}) {
+export default function KBar({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [navItems, setNavItems] = useState(admin_nav_items);
 
-  const navigateTo = (url : string) => {
-   
-      startHolyLoader();
-      router.push(`${url}`);
-   
+  const navigateTo = (url: string) => {
+    startHolyLoader();
+    router.push(`${url}`);
   };
 
   const localNavItems = [...navItems];
@@ -30,19 +22,19 @@ export default function KBar({ children } : {children : ReactNode}) {
       localNavItems.flatMap((navItem) => {
         // Only include base action if the navItem has a real URL and is not just a container
         const baseAction =
-          navItem.url !== "#"
+          navItem.url !== '#'
             ? {
                 id: `${navItem.title.toLowerCase()}Action`,
                 name: navItem.title,
                 shortcut: navItem.shortcut,
                 keywords: navItem.title.toLowerCase(),
-                section: "Navigation",
+                section: 'Navigation',
                 subtitle: `Go to ${navItem.title}`,
                 perform: () => navigateTo(navItem.url),
               }
             : [];
 
-        return baseAction
+        return baseAction;
       }),
     [navItems]
   );
@@ -57,7 +49,7 @@ export default function KBar({ children } : {children : ReactNode}) {
     </KBarProvider>
   );
 }
-const KBarComponent = ({ children } : {children : ReactNode}) => {
+const KBarComponent = ({ children }: { children: ReactNode }) => {
   return (
     <>
       <KBarPortal>

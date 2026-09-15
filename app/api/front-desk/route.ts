@@ -1,14 +1,14 @@
-import pool from "@/lib/db";
+import pool from '@/lib/db';
 import {
   fetchAllAdmins,
   sendAdminSessionEnrollmentEmail,
   sendCoachPlayerEnrollmentEmail,
-} from "@/lib/email-templates";
-import { sendPaymentReciept } from "@/lib/notification-service";
-import { sendInAppNotificationBackend } from "@/lib/send-inapp-notification";
-import { TriggerFirebaseApprovals } from "@/lib/triggerFirebase";
-import moment from "moment";
-import { NextRequest, NextResponse } from "next/server";
+} from '@/lib/email-templates';
+import { sendPaymentReciept } from '@/lib/notification-service';
+import { sendInAppNotificationBackend } from '@/lib/send-inapp-notification';
+import { TriggerFirebaseApprovals } from '@/lib/triggerFirebase';
+import moment from 'moment';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET() {
   try {
@@ -33,10 +33,7 @@ ORDER by fda.created_at DESC
     return NextResponse.json(response.rows, { status: 200 });
   } catch (error: any) {
     console.error(error);
-    return NextResponse.json(
-      { message: error?.message || "Server error" },
-      { status: 500 },
-    );
+    return NextResponse.json({ message: error?.message || 'Server error' }, { status: 500 });
   }
 }
 
@@ -48,17 +45,11 @@ export async function PUT(req: NextRequest) {
     const { id, status } = body;
 
     if (!id || !status) {
-      return NextResponse.json(
-        { error: "Missing id or status" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: 'Missing id or status' }, { status: 400 });
     }
 
-    if (!["waiting", "accepted", "rejected"].includes(status)) {
-      return NextResponse.json(
-        { error: "Invalid status value" },
-        { status: 400 },
-      );
+    if (!['waiting', 'accepted', 'rejected'].includes(status)) {
+      return NextResponse.json({ error: 'Invalid status value' }, { status: 400 });
     }
 
     const result = await pool.query(
@@ -68,26 +59,26 @@ export async function PUT(req: NextRequest) {
       WHERE id = $2
       RETURNING *;
       `,
-      [status, id],
+      [status, id]
     );
     if (result.rowCount === 0) {
-      return new Response(JSON.stringify({ error: "Record not found" }), {
+      return new Response(JSON.stringify({ error: 'Record not found' }), {
         status: 404,
       });
     }
 
     const updatingRow = result.rows?.[0] ?? null;
     if (updatingRow) {
-      if (type === "cash" || type === "approval") {
+      if (type === 'cash' || type === 'approval') {
         const user_id = updatingRow?.user_id;
         const session_id = updatingRow?.session_id;
         let amount = Number(updatingRow.price);
-        let hasSiblingDiscount = false
+        let hasSiblingDiscount = false;
         let clientReleased = false;
         const client = await pool.connect();
 
         try {
-          await pool.query("BEGIN");
+          await pool.query('BEGIN');
 
           /* ---------------- SESSION ---------------- */
 
@@ -97,17 +88,14 @@ export async function PUT(req: NextRequest) {
        FROM sessions
        WHERE id = $1
        FOR UPDATE`,
-            [session_id, updatingRow?.session_date ?? moment().format("YYYY-MM-DD")],
+            [session_id, updatingRow?.session_date ?? moment().format('YYYY-MM-DD')]
           );
 
           const session = sessionResult.rows?.[0];
 
           if (!session) {
-            await client.query("ROLLBACK");
-            return NextResponse.json(
-              { message: "Session not found" },
-              { status: 404 },
-            );
+            await client.query('ROLLBACK');
+            return NextResponse.json({ message: 'Session not found' }, { status: 404 });
           }
 
           /* ---------------- PLAYER ---------------- */
@@ -116,17 +104,14 @@ export async function PUT(req: NextRequest) {
             `SELECT id, square_customer_id, square_card_id
        FROM users
        WHERE id = $1`,
-            [user_id],
+            [user_id]
           );
 
           const player = playerResult.rows?.[0];
 
           if (!player) {
-            await client.query("ROLLBACK");
-            return NextResponse.json(
-              { message: "Player not found" },
-              { status: 404 },
-            );
+            await client.query('ROLLBACK');
+            return NextResponse.json({ message: 'Player not found' }, { status: 404 });
           }
 
           /* ---------------- CHECK SESSION PLAYER ---------------- */
@@ -134,77 +119,85 @@ export async function PUT(req: NextRequest) {
           const playerCheck = await client.query(
             `SELECT 1 FROM session_players
        WHERE session_id = $1 AND user_id = $2`,
-            [session_id, user_id],
+            [session_id, user_id]
           );
 
           // Existing actions created before session_date was introduced remain today-only.
-          const dailySessionDate = updatingRow?.session_date ?? moment().format("YYYY-MM-DD");
+          const dailySessionDate = updatingRow?.session_date ?? moment().format('YYYY-MM-DD');
           if (session.is_daily_payment && playerCheck.rows.length > 0) {
             const existingDailyPayment = await client.query(
               `SELECT 1 FROM payments
                WHERE session_id = $1 AND user_id = $2
                  AND session_date::date = $3::date
                LIMIT 1`,
-              [session_id, user_id, dailySessionDate],
+              [session_id, user_id, dailySessionDate]
             );
             if (existingDailyPayment.rows.length > 0) {
-              await client.query("ROLLBACK");
-              return NextResponse.json({ message: "Player is already enrolled for this date" }, { status: 409 });
+              await client.query('ROLLBACK');
+              return NextResponse.json(
+                { message: 'Player is already enrolled for this date' },
+                { status: 409 }
+              );
             }
 
             const dailyCapacity = await client.query(
               `SELECT COUNT(DISTINCT user_id) FROM payments
                WHERE session_id = $1
                  AND session_date::date = $2::date`,
-              [session_id, dailySessionDate],
+              [session_id, dailySessionDate]
             );
             if (Number(dailyCapacity.rows[0].count) >= Number(session.max_players)) {
-              await client.query("ROLLBACK");
-              return NextResponse.json({ message: "Session is full for this date" }, { status: 409 });
+              await client.query('ROLLBACK');
+              return NextResponse.json(
+                { message: 'Session is full for this date' },
+                { status: 409 }
+              );
             }
 
             if (session.comped) {
               await client.query(
                 `INSERT INTO payments (session_id, user_id, amount, status, paid_at, method, session_date)
                  VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-                [session_id, user_id, amount, "comped", new Date(), "Nil", dailySessionDate],
+                [session_id, user_id, amount, 'comped', new Date(), 'Nil', dailySessionDate]
               );
             } else {
               await client.query(
                 `INSERT INTO payments (session_id, user_id, amount, status, session_date)
                  VALUES ($1, $2, $3, $4, $5)`,
-                [session_id, user_id, amount, "pending", dailySessionDate],
+                [session_id, user_id, amount, 'pending', dailySessionDate]
               );
             }
           }
           if (session.is_daily_payment && !session.is_valid_date) {
-            await client.query("ROLLBACK");
-            return NextResponse.json({ message: "Selected date is outside the session period" }, { status: 400 });
+            await client.query('ROLLBACK');
+            return NextResponse.json(
+              { message: 'Selected date is outside the session period' },
+              { status: 400 }
+            );
           }
 
           if (playerCheck.rows.length === 0) {
             const countResult = session.is_daily_payment
               ? await client.query(
-                `SELECT COUNT(DISTINCT user_id) FROM payments
+                  `SELECT COUNT(DISTINCT user_id) FROM payments
                  WHERE session_id = $1
                    AND session_date::date = $2::date`,
-                [session_id, dailySessionDate],
-              )
-              : await client.query(
-                `SELECT COUNT(*) FROM session_players WHERE session_id = $1`,
-                [session_id],
-              );
+                  [session_id, dailySessionDate]
+                )
+              : await client.query(`SELECT COUNT(*) FROM session_players WHERE session_id = $1`, [
+                  session_id,
+                ]);
 
             const currentPlayers = Number(countResult.rows[0].count);
             const maxPlayers = Number(session.max_players);
 
             if (currentPlayers >= maxPlayers) {
-              await client.query("ROLLBACK");
+              await client.query('ROLLBACK');
               return NextResponse.json(
                 {
-                  message: "Max players added in the session can not add more",
+                  message: 'Max players added in the session can not add more',
                 },
-                { status: 409 },
+                { status: 409 }
               );
             }
 
@@ -212,7 +205,7 @@ export async function PUT(req: NextRequest) {
 
             const parent_data = await client.query(
               `SELECT parent_id FROM players WHERE user_id = $1`,
-              [user_id],
+              [user_id]
             );
 
             const parent_id = parent_data.rows[0]?.parent_id;
@@ -227,7 +220,7 @@ export async function PUT(req: NextRequest) {
                      FROM session_players
                      WHERE session_id = $2
                    )`,
-                [parent_id, session_id],
+                [parent_id, session_id]
               );
 
               const siblingCount = parseInt(siblings_data.rows[0].count, 10);
@@ -257,9 +250,8 @@ export async function PUT(req: NextRequest) {
             await client.query(
               `INSERT INTO session_players (session_id, user_id)
                VALUES ($1, $2)`,
-              [session_id, user_id],
+              [session_id, user_id]
             );
-
 
             if (session.comped) {
               await client.query(
@@ -270,20 +262,26 @@ export async function PUT(req: NextRequest) {
                   session_id,
                   user_id,
                   amount,
-                  "comped",
+                  'comped',
                   new Date(),
-                  "Nil",
+                  'Nil',
                   hasSiblingDiscount,
                   session.is_daily_payment ? dailySessionDate : null,
-                ],
+                ]
               );
             } else {
               await client.query(
                 `INSERT INTO payments
                  (session_id, user_id, amount, status, siblings_discount, session_date)
                  VALUES ($1, $2, $3, $4, $5, $6)`,
-                [session_id, user_id, amount, "pending", hasSiblingDiscount,
-                  session.is_daily_payment ? dailySessionDate : null],
+                [
+                  session_id,
+                  user_id,
+                  amount,
+                  'pending',
+                  hasSiblingDiscount,
+                  session.is_daily_payment ? dailySessionDate : null,
+                ]
               );
             }
           }
@@ -292,15 +290,15 @@ export async function PUT(req: NextRequest) {
             `SELECT status
        FROM payments
        WHERE session_id = $1 AND user_id = $2`,
-            [session_id, user_id],
+            [session_id, user_id]
           );
           const payment = paymentResult.rows?.[0];
 
           if (!payment) {
-            throw new Error("Payment record missing");
+            throw new Error('Payment record missing');
           }
 
-          await client.query("COMMIT");
+          await client.query('COMMIT');
           client.release();
           clientReleased = true;
           const EmailDataRaw = await pool.query(
@@ -324,25 +322,23 @@ JOIN users coach ON s.coach_id = coach.id
 LEFT JOIN players p ON p.user_id = u.id 
 WHERE se.session_id = $1
   AND se.user_id = $2;`,
-            [session_id, user_id],
+            [session_id, user_id]
           );
           const EmailData = EmailDataRaw.rows[0];
 
           if (EmailData) {
             const sessionStartDate = EmailData?.session_start_date
-              ? moment(EmailData.session_start_date).format("YYYY-MM-DD")
-              : "";
+              ? moment(EmailData.session_start_date).format('YYYY-MM-DD')
+              : '';
 
             const sessionEndData = EmailData?.session_end_date
-              ? moment(EmailData.session_end_date).format("YYYY-MM-DD")
-              : "";
+              ? moment(EmailData.session_end_date).format('YYYY-MM-DD')
+              : '';
             const adminEmailPayload = {
-              fullName: `${EmailData?.first_name || ""} ${EmailData?.last_name || ""
-                }`,
+              fullName: `${EmailData?.first_name || ''} ${EmailData?.last_name || ''}`,
               userEmail: EmailData.userEmail,
               sessionName: EmailData.sessionName,
-              coachName: `${EmailData?.coach_first_name || ""} ${EmailData?.coach_last_name || ""
-                }`,
+              coachName: `${EmailData?.coach_first_name || ''} ${EmailData?.coach_last_name || ''}`,
               sessionDate: `${sessionStartDate} - ${sessionEndData}`,
               enrollmentDate: EmailData.enrollmentDate,
             };
@@ -350,10 +346,8 @@ WHERE se.session_id = $1
             await sendAdminSessionEnrollmentEmail(adminEmailPayload);
             const coachEmailPayload = {
               coachEmail: EmailData.coachEmail,
-              coachName: `${EmailData?.coach_first_name || ""} ${EmailData?.coach_last_name || ""
-                }`,
-              playerName: `${EmailData?.first_name || ""} ${EmailData?.last_name || ""
-                }`,
+              coachName: `${EmailData?.coach_first_name || ''} ${EmailData?.coach_last_name || ''}`,
+              playerName: `${EmailData?.first_name || ''} ${EmailData?.last_name || ''}`,
               playerEmail: EmailData.useremail,
               sessionName: EmailData.sessionname,
               sessionDate: `${sessionStartDate} - ${sessionEndData}`,
@@ -361,11 +355,11 @@ WHERE se.session_id = $1
             };
 
             await sendCoachPlayerEnrollmentEmail(coachEmailPayload);
-            const playerName = `${EmailData?.first_name || ""} ${EmailData?.last_name || ""}`;
+            const playerName = `${EmailData?.first_name || ''} ${EmailData?.last_name || ''}`;
             const msg = `${playerName} enrolled in ${EmailData.sessionname}.`;
 
             const admins = await fetchAllAdmins();
-            const promises = admins.map(admin =>
+            const promises = admins.map((admin) =>
               sendInAppNotificationBackend(
                 admin.user_id,
                 msg,
@@ -380,7 +374,6 @@ WHERE se.session_id = $1
               `/portal/coach/sessions/${session_id}`
             );
             if (EmailData.parent_id) {
-
               await sendInAppNotificationBackend(
                 EmailData.parent_id,
                 msg,
@@ -393,27 +386,21 @@ WHERE se.session_id = $1
               `/portal/parent/sessions/${session_id}`
             );
 
-
             const paymentStatus = session.comped
-              ? "Comped"
-              : type === "cash"
-                ? "Paid (Cash)"
-                : "Pending";
+              ? 'Comped'
+              : type === 'cash'
+                ? 'Paid (Cash)'
+                : 'Pending';
 
-            const discountText = hasSiblingDiscount ? " (Sibling discount)" : "";
+            const discountText = hasSiblingDiscount ? ' (Sibling discount)' : '';
 
             const paymentMsg = `${playerName} payment for ${EmailData.sessionname} ${paymentStatus} - $${amount}${discountText}.`;
 
-            const promises1 = admins.map(admin =>
-              sendInAppNotificationBackend(
-                admin.user_id,
-                paymentMsg,
-                `/portal/admin/payments/`
-              )
+            const promises1 = admins.map((admin) =>
+              sendInAppNotificationBackend(admin.user_id, paymentMsg, `/portal/admin/payments/`)
             );
             await Promise.all(promises1);
             if (EmailData.parent_id) {
-
               await sendInAppNotificationBackend(
                 EmailData.parent_id,
                 paymentMsg,
@@ -425,26 +412,23 @@ WHERE se.session_id = $1
               paymentMsg,
               `/portal/parent/sessions/${session_id}`
             );
-
           }
         } catch (error: any) {
-          await client.query("ROLLBACK");
-          console.log("Error:", error);
+          await client.query('ROLLBACK');
+          console.log('Error:', error);
           return NextResponse.json(
             {
               message:
-                error?.response?.data?.message ||
-                error?.message ||
-                "Failed to process payment",
+                error?.response?.data?.message || error?.message || 'Failed to process payment',
             },
-            { status: 500 },
+            { status: 500 }
           );
         } finally {
           if (!clientReleased) client.release();
         }
       }
 
-      if (type === "cash") {
+      if (type === 'cash') {
         const ret = await pool.query(
           `
           UPDATE payments
@@ -470,25 +454,25 @@ WHERE se.session_id = $1
             updatingRow?.user_id,
             updatingRow?.session_id,
             updatingRow?.session_date,
-          ],
+          ]
         );
 
         await sendPaymentReciept(ret.rows[0]);
       }
 
-      await TriggerFirebaseApprovals("user");
-      await TriggerFirebaseApprovals("admin");
+      await TriggerFirebaseApprovals('user');
+      await TriggerFirebaseApprovals('admin');
       return new Response(
         JSON.stringify({
-          message: "Status updated successfully",
+          message: 'Status updated successfully',
           data: result.rows[0],
         }),
-        { status: 200 },
+        { status: 200 }
       );
     }
   } catch (error) {
-    console.error("PUT /front-desk error:", error);
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
+    console.error('PUT /front-desk error:', error);
+    return new Response(JSON.stringify({ error: 'Internal server error' }), {
       status: 500,
     });
   }

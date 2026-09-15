@@ -1,30 +1,27 @@
-"use client"
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import Image from "next/image";
-import Link from "next/link";
+'use client';
+import Image from 'next/image';
+import RegisterNow from './register-now';
 
-export default function GalleryPage(){
+export default function GalleryPage() {
   return (
     <div className="py-16 sm:py-20 relative">
       <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
-
         <div className="flex flex-col items-center text-center px-4 sm:px-6 lg:px-0 mt-10">
           <p className="text-2xl sm:text-3xl md:text-4xl font-semibold mb-4">
             Our community is at the heart of everything we do.
           </p>
           <p className="text-[#B3B3B3] text-sm sm:text-base md:text-lg max-w-2xl">
-            Explore images of our state-of-the-art facilities, high-performance training sessions, and exciting events.
+            Explore images of our state-of-the-art facilities, high-performance training sessions,
+            and exciting events.
           </p>
         </div>
-
 
         <div className="columns-1 sm:columns-2 lg:columns-3 py-10 md:py-20 gap-4">
           {images.map((item, ind) => (
             <div key={ind} className="mb-4 break-inside-avoid relative w-full">
               <Image
                 src={item.src}
-                alt={"image"}
+                alt={'image'}
                 width={item.width}
                 height={item.height}
                 className="w-full h-auto object-cover rounded-[8px]"
@@ -34,117 +31,30 @@ export default function GalleryPage(){
         </div>
       </div>
 
-      <div className="relative flex h-[30rem] sm:h-[35rem] md:h-[40rem] w-full items-center justify-center bg-white dark:bg-black overflow-hidden">
-
-        {/* Top 3D grid */}
-        <div
-          className={cn(
-            "absolute inset-[-30%]",
-            "[background-size:40px_40px]",
-            "[background-image:linear-gradient(to_right,#e4e4e7_1px,transparent_1px),linear-gradient(to_bottom,#e4e4e7_1px,transparent_1px)]",
-            "dark:[background-image:linear-gradient(to_right,#262626_1px,transparent_1px),linear-gradient(to_bottom,#262626_1px,transparent_1px)]",
-            "[transform:perspective(1200px)_rotateX(-70deg)_scale(1.2)]",
-            "origin-center opacity-100"
-          )}
-        />
-
-        {/* Top green glow */}
-        <div
-          className="pointer-events-none absolute inset-x-0 top-0 h-32 sm:h-40 md:h-50"
-          style={{
-            background: 'radial-gradient(ellipse at top, rgba(211, 251, 32, 0.5) 0%, rgba(0, 255, 128, 0) 80%)',
-            zIndex: 10,
-          }}
-        />
-
-        {/* Bottom 3D grid */}
-        <div
-          className={cn(
-            "absolute inset-[-30%]",
-            "[background-size:40px_40px]",
-            "[background-image:linear-gradient(to_right,#e4e4e7_1px,transparent_1px),linear-gradient(to_bottom,#e4e4e7_1px,transparent_1px)]",
-            "dark:[background-image:linear-gradient(to_right,#262626_1px,transparent_1px),linear-gradient(to_bottom,#262626_1px,transparent_1px)]",
-            "[transform:perspective(1200px)_rotateX(70deg)_scale(1.2)]",
-            "origin-center opacity-100"
-          )}
-        />
-
-        {/* Bottom green glow */}
-        <div
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-32 sm:h-40 md:h-50"
-          style={{
-            background: 'radial-gradient(ellipse at bottom, rgba(211, 251, 32, 0.5) 0%, rgba(0, 255, 128, 0) 80%)',
-            zIndex: 10,
-          }}
-        />
-
-        {/* Center fade overlay */}
-        <div className="pointer-events-none absolute inset-0 bg-white [mask-image:radial-gradient(ellipse_at_center,black_20%,transparent_70%)] dark:bg-black" />
-
-        {/* Content */}
-        <div className="relative z-20 flex flex-col gap-6 sm:gap-8 items-center justify-center px-4 text-center">
-          <p className="font-bold text-3xl sm:t ext-4xl md:text-6xl">
-            Visit Our Facility
-          </p>
-          <div className="flex flex-col items-center justify-center px-2">
-            <p className="text-[#B3B3B3] mb-2 sm:mb-2 max-w-md sm:max-w-3xl text-center text-sm">
-              Interested in seeing our facility in person? Schedule a tour or come watch a training session.
-            </p>
-            <p className="text-[#B3B3B3] mb-2 sm:mb-2 max-w-md sm:max-w-3xl text-center text-sm">
-              Address: <span className="text-white">302 High St, Metuchen, NJ 08840</span>
-            </p>
-
-            <p className="text-[#B3B3B3] mb-2 sm:mb-2 max-w-md sm:max-w-3xl text-center text-sm">
-              Phone: <span className="text-white">
-                <a className="cursor-pointer underline" href="tel:7325159300">
-                  732-515-9300
-                </a>
-
-              </span>
-            </p>
-
-
-            <Button
-              style={{
-                background: 'radial-gradient(circle, rgba(255, 255, 255, 0.24) 0%, rgba(255, 255, 255, 0) 100%)',
-                borderColor: 'rgba(255, 255, 255, 0.2)',
-              }}
-              className="text-white w-36 sm:w-40 h-10 mt-5"
-            >
-              <Link href={"portal/auth"}>
-              Register Now
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </div>
-
+      <RegisterNow />
     </div>
-  )
+  );
 }
 const images = [
-  { src: "/images/gallery/pic 1.JPG", width: 320, height: 174 },
-  { src: "/images/gallery/pic 2.JPG", width: 320, height: 212 },
-  { src: "/images/gallery/pic 3.JPG", width: 320, height: 212 },
-  { src: "/images/gallery/pic 4.JPG", width: 320, height: 180 },
-  { src: "/images/gallery/pic 5.JPG", width: 320, height: 200 },
-  { src: "/images/gallery/pic 6.JPG", width: 320, height: 190 },
-  { src: "/images/gallery/pic 7.JPG", width: 320, height: 210 },
-  { src: "/images/gallery/pic 8.JPG", width: 320, height: 175 },
-  { src: "/images/gallery/pic 9.JPG", width: 320, height: 220 },
-  { src: "/images/gallery/pic 10.JPG", width: 320, height: 185 },
-  { src: "/images/gallery/pic 11.JPG", width: 320, height: 195 },
-  { src: "/images/gallery/pic 12.JPG", width: 320, height: 200 },
-  { src: "/images/gallery/pic 13.JPG", width: 320, height: 200 },
-  { src: "/images/gallery/pic 14.JPG", width: 320, height: 175 },
+  { src: '/images/gallery/pic 1.JPG', width: 320, height: 174 },
+  { src: '/images/gallery/pic 2.JPG', width: 320, height: 212 },
+  { src: '/images/gallery/pic 3.JPG', width: 320, height: 212 },
+  { src: '/images/gallery/pic 4.JPG', width: 320, height: 180 },
+  { src: '/images/gallery/pic 5.JPG', width: 320, height: 200 },
+  { src: '/images/gallery/pic 6.JPG', width: 320, height: 190 },
+  { src: '/images/gallery/pic 7.JPG', width: 320, height: 210 },
+  { src: '/images/gallery/pic 8.JPG', width: 320, height: 175 },
+  { src: '/images/gallery/pic 9.JPG', width: 320, height: 220 },
+  { src: '/images/gallery/pic 10.JPG', width: 320, height: 185 },
+  { src: '/images/gallery/pic 11.JPG', width: 320, height: 195 },
+  { src: '/images/gallery/pic 12.JPG', width: 320, height: 200 },
+  { src: '/images/gallery/pic 13.JPG', width: 320, height: 200 },
+  { src: '/images/gallery/pic 14.JPG', width: 320, height: 175 },
 
-  { src: "/images/gallery/pic 15.JPG", width: 320, height: 200 },
-  { src: "/images/gallery/pic 16.JPG", width: 320, height: 190 },
+  { src: '/images/gallery/pic 15.JPG', width: 320, height: 200 },
+  { src: '/images/gallery/pic 16.JPG', width: 320, height: 190 },
 
-  { src: "/images/gallery/pic 17.JPG", width: 320, height: 200 },
-  { src: "/images/gallery/pic 18.JPG", width: 320, height: 175 },
-  { src: "/images/gallery/pic 19.JPG", width: 320, height: 174 },
-
-
-
+  { src: '/images/gallery/pic 17.JPG', width: 320, height: 200 },
+  { src: '/images/gallery/pic 18.JPG', width: 320, height: 175 },
+  { src: '/images/gallery/pic 19.JPG', width: 320, height: 174 },
 ];

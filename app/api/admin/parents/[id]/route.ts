@@ -1,14 +1,10 @@
-import pool from "@/lib/db";
-import { NextRequest, NextResponse } from "next/server";
+import pool from '@/lib/db';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id: parentId } = await params;
 
   try {
-
     /* -------------------------------------------------------
        1️⃣ Parent Info
     ------------------------------------------------------- */
@@ -26,12 +22,10 @@ export async function GET(
     );
 
     if (!parentResult.rows.length) {
-      return NextResponse.json({ message: "Parent not found" }, { status: 404 });
+      return NextResponse.json({ message: 'Parent not found' }, { status: 404 });
     }
 
     const parent = parentResult.rows[0];
-
-
 
     /* -------------------------------------------------------
        2️⃣ Linked Children
@@ -55,9 +49,7 @@ export async function GET(
     );
 
     const children = childrenResult.rows;
-    const childUserIds = children.map(c => c.user_id);
-
-
+    const childUserIds = children.map((c) => c.user_id);
 
     /* -------------------------------------------------------
        3️⃣ Sessions + Coach + Player Info
@@ -101,8 +93,6 @@ export async function GET(
       sessionRows = sessionsResult.rows;
     }
 
-
-
     /* -------------------------------------------------------
        4️⃣ Payments (Total Spent)
     ------------------------------------------------------- */
@@ -116,13 +106,11 @@ export async function GET(
         FROM payments
         WHERE user_id = ANY($1) AND status = $2
         `,
-        [childUserIds, "paid"]
+        [childUserIds, 'paid']
       );
 
       paymentTotal = Number(paymentResult.rows[0].total_spent || 0);
     }
-
-
 
     /* -------------------------------------------------------
        5️⃣ Prepare Sessions Grouped
@@ -130,8 +118,7 @@ export async function GET(
 
     const sessionMap = new Map();
 
-    sessionRows.forEach(row => {
-
+    sessionRows.forEach((row) => {
       if (!sessionMap.has(row.session_id)) {
         sessionMap.set(row.session_id, {
           session_id: row.session_id,
@@ -146,42 +133,33 @@ export async function GET(
           price: row.price,
           promotion_price: row.promotion_price,
           players: [],
-          comped: row.comped
+          comped: row.comped,
         });
       }
 
       sessionMap.get(row.session_id).players.push({
         first_name: row.child_first_name,
-        last_name: row.child_last_name
+        last_name: row.child_last_name,
       });
     });
 
     const sessions = Array.from(sessionMap.values());
 
-
-
     /* -------------------------------------------------------
        6️⃣ Upcoming Sessions Count
     ------------------------------------------------------- */
 
-    const upcomingSessionsCount = sessions.filter(
-      s => s.status === "pending"
-    ).length;
-
-
+    const upcomingSessionsCount = sessions.filter((s) => s.status === 'pending').length;
 
     /* -------------------------------------------------------
        7️⃣ Child Stats (WITHOUT sessions array)
     ------------------------------------------------------- */
 
-    const childrenWithStats = children.map(child => {
-
-      const childSessions = sessionRows.filter(
-        s => s.child_id === child.user_id
-      );
+    const childrenWithStats = children.map((child) => {
+      const childSessions = sessionRows.filter((s) => s.child_id === child.user_id);
 
       const nextSession = childSessions
-        .filter(s => new Date(s.date) >= new Date())
+        .filter((s) => new Date(s.date) >= new Date())
         .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
 
       return {
@@ -189,19 +167,19 @@ export async function GET(
         total_sessions: childSessions.length,
         next_session: nextSession
           ? {
-            date: nextSession.date,
-            start_time: nextSession.start_time
-          }
-          : null
+              date: nextSession.date,
+              start_time: nextSession.start_time,
+            }
+          : null,
       };
     });
-
 
     /* -------------------------------------------------------
        8️⃣ Get payments record
     ------------------------------------------------------- */
 
-    const result = await pool.query(`
+    const result = await pool.query(
+      `
 SELECT 
     p.*,
     s.name AS session_name
@@ -214,34 +192,29 @@ SELECT
          WHERE pl.parent_id = $1
      )
   ORDER BY p.created_at DESC
-`, [parentId]);
+`,
+      [parentId]
+    );
 
     const payments = result.rows;
-
 
     return NextResponse.json({
       parent,
       stats: {
         total_linked_children: children.length,
         total_spent: paymentTotal,
-        upcoming_sessions: upcomingSessionsCount
+        upcoming_sessions: upcomingSessionsCount,
       },
       linked_childrens: childrenWithStats,
       sessions,
-      payments
+      payments,
     });
-
   } catch (error) {
-    console.error("GET Parent Detail Error:", error);
+    console.error('GET Parent Detail Error:', error);
 
-    return NextResponse.json(
-      { message: "Internal Server Error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
   }
 }
-
-
 
 export async function PUT(req: NextRequest) {
   try {
@@ -249,7 +222,7 @@ export async function PUT(req: NextRequest) {
     const { id, ...updates } = data;
 
     if (!id) {
-      return NextResponse.json({ message: "ID is required" }, { status: 400 });
+      return NextResponse.json({ message: 'ID is required' }, { status: 400 });
     }
 
     const fields: any[] = [];
@@ -263,25 +236,26 @@ export async function PUT(req: NextRequest) {
     });
 
     if (fields.length === 0) {
-      return NextResponse.json({ message: "No valid data provided for update" }, { status: 400 });
+      return NextResponse.json({ message: 'No valid data provided for update' }, { status: 400 });
     }
 
     values.push(id);
     const query = `
           UPDATE parents 
-          SET ${fields.join(", ")}
+          SET ${fields.join(', ')}
           WHERE user_id = $${values.length}
       `;
 
     await pool.query(query, values);
 
-
-    return NextResponse.json({ message: "Updated successfully" }, { status: 200 });
+    return NextResponse.json({ message: 'Updated successfully' }, { status: 200 });
   } catch (error: any) {
-    console.log("Error updating data:", error?.message);
-    return NextResponse.json({ message: error?.message || "Internal Server Error" }, { status: 500 });
+    console.log('Error updating data:', error?.message);
+    return NextResponse.json(
+      { message: error?.message || 'Internal Server Error' },
+      { status: 500 }
+    );
   }
 }
 
-
-export const revalidate = 0
+export const revalidate = 0;

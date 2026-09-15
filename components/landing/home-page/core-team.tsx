@@ -1,29 +1,21 @@
-"use client"
+'use client';
 
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem
-} from "@/components/ui/carousel"
-import { Button } from "@/components/ui/button"
-import Link from "next/link"
-import { team } from "@/components/landing/constants"
-import Image from "next/image"
+import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+import { team } from '@/components/landing/constants';
+import Image from 'next/image';
 
 export default function CoreTeam() {
-
   return (
-
     <div className="container mx-auto">
       <div className="flex justify-between flex-wrap gap-4 items-center mb-4 sm:mb-4">
         <p className="font-bold text-2xl sm:text-3xl mb-2">
           <span>Our Core </span>
           <span className="text-primary">Team</span>
         </p>
-        <Link href={"/about/coreteam"}>
-          <Button >
-            View All Coaches
-          </Button>
+        <Link href={'/about/coreteam'}>
+          <Button>View All Coaches</Button>
         </Link>
       </div>
 
@@ -34,19 +26,11 @@ export default function CoreTeam() {
       <Carousel className="w-full mt-4">
         <CarouselContent>
           {team.map((item, index) => (
-            <CarouselItem
-              key={index}
-              className="basis-full sm:basis-1/2 lg:basis-1/3 px-2"
-            >
+            <CarouselItem key={index} className="basis-full sm:basis-1/2 lg:basis-1/3 px-2">
               <div className="bg-[#141414] flex flex-col h-[420px] sm:h-[480px] md:h-[530px] rounded-t-lg overflow-hidden">
                 {/* Image */}
                 <div className="relative w-full h-2/3 overflow-hidden rounded-t-lg">
-                  <Image
-                    src={item.img}
-                    alt={item.title}
-                    fill
-                    className="object-cover"
-                  />
+                  <Image src={item.img} alt={item.title} fill className="object-cover" />
                 </div>
 
                 {/* Name & Designation */}
@@ -60,8 +44,5 @@ export default function CoreTeam() {
         </CarouselContent>
       </Carousel>
     </div>
-
-  )
+  );
 }
-
-

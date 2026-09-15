@@ -1,45 +1,41 @@
-"use client"
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { auth } from "@/lib/firebase";
-import { confirmPasswordReset } from "firebase/auth";
-import { CircleCheck, Eye, EyeOff } from "lucide-react";
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import React, { useEffect, useState } from "react";
-import { toast } from "sonner";
+'use client';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { auth } from '@/lib/firebase';
+import { confirmPasswordReset } from 'firebase/auth';
+import { CircleCheck, Eye, EyeOff } from 'lucide-react';
+import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 export default function Page() {
-
-
-  const [page, setPage] = useState<string | null>("")
-  const search = useSearchParams()
+  const [page, setPage] = useState<string | null>('');
+  const search = useSearchParams();
 
   useEffect(() => {
-    const mode = search.get("mode")
-    setPage(mode)
-  }, [search])
+    const mode = search.get('mode');
+    setPage(mode);
+  }, [search]);
 
-  return (
-    page === 'resetPassword'
-      ?
-      <PasswordResetPage />
-      :
-      <div className="w-full flex items-center justify-center py-24">
-        <h1 className="font-formula1-regular text-primary text-4xl">Invalid or broken link</h1>
-      </div>
+  return page === 'resetPassword' ? (
+    <PasswordResetPage />
+  ) : (
+    <div className="w-full flex items-center justify-center py-24">
+      <h1 className="font-formula1-regular text-primary text-4xl">Invalid or broken link</h1>
+    </div>
   );
 }
 
 const PasswordResetPage = () => {
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [validation, setValidation] = useState([false, false]);
   const [matched, setMatched] = useState(false);
   const [loading, setLoading] = useState(false);
-  const search = useSearchParams()
-  const [showPassword, setShowPassword] = useState(false)
+  const search = useSearchParams();
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     if (password.length > 7) {
@@ -82,23 +78,23 @@ const PasswordResetPage = () => {
   }, [password, confirmPassword]);
 
   async function handlePasswordCreation(e: React.FormEvent) {
-    e.preventDefault()
+    e.preventDefault();
 
     if (password !== confirmPassword) {
-      toast.error("Password do not match")
-      return
+      toast.error('Password do not match');
+      return;
     }
-    const oobCode = search.get("oobCode")
-    if (!oobCode) return
+    const oobCode = search.get('oobCode');
+    if (!oobCode) return;
 
-    setLoading(true)
+    setLoading(true);
     try {
-      await confirmPasswordReset(auth, oobCode, password)
-      setLoading(false)
-      toast.success("Password created successfully, sign in to continue")
+      await confirmPasswordReset(auth, oobCode, password);
+      setLoading(false);
+      toast.success('Password created successfully, sign in to continue');
     } catch (e: any) {
-      setLoading(false)
-      toast.error(e?.message || "Error in password creation")
+      setLoading(false);
+      toast.error(e?.message || 'Error in password creation');
     }
     // setShowSuccessfull(true);
   }
@@ -106,7 +102,6 @@ const PasswordResetPage = () => {
   return (
     <section className="min-h-screen flex items-center justify-center px-4">
       <div className="w-full max-w-md space-y-8">
-
         {/* Header */}
         <div className="text-center space-y-2">
           <h1 className="text-4xl font-bold text-primary">Reset</h1>
@@ -118,7 +113,6 @@ const PasswordResetPage = () => {
         {/* Card */}
         <div className="rounded-xl border bg-background p-6 shadow-sm">
           <form onSubmit={handlePasswordCreation} className="space-y-4">
-
             {/* Password */}
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
@@ -138,7 +132,7 @@ const PasswordResetPage = () => {
               <div className="relative">
                 <Input
                   id="confirmpassword"
-                  type={showPassword ? "text" : "password"}
+                  type={showPassword ? 'text' : 'password'}
                   placeholder="********"
                   required
                   value={confirmPassword}
@@ -159,7 +153,7 @@ const PasswordResetPage = () => {
               <div className="flex items-center gap-2">
                 <CircleCheck
                   size={16}
-                  className={validation[0] ? "text-primary" : "text-muted-foreground"}
+                  className={validation[0] ? 'text-primary' : 'text-muted-foreground'}
                 />
                 <span className="text-sm">At least 8 characters</span>
               </div>
@@ -167,7 +161,7 @@ const PasswordResetPage = () => {
               <div className="flex items-center gap-2">
                 <CircleCheck
                   size={16}
-                  className={validation[1] ? "text-primary" : "text-muted-foreground"}
+                  className={validation[1] ? 'text-primary' : 'text-muted-foreground'}
                 />
                 <span className="text-sm">Contains one number</span>
               </div>
@@ -175,7 +169,7 @@ const PasswordResetPage = () => {
 
             {/* Submit */}
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "RESETTING..." : "RESET PASSWORD"}
+              {loading ? 'RESETTING...' : 'RESET PASSWORD'}
             </Button>
           </form>
 
@@ -190,5 +184,4 @@ const PasswordResetPage = () => {
       </div>
     </section>
   );
-
-}
+};

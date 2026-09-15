@@ -1,21 +1,21 @@
-"use client";
-import CardStatus from "@/components/card-status";
-import { EditParents } from "@/components/parents/edit-parents";
-import { LinkChildrenDialog } from "@/components/parents/link-children";
-import { CreatePlayer } from "@/components/players/create-player";
-import RenderAvatar from "@/components/render-avatar";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAuth } from "@/contexts/auth-context";
-import { useIsMobile } from "@/hooks/use-mobile";
-import axios from "@/lib/axios";
-import { exportToExcel, getYear, joinNames } from "@/lib/functions";
-import { ParentDetailResponse, PaymentItemParent, SquareSavedCard } from "@/lib/types";
-import { Scrollbar } from "@radix-ui/react-scroll-area";
+'use client';
+import CardStatus from '@/components/card-status';
+import { EditParents } from '@/components/parents/edit-parents';
+import { LinkChildrenDialog } from '@/components/parents/link-children';
+import { CreatePlayer } from '@/components/players/create-player';
+import RenderAvatar from '@/components/render-avatar';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAuth } from '@/contexts/auth-context';
+import { useIsMobile } from '@/hooks/use-mobile';
+import axios from '@/lib/axios';
+import { exportToExcel, getYear, joinNames } from '@/lib/functions';
+import { ParentDetailResponse, PaymentItemParent, SquareSavedCard } from '@/lib/types';
+import { Scrollbar } from '@radix-ui/react-scroll-area';
 import {
   Banknote,
   Calendar,
@@ -29,60 +29,52 @@ import {
   Phone,
   User,
   Users,
-  UserX
-} from "lucide-react";
-import moment from "moment";
-import Link from "next/link";
-import { ReactNode, useEffect, useState } from "react";
-import { IoIosPin } from "react-icons/io";
-import { IoCalendarClear } from "react-icons/io5";
-import PaymentMethodSteps from "../square/payment-method-steps";
-import { Spinner } from "../ui/spinner";
-
-
-
-
-
+  UserX,
+} from 'lucide-react';
+import moment from 'moment';
+import Link from 'next/link';
+import { ReactNode, useEffect, useState } from 'react';
+import { IoIosPin } from 'react-icons/io';
+import { IoCalendarClear } from 'react-icons/io5';
+import PaymentMethodSteps from '../square/payment-method-steps';
+import { Spinner } from '../ui/spinner';
 
 export default function MainParentPage({
   id,
   back,
-  admin = false
+  admin = false,
 }: {
   id: string | number | undefined;
   back?: ReactNode;
   admin?: boolean;
 }) {
   const [data, setData] = useState<ParentDetailResponse | undefined>();
-  const [tab, setTab] = useState("linked");
+  const [tab, setTab] = useState('linked');
   const isMobile = useIsMobile();
   const [loading, setLoading] = useState(false);
-  const [dataLoading, setDataLoading] = useState(true)
-  const { user } = useAuth()
-  const [cardInformation, setCardInformation] = useState<SquareSavedCard | undefined>()
-
+  const [dataLoading, setDataLoading] = useState(true);
+  const { user } = useAuth();
+  const [cardInformation, setCardInformation] = useState<SquareSavedCard | undefined>();
 
   useEffect(() => {
     if (id && user?.id) {
       fetchData();
-      fetchCardInformation()
+      fetchCardInformation();
     }
   }, [id, user]);
 
   async function fetchCardInformation() {
     const result = await axios.get(`/user/card?id=${id}`);
-    setCardInformation(result.data)
+    setCardInformation(result.data);
   }
 
   const fetchData = async () => {
-    setDataLoading(true)
+    setDataLoading(true);
     try {
-
       const result = await axios.get(`/admin/parents/${id}`);
-      setData(result.data)
-
+      setData(result.data);
     } finally {
-      setDataLoading(false)
+      setDataLoading(false);
     }
   };
 
@@ -103,33 +95,26 @@ export default function MainParentPage({
             status,
           },
         };
-      })
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  function handleExport(payments: PaymentItemParent[] | undefined, fileName = "payments.xlsx") {
+  function handleExport(payments: PaymentItemParent[] | undefined, fileName = 'payments.xlsx') {
     if (!payments || payments.length === 0) return;
 
-    const headers = [
-      "Session Name",
-      "Status",
-      "Amount",
-      "Created At",
-      "Method",
-      "Transaction ID",
-    ];
+    const headers = ['Session Name', 'Status', 'Amount', 'Created At', 'Method', 'Transaction ID'];
 
     const rows: string[][] = payments.map((item) => [
-      item.session_name || "N/A",
+      item.session_name || 'N/A',
       item.status,
-      item.status === "refunded"
+      item.status === 'refunded'
         ? `-${Number(item.amount || 0).toFixed(2)}`
         : `$${Number(item.amount || 0).toFixed(2)}`,
-      item.created_at ? moment(item.created_at).format("YYYY-MM-DD") : "N/A",
-      item.method || "N/A",
-      item.transaction_id || "Nil",
+      item.created_at ? moment(item.created_at).format('YYYY-MM-DD') : 'N/A',
+      item.method || 'N/A',
+      item.transaction_id || 'Nil',
     ]);
 
     return exportToExcel(headers, rows, fileName);
@@ -141,12 +126,9 @@ export default function MainParentPage({
         {back}
         <Skeleton className="h-[200px] w-full bg-secondary rounded-sm" />
         <Skeleton className="h-[300px] w-full bg-secondary rounded-sm" />
-
       </div>
-    )
+    );
   }
-
-
 
   return (
     <div className="flex flex-col w-full gap-6">
@@ -157,12 +139,9 @@ export default function MainParentPage({
           <div className="w-full flex justify-between flex-wrap gap-4">
             <div className="flex flex-col gap-2">
               <span className="flex gap-2 text-xl items-center">
-                {joinNames([data?.parent?.first_name, data?.parent?.last_name])}{" "}
+                {joinNames([data?.parent?.first_name, data?.parent?.last_name])}{' '}
                 <span>
-                  <CardStatus
-                    value={data?.parent?.status || ""}
-                    icon={true}
-                  />
+                  <CardStatus value={data?.parent?.status || ''} icon={true} />
                 </span>
               </span>
               <div className="text-[#D1D5DC] text-xs flex flex-col gap-2">
@@ -179,62 +158,64 @@ export default function MainParentPage({
                   <MapPin size={14} /> {data?.parent?.zip_code}
                 </span>
                 <span className="inline-flex gap-2">
-                  <IoCalendarClear size={14} /> Member since{" "}
-                  {data?.parent?.created_at && moment(new Date(data.parent.created_at)).format("YYYY-MM-DD")}
+                  <IoCalendarClear size={14} /> Member since{' '}
+                  {data?.parent?.created_at &&
+                    moment(new Date(data.parent.created_at)).format('YYYY-MM-DD')}
                 </span>
               </div>
             </div>
-            {data && <div className="flex gap-4 flex-wrap">
-              <EditParents parent_id={data?.parent?.id} data={{
-                first_name: data?.parent?.first_name,
-                last_name: data?.parent?.last_name,
-                phone_no: data?.parent?.phone_no,
-                location: data?.parent?.location,
-                zip_code: data?.parent?.zip_code || ""
-              }}
-                onRefresh={fetchData} />
-              {admin && (
-                <>
-                  {/* <Button>
+            {data && (
+              <div className="flex gap-4 flex-wrap">
+                <EditParents
+                  parent_id={data?.parent?.id}
+                  data={{
+                    first_name: data?.parent?.first_name,
+                    last_name: data?.parent?.last_name,
+                    phone_no: data?.parent?.phone_no,
+                    location: data?.parent?.location,
+                    zip_code: data?.parent?.zip_code || '',
+                  }}
+                  onRefresh={fetchData}
+                />
+                {admin && (
+                  <>
+                    {/* <Button>
                     <Send /> Send Reminder
                   </Button> */}
 
-                  {data?.parent?.status === "active" ? (
-                    <Button
-                      variant="destructive"
-                      onClick={() => setStatus("inactive")}
-                    >
-                      {loading ? (
-                        <>
-                          <Spinner className="text-black" />
-                          Disabling...
-                        </>
-                      ) : (
-                        <>
-                          <UserX className="h-4 w-4" />
-                          Disable
-                        </>
-                      )}
-                    </Button>
-                  ) : (
-                    <Button onClick={() => setStatus("active")}>
-                      {loading ? (
-                        <>
-                          <Spinner className="text-black" />
-                          Activating...
-                        </>
-                      ) : (
-                        <>
-                          <User className="h-4 w-4" />
-                          Activate
-                        </>
-                      )}
-                    </Button>
-                  )}
-                </>
-              )}
-
-            </div>}
+                    {data?.parent?.status === 'active' ? (
+                      <Button variant="destructive" onClick={() => setStatus('inactive')}>
+                        {loading ? (
+                          <>
+                            <Spinner className="text-black" />
+                            Disabling...
+                          </>
+                        ) : (
+                          <>
+                            <UserX className="h-4 w-4" />
+                            Disable
+                          </>
+                        )}
+                      </Button>
+                    ) : (
+                      <Button onClick={() => setStatus('active')}>
+                        {loading ? (
+                          <>
+                            <Spinner className="text-black" />
+                            Activating...
+                          </>
+                        ) : (
+                          <>
+                            <User className="h-4 w-4" />
+                            Activate
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
           </div>
           <div className="mt-4 flex w-full justify-between flex-wrap gap-4">
             <HeaderCard
@@ -289,33 +270,31 @@ export default function MainParentPage({
             setTab(v);
           }}
         >
-          <ScrollArea
-            className={`overflow-x-auto ${isMobile && "max-w-[calc(100vw-64px)]"}`}
-          >
+          <ScrollArea className={`overflow-x-auto ${isMobile && 'max-w-[calc(100vw-64px)]'}`}>
             <TabsList className="bg-transparent relative flex gap-2">
-              {["linked", "history", "payment", "method"].map((t) => (
+              {['linked', 'history', 'payment', 'method'].map((t) => (
                 <TabsTrigger
                   key={t}
                   value={t}
                   className="h-9 px-4 text-[12px] leading-tight tracking-tight"
                 >
-                  {t === "linked" && (
+                  {t === 'linked' && (
                     <div className="flex gap-2 items-center py-2">
                       <Users /> Linked Children
                     </div>
                   )}
-                  {t === "history" && (
+                  {t === 'history' && (
                     <div className="flex gap-2 items-center py-2">
                       <Calendar /> Booking History
                     </div>
                   )}
-                  {t === "payment" && (
+                  {t === 'payment' && (
                     <div className="flex gap-2 items-center py-2">
                       <CreditCard /> Payment History
                     </div>
                   )}
 
-                  {t === "method" && (
+                  {t === 'method' && (
                     <div className="flex gap-2 items-center py-2">
                       <Banknote /> Payment Method
                     </div>
@@ -330,90 +309,115 @@ export default function MainParentPage({
           <TabsContent value="linked">
             <div className="flex gap-4 p-4 justify-end">
               <LinkChildrenDialog parent_id={id as string} onSuccess={fetchData} />
-              <CreatePlayer parent_id={id as string} onRefresh={fetchData} placeholder="Add Child" />
+              <CreatePlayer
+                parent_id={id as string}
+                onRefresh={fetchData}
+                placeholder="Add Child"
+              />
             </div>
 
             <div className="flex w-full justify-between gap-4 p-2 flex-wrap">
-              {data?.linked_childrens && data?.linked_childrens?.map((item) => (
-                <Card key={item.user_id} className="rounded-[10px] bg-[#1A1A1A] border-[#3A3A3A] flex flex-1">
-                  <CardContent className="space-y-4">
-                    <div className="flex gap-4 items-center">
-                      <RenderAvatar className="h-12 w-12" fallback={joinNames([item.first_name, item.last_name])} img={item.picture} />
-                      <div>
-                        <Link href={`/portal/parent/dashboard/${item.user_id}`} className="hover:underline">
-                          <div className="text-lg text-white">{joinNames([item.first_name, item.last_name])}</div></Link>
-                        <div className="text-muted-foreground">
-                          Age {getYear(item.birth_date)} - {item.skill_level}
+              {data?.linked_childrens &&
+                data?.linked_childrens?.map((item) => (
+                  <Card
+                    key={item.user_id}
+                    className="rounded-[10px] bg-[#1A1A1A] border-[#3A3A3A] flex flex-1"
+                  >
+                    <CardContent className="space-y-4">
+                      <div className="flex gap-4 items-center">
+                        <RenderAvatar
+                          className="h-12 w-12"
+                          fallback={joinNames([item.first_name, item.last_name])}
+                          img={item.picture}
+                        />
+                        <div>
+                          <Link
+                            href={`/portal/parent/dashboard/${item.user_id}`}
+                            className="hover:underline"
+                          >
+                            <div className="text-lg text-white">
+                              {joinNames([item.first_name, item.last_name])}
+                            </div>
+                          </Link>
+                          <div className="text-muted-foreground">
+                            Age {getYear(item.birth_date)} - {item.skill_level}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <Separator />
-                    <div className="flex w-full justify-between">
-                      <div className="text-white">Next Session:</div>
-                      <div className="text-muted-foreground">
-                        {item?.next_session && `${moment(new Date(item?.next_session?.date)).format("YYYY-MM-DD")} ${item.next_session?.start_time}`}
+                      <Separator />
+                      <div className="flex w-full justify-between">
+                        <div className="text-white">Next Session:</div>
+                        <div className="text-muted-foreground">
+                          {item?.next_session &&
+                            `${moment(new Date(item?.next_session?.date)).format('YYYY-MM-DD')} ${item.next_session?.start_time}`}
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="flex w-full justify-between">
-                      <div className="text-white">Total Sessions:</div>
-                      <div className="text-muted-foreground">{item.total_sessions}</div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-
+                      <div className="flex w-full justify-between">
+                        <div className="text-white">Total Sessions:</div>
+                        <div className="text-muted-foreground">{item.total_sessions}</div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
             </div>
           </TabsContent>
 
           <TabsContent value="history" className="space-y-4 p-2">
-            {data?.sessions && data?.sessions?.map((item) => (
-              <div
-                key={item.session_id}
-                className="bg-[#1A1A1A] w-full rounded-[8px] p-4 space-y-4"
-              >
-                <div className="flex w-full justify-between items-start">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[#F3F4F6]">{item.name}</span>
-                      <CardStatus value={item.status} />
-                      {item.comped && <CardStatus value={"comped"} />}
+            {data?.sessions &&
+              data?.sessions?.map((item) => (
+                <div
+                  key={item.session_id}
+                  className="bg-[#1A1A1A] w-full rounded-[8px] p-4 space-y-4"
+                >
+                  <div className="flex w-full justify-between items-start">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[#F3F4F6]">{item.name}</span>
+                        <CardStatus value={item.status} />
+                        {item.comped && <CardStatus value={'comped'} />}
+                      </div>
+                      <div className="text-muted-foreground text-xs flex items-center gap-2">
+                        <Calendar size={14} />{' '}
+                        {item.date && moment(new Date(item.date)).format('YYYY-MM-DD')}{' '}
+                        <Clock size={14} /> {item.start_time} - {item.end_time}
+                      </div>
                     </div>
-                    <div className="text-muted-foreground text-xs flex items-center gap-2">
-                      <Calendar size={14} /> {item.date && moment(new Date(item.date)).format("YYYY-MM-DD")} <Clock size={14} />{" "}
-                      {item.start_time} - {item.end_time}
+                    <div className="text-[#F3F4F6]">
+                      ${item?.apply_promotion ? item?.promotion_price : item?.price}
                     </div>
                   </div>
-                  <div className="text-[#F3F4F6]">${item?.apply_promotion ? item?.promotion_price : item?.price}</div>
-                </div>
 
-                <Separator className="my-2" />
+                  <Separator className="my-2" />
 
-                <div className="grid grid-cols-2 text-[#F3F4F6] text-xs max-w-md">
-                  <span>Coach: {joinNames([item.coach_first_name, item.coach_last_name])}</span>
-                  <div className="inline-flex items-start gap-1 flex-wrap">
-                    <Dot size={16} className="mt-[2px]" />
-                    <span className="font-medium">Child:</span>
-                    <span className="flex flex-wrap gap-1">
-                      {item?.players?.map((p, i) => (
-                        <span key={i}>
-                          {i > 0 && ", "}
-                          {joinNames([p.first_name, p.last_name])}
-                        </span>
-                      ))}
-                    </span>
+                  <div className="grid grid-cols-2 text-[#F3F4F6] text-xs max-w-md">
+                    <span>Coach: {joinNames([item.coach_first_name, item.coach_last_name])}</span>
+                    <div className="inline-flex items-start gap-1 flex-wrap">
+                      <Dot size={16} className="mt-[2px]" />
+                      <span className="font-medium">Child:</span>
+                      <span className="flex flex-wrap gap-1">
+                        {item?.players?.map((p, i) => (
+                          <span key={i}>
+                            {i > 0 && ', '}
+                            {joinNames([p.first_name, p.last_name])}
+                          </span>
+                        ))}
+                      </span>
+                    </div>
                   </div>
-
                 </div>
-              </div>
-            ))}
+              ))}
             <div></div>
           </TabsContent>
 
           <TabsContent value="payment" className="space-y-4 p-2">
             <div className="flex gap-4 flex-wrap justify-between items-center">
               <div />
-              <Button onClick={() => handleExport(data?.payments)} variant={"outline"} className="bg-black">
+              <Button
+                onClick={() => handleExport(data?.payments)}
+                variant={'outline'}
+                className="bg-black"
+              >
                 <Download /> Export
               </Button>
             </div>
@@ -424,14 +428,10 @@ export default function MainParentPage({
                   <div className="flex justify-between gap-2 flex-wrap">
                     <div className="flex gap-4 items-center text-sm">
                       <p>{item?.session_name}</p>
-                      <CardStatus
-                        value={item?.status}
-                      />
+                      <CardStatus value={item?.status} />
                     </div>
-                    <p
-                      className={`text-md ${item?.status === "refunded" && "text-danger-text"}`}
-                    >
-                      {item?.status === "refunded"
+                    <p className={`text-md ${item?.status === 'refunded' && 'text-danger-text'}`}>
+                      {item?.status === 'refunded'
                         ? `-$${Number(item?.amount || 0).toFixed(0)}`
                         : `$${Number(item?.amount || 0).toFixed(0)}`}
                     </p>
@@ -440,7 +440,9 @@ export default function MainParentPage({
                   <div className="flex gap-2 items-center text-xs text-muted-foreground flex-wrap">
                     <div className="flex gap-2">
                       <Calendar size={14} />
-                      <p>{item?.created_at && moment(new Date(item.created_at)).format("YYYY-MM-DD")}</p>
+                      <p>
+                        {item?.created_at && moment(new Date(item.created_at)).format('YYYY-MM-DD')}
+                      </p>
                     </div>
                     <div className="flex gap-2">
                       <CreditCard size={14} />
@@ -448,7 +450,7 @@ export default function MainParentPage({
                     </div>
                     <div className="flex gap-2">
                       <p>Receipt: </p>
-                      <p>{item?.transaction_id || "Nil"}</p>
+                      <p>{item?.transaction_id || 'Nil'}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -457,9 +459,11 @@ export default function MainParentPage({
           </TabsContent>
 
           <TabsContent value="method" className="space-y-4 p-2">
-
-            <PaymentMethodSteps id={data?.parent?.id} data={cardInformation} onRefresh={fetchCardInformation} />
-
+            <PaymentMethodSteps
+              id={data?.parent?.id}
+              data={cardInformation}
+              onRefresh={fetchCardInformation}
+            />
           </TabsContent>
         </Tabs>
       </div>
@@ -467,11 +471,7 @@ export default function MainParentPage({
   );
 }
 
-
-
 const RenderCardDetail = ({ data }: { data: SquareSavedCard | undefined }) => {
-
-
   return (
     <Card className="rounded-[10px] bg-[#1A1A1A] border-[#3A3A3A] sm:w-[250px] w-full">
       <CardContent>
@@ -480,18 +480,20 @@ const RenderCardDetail = ({ data }: { data: SquareSavedCard | undefined }) => {
             <CreditCard className="text-active-text" size={20} />
           </div>
           <div>
-            <div className="text-lg text-white">{data?.last4 ? `**** ${data?.last4}` : "NA"}</div>
-            <div className="text-muted-foreground">{data?.expMonth ? `Exp:${data?.expMonth}/${data?.expYear}` : "NA"}</div>
+            <div className="text-lg text-white">{data?.last4 ? `**** ${data?.last4}` : 'NA'}</div>
+            <div className="text-muted-foreground">
+              {data?.expMonth ? `Exp:${data?.expMonth}/${data?.expYear}` : 'NA'}
+            </div>
           </div>
         </div>
       </CardContent>
     </Card>
-  )
-}
+  );
+};
 
 const HeaderCard = ({
-  title = "",
-  description = "",
+  title = '',
+  description = '',
   icon = null,
 }: {
   title: string;
@@ -512,4 +514,3 @@ const HeaderCard = ({
     </Card>
   );
 };
-

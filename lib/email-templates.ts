@@ -1,10 +1,17 @@
-import pool from "./db";
-import { sendSingleEmail } from "./notification-service";
+import pool from './db';
+import { sendSingleEmail } from './notification-service';
 
-export const sendNewJoiningEmail = async ({ email, fullName, password }: { email: string, fullName: string, password: string }): Promise<void> => {
-
+export const sendNewJoiningEmail = async ({
+  email,
+  fullName,
+  password,
+}: {
+  email: string;
+  fullName: string;
+  password: string;
+}): Promise<void> => {
   try {
-    const subject = "Your Account Has Been Created – Advanced Physical and Technical Training";
+    const subject = 'Your Account Has Been Created – Advanced Physical and Technical Training';
 
     const message = `
 <!DOCTYPE html>
@@ -55,10 +62,8 @@ export const sendNewJoiningEmail = async ({ email, fullName, password }: { email
 
     await sendSingleEmail(message, subject, email);
   } catch (error: any) {
-    console.log(error?.message)
+    console.log(error?.message);
   }
-
-
 };
 
 export const sendPaymentReceiptEmail = async ({
@@ -69,14 +74,14 @@ export const sendPaymentReceiptEmail = async ({
   sessionName,
   paymentDate,
 }: {
-  email: string,
-  fullName: string,
-  amount: string,
-  paymentId: string,
-  sessionName: string,
-  paymentDate: string,
+  email: string;
+  fullName: string;
+  amount: string;
+  paymentId: string;
+  sessionName: string;
+  paymentDate: string;
 }): Promise<void> => {
-  const subject = "Payment Receipt – Advanced Physical and Technical Training";
+  const subject = 'Payment Receipt – Advanced Physical and Technical Training';
 
   const message = `
 <!DOCTYPE html>
@@ -130,7 +135,6 @@ export const sendPaymentReceiptEmail = async ({
 `;
 
   await sendSingleEmail(message, subject, email);
-
 };
 
 export const sendAdminPaymentNotificationEmail = async ({
@@ -139,19 +143,18 @@ export const sendAdminPaymentNotificationEmail = async ({
   amount,
   paymentId,
   sessionName,
-  paymentMethod = "Online",
+  paymentMethod = 'Online',
   paymentDate,
 }: {
-  fullName: string,
-  userEmail: string,
-  amount: string,
-  paymentId: string,
-  sessionName: string,
-  paymentMethod: string,
-  paymentDate: string,
-
+  fullName: string;
+  userEmail: string;
+  amount: string;
+  paymentId: string;
+  sessionName: string;
+  paymentMethod: string;
+  paymentDate: string;
 }): Promise<void> => {
-  const subject = "New Payment Received – Advanced Physical and Technical Training";
+  const subject = 'New Payment Received – Advanced Physical and Technical Training';
 
   const message = `
 <!DOCTYPE html>
@@ -215,32 +218,28 @@ export const sendAdminPaymentNotificationEmail = async ({
 </html>
 `;
 
-  const allAdmins = await fetchAllAdmins()
+  const allAdmins = await fetchAllAdmins();
 
-    await Promise.all(
-      allAdmins.map(admin => {
-        if (admin.payment_receive) {
-          return sendSingleEmail(message, subject, admin.email).catch(err => console.log(err))
-        }
+  await Promise.all(
+    allAdmins.map((admin) => {
+      if (admin.payment_receive) {
+        return sendSingleEmail(message, subject, admin.email).catch((err) => console.log(err));
       }
-      )
-    );
+    })
+  );
 };
 
 export const sendAdminNewSignupEmail = async ({
-
   fullName,
   email,
-  role = "user",
+  role = 'user',
 }: {
-
-  fullName: string,
-  email: string,
-  role: string,
+  fullName: string;
+  email: string;
+  role: string;
 }): Promise<void> => {
-
   try {
-    const subject = "New User Signup – Advanced Physical and Technical Training";
+    const subject = 'New User Signup – Advanced Physical and Technical Training';
 
     const message = `
 <!DOCTYPE html>
@@ -288,31 +287,26 @@ export const sendAdminNewSignupEmail = async ({
 </html>
 `;
 
-    const allAdmins = await fetchAllAdmins()
+    const allAdmins = await fetchAllAdmins();
 
     await Promise.all(
-      allAdmins.map(admin => {
+      allAdmins.map((admin) => {
         if (admin.email_notification) {
-          return sendSingleEmail(message, subject, admin.email).catch(err => console.log(err))
+          return sendSingleEmail(message, subject, admin.email).catch((err) => console.log(err));
         }
-      }
-      )
+      })
     );
   } catch (error) {
-    console.log(error)
+    console.log(error);
   }
-
-
-
-
 };
 
 export const sendAdminSessionEnrollmentEmail = async ({
   fullName,
   userEmail,
   sessionName,
-  coachName = "Not Assigned",
-  sessionDate = "To Be Confirmed",
+  coachName = 'Not Assigned',
+  sessionDate = 'To Be Confirmed',
   enrollmentDate = new Date().toLocaleString(),
 }: {
   fullName: string;
@@ -322,13 +316,8 @@ export const sendAdminSessionEnrollmentEmail = async ({
   sessionDate?: string;
   enrollmentDate?: string;
 }): Promise<void> => {
-
   try {
-
-
-
-    const subject =
-      "New Session Enrollment – Advanced Physical and Technical Training";
+    const subject = 'New Session Enrollment – Advanced Physical and Technical Training';
 
     const message = `
 <!DOCTYPE html>
@@ -388,30 +377,26 @@ export const sendAdminSessionEnrollmentEmail = async ({
 </html>
 `;
 
-
-    const allAdmins = await fetchAllAdmins()
+    const allAdmins = await fetchAllAdmins();
 
     await Promise.all(
-      allAdmins.map(admin => {
+      allAdmins.map((admin) => {
         if (admin.new_booking) {
-          return sendSingleEmail(message, subject, admin.email).catch(err => console.log(err))
+          return sendSingleEmail(message, subject, admin.email).catch((err) => console.log(err));
         }
-      }
-      )
+      })
     );
-
   } catch (error) {
-    console.log(error)
+    console.log(error);
   }
-
 };
 export const sendCoachNewSessionEmail = async ({
   coachEmail,
   coachName,
   sessionName,
-  sessionDate = "To Be Confirmed",
-  sessionTime = "To Be Confirmed",
-  location = "To Be Announced",
+  sessionDate = 'To Be Confirmed',
+  sessionTime = 'To Be Confirmed',
+  location = 'To Be Announced',
 
   createdDate = new Date().toLocaleString(),
 }: {
@@ -423,9 +408,8 @@ export const sendCoachNewSessionEmail = async ({
   location?: string;
   createdDate?: string;
 }): Promise<void> => {
-
   try {
-    const subject = "New Session Assigned to You";
+    const subject = 'New Session Assigned to You';
 
     const message = `
 <!DOCTYPE html>
@@ -487,9 +471,8 @@ export const sendCoachNewSessionEmail = async ({
 
     await sendSingleEmail(message, subject, coachEmail);
   } catch (error) {
-    console.log(error)
+    console.log(error);
   }
-
 };
 export const sendCoachPlayerEnrollmentEmail = async ({
   coachEmail,
@@ -497,7 +480,7 @@ export const sendCoachPlayerEnrollmentEmail = async ({
   playerName,
   playerEmail,
   sessionName,
-  sessionDate = "To Be Confirmed",
+  sessionDate = 'To Be Confirmed',
   enrollmentDate = new Date().toLocaleString(),
 }: {
   coachEmail: string;
@@ -508,10 +491,8 @@ export const sendCoachPlayerEnrollmentEmail = async ({
   sessionDate?: string;
   enrollmentDate?: string;
 }): Promise<void> => {
-
   try {
-
-    const subject = "New Player Enrolled in Your Session";
+    const subject = 'New Player Enrolled in Your Session';
 
     const message = `
 <!DOCTYPE html>
@@ -573,9 +554,8 @@ export const sendCoachPlayerEnrollmentEmail = async ({
 
     await sendSingleEmail(message, subject, coachEmail);
   } catch (error) {
-    console.log(error)
+    console.log(error);
   }
-
 };
 
 export const sendPaymentReminderEmail = async ({
@@ -584,16 +564,15 @@ export const sendPaymentReminderEmail = async ({
   amount,
   sessionName,
 }: {
-  email: string,
-  fullName: string,
-  amount: string,
-  sessionName: string,
+  email: string;
+  fullName: string;
+  amount: string;
+  sessionName: string;
 }): Promise<void> => {
-
   try {
-     const subject = "Payment Reminder – Pending Payment";
+    const subject = 'Payment Reminder – Pending Payment';
 
-  const message = `
+    const message = `
 <!DOCTYPE html>
 <html>
   <head>
@@ -640,16 +619,13 @@ export const sendPaymentReminderEmail = async ({
 </html>
 `;
 
-  await sendSingleEmail(message, subject, email);
+    await sendSingleEmail(message, subject, email);
   } catch (error) {
-    console.log(error)
+    console.log(error);
   }
-
- 
 };
 
 export async function fetchAllAdmins() {
-
   const admins = await pool.query(`
   SELECT 
   u.id AS user_id,
@@ -662,8 +638,8 @@ export async function fetchAllAdmins() {
   s.sms_notification
 FROM users u
 JOIN settings s ON s.user_id = u.id
-WHERE u.role = 'admin';`)
+WHERE u.role = 'admin';`);
 
-  const allAdmins = admins.rows
-  return allAdmins
+  const allAdmins = admins.rows;
+  return allAdmins;
 }

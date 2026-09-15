@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import GradientIcon from "@/components/landing/icon-container";
-import { Trophy, User, Users } from "lucide-react";
-import Link from "next/link";
+import GradientIcon from '@/components/landing/icon-container';
+import { Trophy, User, Users } from 'lucide-react';
+import Link from 'next/link';
 
 export default function Programs() {
   return (
@@ -13,8 +13,7 @@ export default function Programs() {
             Our <span className="text-primary">Programs</span>
           </h1>
           <p className="text-sm sm:text-base text-muted-foreground text-center">
-            Comprehensive training programs designed to develop exceptional
-            soccer players
+            Comprehensive training programs designed to develop exceptional soccer players
           </p>
         </div>
 
@@ -29,22 +28,22 @@ export default function Programs() {
                 <h1 className="text-lg font-semibold">{program.title}</h1>
                 <p className="text-sm text-primary">{program.price}</p>
               </div>
-              <p className="text-sm text-muted-foreground mt-2">
-                {program.description}
-              </p>
-              {program.buttonText==="Book Online"?<Link
-                href="/portal/auth"
-                className="py-2 w-full rounded-full bg-[#CBFD0026] text-primary mt-4 hover:bg-primary hover:text-black text-center block transition"
-              >
-                {program.buttonText}
-              </Link>:
-              <Link
-                href="/contact"
-                className="py-2 w-full rounded-full bg-[#CBFD0026] text-primary mt-4 hover:bg-primary hover:text-black text-center block transition"
-              >
-                {program.buttonText}
-              </Link>
-              }
+              <p className="text-sm text-muted-foreground mt-2">{program.description}</p>
+              {program.buttonText === 'Book Online' ? (
+                <Link
+                  href="/portal/auth"
+                  className="py-2 w-full rounded-full bg-[#CBFD0026] text-primary mt-4 hover:bg-primary hover:text-black text-center block transition"
+                >
+                  {program.buttonText}
+                </Link>
+              ) : (
+                <Link
+                  href="/contact"
+                  className="py-2 w-full rounded-full bg-[#CBFD0026] text-primary mt-4 hover:bg-primary hover:text-black text-center block transition"
+                >
+                  {program.buttonText}
+                </Link>
+              )}
             </div>
           ))}
         </div>
@@ -55,59 +54,57 @@ export default function Programs() {
 
 const programs = [
   {
-    title: "Technical Training",
-    price: "$45",
+    title: 'Technical Training',
+    price: '$45',
     description:
-      "Group sessions focused on improving soccer skills, technique, and on-field decision-making.",
-    buttonText: "Book Online",
+      'Group sessions focused on improving soccer skills, technique, and on-field decision-making.',
+    buttonText: 'Book Online',
     icon: <Users className="text-[#CAFF33] size-8 relative z-10" />,
   },
   {
-    title: "Speed & Agility",
-    price: "$45",
+    title: 'Speed & Agility',
+    price: '$45',
     description:
-      "Personalized workouts to improve strength, speed, agility, and overall athletic performance",
-    buttonText: "Book Online",
+      'Personalized workouts to improve strength, speed, agility, and overall athletic performance',
+    buttonText: 'Book Online',
     icon: <User className="text-[#CAFF33] size-8 relative z-10" />,
   },
   {
-    title: "2 Hour Training",
-    price: "$69.95",
+    title: '2 Hour Training',
+    price: '$69.95',
     description:
-      "Intensive 2-hour sessions focused on improving skills, speed, and game performance.",
-    buttonText: "Book Online",
+      'Intensive 2-hour sessions focused on improving skills, speed, and game performance.',
+    buttonText: 'Book Online',
     icon: <Trophy className="text-[#CAFF33] size-8 relative z-10" />,
   },
   {
-    title: "Physical Training",
-    price: "$25",
+    title: 'Physical Training',
+    price: '$25',
     description:
-      "Focused physical training to build strength, conditioning, and athletic performance.",
-    buttonText: "Book Online",
+      'Focused physical training to build strength, conditioning, and athletic performance.',
+    buttonText: 'Book Online',
     icon: <Trophy className="text-[#CAFF33] size-8 relative z-10" />,
   },
   {
-    title: "Semi-Private Session",
-    price: "$120",
-    description:
-      "Semi-private sessions for personalized guidance in a small-group setting.",
-    buttonText: "Email to Book",
+    title: 'Semi-Private Session',
+    price: '$120',
+    description: 'Semi-private sessions for personalized guidance in a small-group setting.',
+    buttonText: 'Email to Book',
     icon: <User className="text-[#CAFF33] size-8 relative z-10" />,
   },
   {
-    title: "Private Session",
-    price: "$95",
-    description:
-      "Personalized private coaching to refine skills and reach your highest potential.",
-    buttonText: "Email to Book",
+    title: 'Private Session',
+    price: '$95',
+    description: 'Personalized private coaching to refine skills and reach your highest potential.',
+    buttonText: 'Email to Book',
     icon: <Trophy className="text-[#CAFF33] size-8 relative z-10" />,
   },
   {
-    title: "Groups of 3 or More",
-    price: "$40/Player",
+    title: 'Groups of 3 or More',
+    price: '$40/Player',
     description:
-      "Small-group training for three or more players, with focused coaching and shared development.",
-    buttonText: "Email to Book",
+      'Small-group training for three or more players, with focused coaching and shared development.',
+    buttonText: 'Email to Book',
     icon: <Users className="text-[#CAFF33] size-8 relative z-10" />,
   },
 ];

@@ -1,16 +1,15 @@
-import { sendSingleEmail } from "@/lib/notification-service";
-import { NextRequest, NextResponse } from "next/server";
+import { sendSingleEmail } from '@/lib/notification-service';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
-    const { firstName, lastName, phone, email, message } = await req.json()
-    const searchParams = req.nextUrl.searchParams
-    const type = searchParams.get("type")
+  const { firstName, lastName, phone, email, message } = await req.json();
+  const searchParams = req.nextUrl.searchParams;
+  const type = searchParams.get('type');
 
-    let typeMessage = type === "inquiry" ? "New Private Training Inquiry" : "New Support Request"
+  let typeMessage = type === 'inquiry' ? 'New Private Training Inquiry' : 'New Support Request';
 
-    try {
-
-        const htmlMessage = `
+  try {
+    const htmlMessage = `
     <div style="font-family: Arial, sans-serif; background-color: #f4f4f5; padding: 20px;">
     <div style="max-width: 600px; margin: auto; background: #ffffff; border-radius: 8px; overflow: hidden; border: 1px solid #e5e7eb;">
     
@@ -52,13 +51,15 @@ export async function POST(req: NextRequest) {
     </div>
   `;
 
-        const adminEmail = process.env.BULK_EMAIL_USER || null
-        await sendSingleEmail(htmlMessage, type === 'inquiry' ? "Inquiry" : "Support", adminEmail as string)
-        return NextResponse.json({ message: "Done" }, { status: 200 })
-    }
-
-    catch (error: any) {
-        return NextResponse.json({ message: error?.message || "Error sending email" }, { status: 500 })
-    }
+    const adminEmail = process.env.BULK_EMAIL_USER || null;
+    await sendSingleEmail(
+      htmlMessage,
+      type === 'inquiry' ? 'Inquiry' : 'Support',
+      adminEmail as string
+    );
+    return NextResponse.json({ message: 'Done' }, { status: 200 });
+  } catch (error: any) {
+    return NextResponse.json({ message: error?.message || 'Error sending email' }, { status: 500 });
+  }
 }
-export const revalidate = 0
+export const revalidate = 0;

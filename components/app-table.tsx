@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   ColumnDef,
@@ -11,26 +11,20 @@ import {
   PaginationState,
   useReactTable,
   VisibilityState,
-} from "@tanstack/react-table";
-import {
-  ChevronLeftIcon,
-  ChevronRightIcon,
-} from "lucide-react";
+} from '@tanstack/react-table';
+import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 
-import {
-  DoubleArrowLeftIcon,
-  DoubleArrowRightIcon,
-} from "@radix-ui/react-icons";
+import { DoubleArrowLeftIcon, DoubleArrowRightIcon } from '@radix-ui/react-icons';
 
-import { Button } from "@/components/ui/button";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { Button } from '@/components/ui/button';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -38,26 +32,22 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { useIsMobile } from "@/hooks/use-mobile";
-import {
-  useEffect,
-  useState
-} from "react";
-import { useSidebar } from "./ui/sidebar";
-import { Spinner } from "./ui/spinner";
+} from '@/components/ui/table';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { useEffect, useState } from 'react';
+import { useSidebar } from './ui/sidebar';
+import { Spinner } from './ui/spinner';
 
 type PageTableProps<T extends Record<string, any>> = {
   columns: ColumnDef<T>[];
   data: T[];
-  pageSizeOptions?: number[]
+  pageSizeOptions?: number[];
   disableInput?: boolean;
   onRowClick?: (row: T, event: React.MouseEvent<HTMLTableRowElement>) => void;
   loading?: boolean;
-  headerClassName?: string
-  scrollAreaWidth?: string
+  headerClassName?: string;
+  scrollAreaWidth?: string;
 };
-
 
 const PageTable = <T extends Record<string, any>>({
   columns,
@@ -65,12 +55,11 @@ const PageTable = <T extends Record<string, any>>({
   pageSizeOptions = [10, 20, 30, 40, 50],
   onRowClick,
   loading = false,
-  headerClassName = "",
-  scrollAreaWidth = ""
+  headerClassName = '',
+  scrollAreaWidth = '',
 }: PageTableProps<T>) => {
-
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(false);
   const [rowSelection, setRowSelection] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -78,16 +67,13 @@ const PageTable = <T extends Record<string, any>>({
     pageIndex: currentPage - 1,
     pageSize: pageSize,
   };
-  const { open : sidebarOpen } = useSidebar()
-
+  const { open: sidebarOpen } = useSidebar();
 
   const pageCount = Math.ceil(data.length / pageSize);
 
   const handlePaginationChange: OnChangeFn<PaginationState> = (updaterOrValue) => {
     const pagination =
-      typeof updaterOrValue === "function"
-        ? updaterOrValue(paginationState)
-        : updaterOrValue;
+      typeof updaterOrValue === 'function' ? updaterOrValue(paginationState) : updaterOrValue;
 
     setCurrentPage(pagination.pageIndex + 1);
     setPageSize(pagination.pageSize);
@@ -110,8 +96,8 @@ const PageTable = <T extends Record<string, any>>({
     },
     onPaginationChange: handlePaginationChange,
     defaultColumn: {
-      size: 200
-    }
+      size: 200,
+    },
   });
 
   const startIndex = paginationState.pageIndex * paginationState.pageSize + 1;
@@ -120,23 +106,25 @@ const PageTable = <T extends Record<string, any>>({
     data.length
   );
 
-  const isMobile = useIsMobile()
+  const isMobile = useIsMobile();
 
   useEffect(() => {
-    if(sidebarOpen){
-      setOpen(sidebarOpen)
-      return
+    if (sidebarOpen) {
+      setOpen(sidebarOpen);
+      return;
     }
-  const timer = setTimeout(() => {
-    setOpen(sidebarOpen);
-  }, 200);
+    const timer = setTimeout(() => {
+      setOpen(sidebarOpen);
+    }, 200);
 
-  return () => clearTimeout(timer);
-}, [sidebarOpen]);
+    return () => clearTimeout(timer);
+  }, [sidebarOpen]);
 
   return (
     <div className="flex flex-1 flex-col space-y-4">
-      <div className={`relative flex flex-1 flex-col ${open ? "w-[calc(100dvw-304px)]" : "w-[calc(100dvw-96px)]"} ${isMobile && "w-[calc(100vw-44px)]"} ${scrollAreaWidth}`}>
+      <div
+        className={`relative flex flex-1 flex-col ${open ? 'w-[calc(100dvw-304px)]' : 'w-[calc(100dvw-96px)]'} ${isMobile && 'w-[calc(100vw-44px)]'} ${scrollAreaWidth}`}
+      >
         <div className={`flex flex-col rounded-md border md:overflow-auto ${headerClassName}`}>
           <ScrollArea className="overflow-x-auto flex flex-1 h-[500px]">
             <Table className="relative w-full">
@@ -144,7 +132,11 @@ const PageTable = <T extends Record<string, any>>({
                 {table.getHeaderGroups().map((headerGroup) => (
                   <TableRow key={headerGroup.id} className="bg-background hover:bg-background">
                     {headerGroup.headers.map((header) => (
-                      <TableHead style={{ width: header.getSize() }} key={header.id} className="p-0 py-2">
+                      <TableHead
+                        style={{ width: header.getSize() }}
+                        key={header.id}
+                        className="p-0 py-2"
+                      >
                         {header.isPlaceholder
                           ? null
                           : flexRender(header.column.columnDef.header, header.getContext())}
@@ -160,7 +152,7 @@ const PageTable = <T extends Record<string, any>>({
                       onClick={(e) => onRowClick?.(row.original, e)}
                       className="even:bg-gray-100 dark:even:bg-[#2A2A2A] dark:text-white text-black hover:bg-inherit"
                       key={row.id}
-                      data-state={row.getIsSelected() && "selected"}
+                      data-state={row.getIsSelected() && 'selected'}
                     >
                       {row.getVisibleCells().map((cell: any) => (
                         <TableCell className="text-[12px] p-3" key={cell.id}>
@@ -180,14 +172,13 @@ const PageTable = <T extends Record<string, any>>({
                           <Spinner />
                         </div>
                       ) : (
-                        "No results."
+                        'No results.'
                       )}
                     </TableCell>
                   </TableRow>
                 )}
               </TableBody>
             </Table>
-
 
             <ScrollBar orientation="horizontal" />
           </ScrollArea>
@@ -199,14 +190,12 @@ const PageTable = <T extends Record<string, any>>({
                     Showing {startIndex} to {endIndex} of {data.length} entries
                   </>
                 ) : (
-                  "No entries found"
+                  'No entries found'
                 )}
               </div>
               <div className="flex flex-col items-center gap-4 sm:flex-row sm:gap-6 lg:gap-8">
                 <div className="flex items-center space-x-2">
-                  <p className="whitespace-nowrap text-sm font-medium">
-                    Rows per page
-                  </p>
+                  <p className="whitespace-nowrap text-sm font-medium">Rows per page</p>
                   <Select
                     value={`${paginationState.pageSize}`}
                     onValueChange={(value) => {
@@ -231,11 +220,10 @@ const PageTable = <T extends Record<string, any>>({
               <div className="flex sm:w-[250px] items-center justify-center text-sm font-medium">
                 {data.length > 0 ? (
                   <>
-                    Page{" "}
-                    {paginationState.pageIndex + 1} of {pageCount}
+                    Page {paginationState.pageIndex + 1} of {pageCount}
                   </>
                 ) : (
-                  "No pages"
+                  'No pages'
                 )}
               </div>
               <div className="flex items-center space-x-2">
@@ -283,4 +271,4 @@ const PageTable = <T extends Record<string, any>>({
     </div>
   );
 };
-export default PageTable
+export default PageTable;

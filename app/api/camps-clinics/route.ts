@@ -1,11 +1,9 @@
-import pool from "@/lib/db";
-import { NextResponse } from "next/server";
-
+import pool from '@/lib/db';
+import { NextResponse } from 'next/server';
 
 export async function GET() {
-
-    try {
-       const result = await pool.query(`
+  try {
+    const result = await pool.query(`
   SELECT
     s.id,
     s.session_type,
@@ -32,14 +30,14 @@ export async function GET() {
   ORDER BY s.date ASC
 `);
 
-const sessionsWithCounts = result.rows.map((r: any) => ({
-  ...r,
-  total_enrolled_players: Number(r.total_enrolled_players),
-  total_left: Number(r.total_left),
-}));
-        return NextResponse.json(sessionsWithCounts, { status: 200 })
-    } catch (error: any) {
-        return NextResponse.json({ message: error?.message || "Server errror" }, { status: 500 })
-    }
+    const sessionsWithCounts = result.rows.map((r: any) => ({
+      ...r,
+      total_enrolled_players: Number(r.total_enrolled_players),
+      total_left: Number(r.total_left),
+    }));
+    return NextResponse.json(sessionsWithCounts, { status: 200 });
+  } catch (error: any) {
+    return NextResponse.json({ message: error?.message || 'Server errror' }, { status: 500 });
+  }
 }
-export const revalidate = 0
+export const revalidate = 0;

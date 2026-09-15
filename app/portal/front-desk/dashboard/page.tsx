@@ -1,7 +1,5 @@
-import FrontdeskDashboard from "@/components/frontdesk/frontdesk-dashboard";
+import FrontdeskDashboard from '@/components/frontdesk/frontdesk-dashboard';
 
-
-export default function Page(){
-
-  return <FrontdeskDashboard />
+export default function Page() {
+  return <FrontdeskDashboard />;
 }

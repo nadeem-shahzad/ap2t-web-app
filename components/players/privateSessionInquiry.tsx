@@ -1,61 +1,62 @@
-"use client";
+'use client';
 
-import axios from "@/lib/axios";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
-import { Button } from "../ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle
-} from "../ui/dialog";
-import { Spinner } from "../ui/spinner";
-import { MessageSquareDot, Send } from "lucide-react";
+import axios from '@/lib/axios';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { Button } from '../ui/button';
+import { Dialog, DialogContent, DialogTitle } from '../ui/dialog';
+import { Spinner } from '../ui/spinner';
+import { MessageSquareDot, Send } from 'lucide-react';
 
-export default function PrivateSessionInquiryDialog({ email, firstName, lastName }: { email: string | undefined, firstName: string | undefined, lastName: string | undefined }) {
-  const [localEmail, setLocalEmail] = useState("")
-  const [localFirstName, setLocalFirstName] = useState("")
-  const [localLastName, setLocalLastName] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [open, setOpen] = useState(false)
+export default function PrivateSessionInquiryDialog({
+  email,
+  firstName,
+  lastName,
+}: {
+  email: string | undefined;
+  firstName: string | undefined;
+  lastName: string | undefined;
+}) {
+  const [localEmail, setLocalEmail] = useState('');
+  const [localFirstName, setLocalFirstName] = useState('');
+  const [localLastName, setLocalLastName] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    if (email) setLocalEmail(email)
-    if (firstName) setLocalFirstName(firstName)
-    if (lastName) setLocalLastName(lastName)
-  }, [email, firstName, lastName])
+    if (email) setLocalEmail(email);
+    if (firstName) setLocalFirstName(firstName);
+    if (lastName) setLocalLastName(lastName);
+  }, [email, firstName, lastName]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
-    setLoading(true)
+    setLoading(true);
 
     const formData = new FormData(e.currentTarget);
 
     const data = {
-      firstName: formData.get("firstName"),
-      lastName: formData.get("lastName"),
-      phone: formData.get("phone"),
+      firstName: formData.get('firstName'),
+      lastName: formData.get('lastName'),
+      phone: formData.get('phone'),
       email: localEmail,
-      message: formData.get("message"),
+      message: formData.get('message'),
     };
 
     try {
-      await axios.post(`/support?type=inquiry`, data)
-      toast.success("Inquiry successfully sent..");
-      setOpen(false)
+      await axios.post(`/support?type=inquiry`, data);
+      toast.success('Inquiry successfully sent..');
+      setOpen(false);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-
-  };
-
+  }
 
   return (
     <>
-
       <Button onClick={() => setOpen(true)}>
-      <Send/>  Private Training Inquiry
+        <Send /> Private Training Inquiry
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
@@ -65,7 +66,6 @@ export default function PrivateSessionInquiryDialog({ email, firstName, lastName
           <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <input
-
                 value={localFirstName}
                 onChange={(e) => setLocalFirstName(e.target.value)}
                 name="firstName"
@@ -75,7 +75,6 @@ export default function PrivateSessionInquiryDialog({ email, firstName, lastName
                 className="w-full rounded bg-neutral-900 border border-neutral-800 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-primary"
               />
               <input
-
                 value={localLastName}
                 onChange={(e) => setLocalLastName(e.target.value)}
                 name="lastName"
@@ -85,8 +84,6 @@ export default function PrivateSessionInquiryDialog({ email, firstName, lastName
                 className="w-full rounded bg-neutral-900 border border-neutral-800 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
-
-
 
             <input
               name="email"
@@ -107,7 +104,7 @@ export default function PrivateSessionInquiryDialog({ email, firstName, lastName
             />
 
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading && <Spinner className="text-white" />}  Send Message
+              {loading && <Spinner className="text-white" />} Send Message
             </Button>
           </form>
         </DialogContent>

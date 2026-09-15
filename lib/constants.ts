@@ -1,6 +1,4 @@
-
 export const admin_nav_items = [
-
   {
     title: 'Dashboard',
     url: '/portal/admin/dashboard',
@@ -88,7 +86,6 @@ export const admin_nav_items = [
 ];
 
 export const parent_nav_items = [
-
   {
     title: 'Dashboard',
     url: '/portal/parent/dashboard',
@@ -104,6 +101,13 @@ export const parent_nav_items = [
     shortcut: ['d', 'a', 's', 'h'],
   },
   {
+    title: 'Analytics',
+    url: '/portal/parent/analytics',
+    icon: 'reports',
+
+    shortcut: ['d', 'a', 's', 'h'],
+  },
+  {
     title: 'Settings',
     url: '/portal/parent/settings',
     icon: 'settings',
@@ -113,7 +117,6 @@ export const parent_nav_items = [
 ];
 
 export const player_nav_items = [
-
   {
     title: 'Dashboard',
     url: '/portal/player/dashboard',
@@ -144,18 +147,22 @@ export const player_nav_items = [
     shortcut: ['d', 'a', 's', 'h'],
   },
   {
+    title: 'Analytics',
+    url: '/portal/player/analytics',
+    icon: 'reports',
+
+    shortcut: ['d', 'a', 's', 'h'],
+  },
+  {
     title: 'Settings',
     url: '/portal/player/settings',
     icon: 'settings',
 
     shortcut: ['d', 'a', 's', 'h'],
   },
-
-  
 ];
 
 export const coach_nav_items = [
-
   {
     title: 'Dashboard',
     url: '/portal/coach/dashboard',
@@ -200,7 +207,7 @@ export const front_desk_items = [
 
     shortcut: ['d', 'a', 's', 'h'],
   },
-]
+];
 
 export const EVENT_STYLES = {
   active: {
@@ -228,7 +235,7 @@ export const EVENT_STYLES = {
     text: 'text-other-text',
     border: 'border-other-text/32',
   },
-}
+};
 
 export const DARKMODECARDSTYLE = {
   '.input-container': {
@@ -266,42 +273,37 @@ export const DARKMODECARDSTYLE = {
   },
 };
 
-
 export const SESSION_TYPE_CHART_CONFIG = {
   value: {
-    label: "Sessions",
+    label: 'Sessions',
   },
-  "Group Session": {
-    label: "Group Session",
-    color: "var(--chart-1)",
+  'Group Session': {
+    label: 'Group Session',
+    color: 'var(--chart-1)',
   },
-  "Private Session": {
-    label: "Private Session",
-    color: "var(--chart-2)",
+  'Private Session': {
+    label: 'Private Session',
+    color: 'var(--chart-2)',
   },
-  "Trial Session": {
-    label: "Trial Session",
-    color: "var(--chart-3)",
+  'Trial Session': {
+    label: 'Trial Session',
+    color: 'var(--chart-3)',
   },
-  "Fitness Session": {
-    label: "Fitness Session",
-    color: "var(--chart-4)",
+  'Fitness Session': {
+    label: 'Fitness Session',
+    color: 'var(--chart-4)',
   },
-  "Goalkeeper Session": {
-    label: "Goalkeeper Session",
-    color: "var(--chart-5)",
+  'Goalkeeper Session': {
+    label: 'Goalkeeper Session',
+    color: 'var(--chart-5)',
   },
-}
+};
 
 export const MONTHLY_SESSIONS_CONFIG = {
   value: {
-    label: "Sessions",
-    color: "var(--chart-1)",
+    label: 'Sessions',
+    color: 'var(--chart-1)',
   },
-}
+};
 
-
-export const BASE_URL = "/api"
-
-
-
+export const BASE_URL = '/api';

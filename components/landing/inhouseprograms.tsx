@@ -1,16 +1,16 @@
-"use client";
+'use client';
 
-import { Calendar, Clock, Pin, Trophy, Users, Volleyball } from "lucide-react";
-import JoinNow from "./join-now";
-import Booking from "./home-page/book.client";
-import { Card, CardContent, CardFooter } from "../ui/card";
-import GradientIcon from "./icon-container";
-import Link from "next/link";
-import { Button } from "../ui/button";
-import Image from "next/image";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { CurvedImage } from "./curved-image";
-import FlyerDialog from "./flyer-dialog";
+import { useIsMobile } from '@/hooks/use-mobile';
+import { Calendar, Clock, Pin, Trophy, Users, Volleyball } from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { Button } from '../ui/button';
+import { Card, CardContent, CardFooter } from '../ui/card';
+import { CurvedImage } from './curved-image';
+import FlyerDialog from './flyer-dialog';
+import Booking from './home-page/book.client';
+import GradientIcon from './icon-container';
+import RegisterNow from './register-now';
 
 export default function InHouseProgramsPage() {
   const mobile = useIsMobile();
@@ -26,12 +26,9 @@ export default function InHouseProgramsPage() {
 
             <div className="relative space-y-8 w-full max-w-4xl">
               <div className="flex flex-col items-center gap-4 text-center">
-                <h1 className="text-4xl sm:text-5xl font-bold">
-                  Programs at Our Facility
-                </h1>
+                <h1 className="text-4xl sm:text-5xl font-bold">Programs at Our Facility</h1>
                 <p className="text-sm text-muted max-w-xl">
-                  From private to group sessions, build skill, agility, and
-                  athletic performance.
+                  From private to group sessions, build skill, agility, and athletic performance.
                 </p>
               </div>
             </div>
@@ -46,14 +43,11 @@ export default function InHouseProgramsPage() {
 
           {/* CLASS OVERVIEW */}
           <div className="max-w-4xl space-y-4">
-            <h1 className="text-2xl sm:text-3xl font-semibold">
-              Class Overview
-            </h1>
+            <h1 className="text-2xl sm:text-3xl font-semibold">Class Overview</h1>
             <p className="text-sm sm:text-base text-muted leading-relaxed">
-              Our Agility & Quickness Drills class is built to improve your
-              athleticism by improving reaction time, directional changes, and
-              multi-directional speed. Through cutting drills, cone work, and
-              explosive reaction exercises, you'll sharpen your footwork and
+              Our Agility & Quickness Drills class is built to improve your athleticism by improving
+              reaction time, directional changes, and multi-directional speed. Through cutting
+              drills, cone work, and explosive reaction exercises, you'll sharpen your footwork and
               enhance your ability to change direction efficiently.
             </p>
           </div>
@@ -64,58 +58,49 @@ export default function InHouseProgramsPage() {
           <div className="text-center space-y-3 max-w-2xl mx-auto">
             <p className="font-bold text-3xl sm:text-4xl">In-House Events</p>
             <p className="text-[#B3B3B3] text-sm sm:text-base">
-              Comprehensive training programs designed to develop exceptional
-              soccer players
+              Comprehensive training programs designed to develop exceptional soccer players
             </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {events2
-              .filter((item) => item.title !== "Sport-Specific Technical Training")
+              .filter((item) => item.title !== 'Sport-Specific Technical Training')
+              .sort((a, b) => programOrder[a.title] - programOrder[b.title])
               .map((item, i) => (
-              <Card
-                key={i}
-                className="flex flex-col justify-between bg-[#131313] rounded-lg"
-              >
-                <CardContent className="p-6 space-y-6">
-                  <div className="flex flex-col items-center gap-4 text-center">
-                    <GradientIcon>{item.icon}</GradientIcon>
-                    <p className="font-semibold text-xl sm:text-2xl">
-                      {item.title}
-                    </p>
-                    <p className="text-[#B3B3B3] text-sm sm:text-base leading-relaxed">
-                      {item.description}
-                    </p>
-                  </div>
-
-                  <div className="space-y-3 text-sm">
-                    <div className="flex gap-4 items-center">
-                      <Pin className="text-primary" size={16} />
-                      <p>{item.area}</p>
-                      <Users className="text-primary" size={16} />
-                      <p>{item.players}</p>
+                <Card key={i} className="flex flex-col justify-between bg-[#131313] rounded-lg">
+                  <CardContent className="p-6 space-y-6">
+                    <div className="flex flex-col items-center gap-4 text-center">
+                      <GradientIcon>{item.icon}</GradientIcon>
+                      <p className="font-semibold text-xl sm:text-2xl">{item.title}</p>
+                      <p className="text-[#B3B3B3] text-sm sm:text-base leading-relaxed">
+                        {item.description}
+                      </p>
                     </div>
 
-                    <div className="flex gap-4 items-center">
-                      <Clock className="text-primary" size={16} />
-                      <p>{item.time}</p>
-                      <Calendar className="text-primary" size={16} />
-                      <p>{item.day}</p>
-                    </div>
-                  </div>
-                </CardContent>
+                    <div className="space-y-3 text-sm">
+                      <div className="flex gap-4 items-center">
+                        <Pin className="text-primary" size={16} />
+                        <p>{item.area}</p>
+                        <Users className="text-primary" size={16} />
+                        <p>{item.players}</p>
+                      </div>
 
-                <CardFooter className="flex items-center justify-between border-t border-[#282828] px-6 py-4">
-                  <h1 className="text-primary font-semibold">
-                    ${item.price}
-                  </h1>
-                  <Link href="/portal/auth?p=signup">
-                    <Button className="bg-primary text-secondary">
-                      Book Now
-                    </Button>
-                  </Link>
-                </CardFooter>
-              </Card>
+                      <div className="flex gap-4 items-center">
+                        <Clock className="text-primary" size={16} />
+                        <p>{item.time}</p>
+                        <Calendar className="text-primary" size={16} />
+                        <p>{item.day}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+
+                  <CardFooter className="flex items-center justify-between border-t border-[#282828] px-6 py-4">
+                    <h1 className="text-primary font-semibold">${item.price}</h1>
+                    <Link href="/portal/auth?p=signup">
+                      <Button className="bg-primary text-secondary">Book Now</Button>
+                    </Link>
+                  </CardFooter>
+                </Card>
               ))}
           </div>
         </section>
@@ -138,9 +123,7 @@ export default function InHouseProgramsPage() {
               </div>
 
               <div className="space-y-4">
-                <h1 className="text-xl sm:text-2xl font-bold">
-                  Who This Program is Perfect For
-                </h1>
+                <h1 className="text-xl sm:text-2xl font-bold">Who This Program is Perfect For</h1>
                 <ul className="list-disc space-y-2 pl-5 marker:text-primary text-sm text-muted">
                   <li>Competitive athletes across sports</li>
                   <li>Youth athletes developing fundamentals</li>
@@ -161,70 +144,77 @@ export default function InHouseProgramsPage() {
             </div>
           </div>
         </section>
-
-        <JoinNow />
+      </div>
+      <div className="pt-6 sm:pt-8 lg:pt-10">
+        <RegisterNow />
       </div>
     </div>
   );
 }
 
+const programOrder: Record<string, number> = {
+  'Speed, Agility, and Quickness': 1,
+  'Technical and Skill Training': 2,
+  '2 Hour Training': 3,
+  'Strength Training': 4,
+  'Sport-Specific Technical Training': 5,
+};
+
 const events2 = [
   {
-    title: "Speed, Agility, and Quickness",
+    title: 'Speed, Agility, and Quickness',
     description:
-      "At AP2T, we recognize that today’s athletes are faster, quicker, and more agile than ever before. Since the difference between the best and the rest can often be fractions of seconds, we understand that developing game-changing speed and agility is one of the most important elements of our training regimen. Creating athletes who are strong and skillful is not enough to dominate the competition, which is why AP2T focuses heavily on executing sport-specific movements as explosively as possible. At AP2T, you will become a student of linear, lateral, and change-of-direction techniques. Through detailed instruction that explains the intricacies of elite-level running, AP2T athletes will improve acceleration, top speed, quickness, and enhance their resistance to injuries commonly associated with sport-related running.",
+      'Build explosive speed, sharper footwork, and confident change-of-direction skills. Athletes learn proper acceleration, sprinting, and lateral-movement techniques. Focused drills improve reaction time and on-field quickness. Each session also reinforces movement habits that help reduce running-related injuries.',
     icon: <img src="/images/inhouse/running.png" className="w-8 h-8" />,
-    area: "Main Training Area",
-    players: "12 Players",
-    time: "4:00 PM - 5:00 PM",
-    day: "Monday - Friday",
+    area: 'Main Training Area',
+    players: '12 Players',
+    time: '4:00 PM - 5:00 PM',
+    day: 'Monday - Friday',
     price: 45,
   },
   {
-    title: "Strength Training",
+    title: 'Strength Training',
     description:
-      "AP2T prides itself on offering a strength and conditioning program that is second to none. We are committed to providing each student-athlete with the most appropriate exercise regimen to prepare them for their specific sport. Through the implementation of properly prescribed strength, power, plyometrics, speed, endurance, and flexibility exercises, we induce positive gains in holistic wellness, overall fitness, and resistance to injury as it relates to sport performance. AP2T creates individualized, sport-specific, multi-planar training regimens designed to produce morphological and neurological adaptations that yield physiological advantages for athletic performance. Our research-based programs form the foundation of AP2T’s Strength & Conditioning approach.",
+      'Develop the strength, power, and conditioning needed to perform at your best. Training combines sport-focused exercises, plyometrics, mobility, and endurance work. Athletes receive guidance on safe technique and consistent progress. Each program supports greater confidence, resilience, and injury resistance.',
     icon: <img src="/images/inhouse/gym.png" className="w-8 h-8" />,
-    area: "Main Training Area",
-    players: "12 Players",
-    time: "4:00 PM - 5:00 PM",
-    day: "Monday - Friday",
+    area: 'Main Training Area',
+    players: '12 Players',
+    time: '6:00 PM - 7:00 PM',
+    day: 'Monday - Friday',
     price: 25,
   },
   {
-    title: "Basic Nutrition Plan",
+    title: '2 Hour Training',
     description:
-      "Fuel your body for peak performance with AP2T’s personalized nutrition plans. Whether your goal is to build lean muscle, increase endurance, or improve recovery, our expert staff will create a plan tailored to your age, athletic level, and goals. Learn how to eat smarter, train harder, and maximize results both on and off the field.",
-    icon: (
-      <img src="/images/inhouse/diet.png" className="w-8 h-8 text-primary" />
-    ),
-    area: "Nutrition Center",
-    players: "Individual or Small Group",
-    time: "Flexible / By Appointment",
-    day: "Monday - Friday",
-    price: 100,
+      'Get two focused hours of complete athletic development in one session. Training combines technical skill work, speed and agility drills, and game-ready conditioning. Coaches provide detailed instruction and feedback throughout the session. It is an ideal option for athletes who want more time to build confidence and improve performance.',
+    icon: <Trophy className="w-8 h-8 text-primary" />,
+    area: 'Main Training Area',
+    players: '12 Players',
+    time: '4:00 PM - 6:00 PM',
+    day: 'Monday - Friday',
+    price: 69.95,
   },
   {
-    title: "Sport-Specific Technical Training",
+    title: 'Sport-Specific Technical Training',
     description:
-      "At AP2T, we recognize that strength and speed will only take you so far in your sport. While both are extremely important, proper technique is equally critical. AP2T’s coaching staff includes professionals who currently work at the professional and Division-I collegiate levels. Their years of experience and mastery of their respective sports enable them to teach proper technique to athletes of all levels. All athletes who participate in sport-specific technical training receive personalized programs designed to help them master the technical demands of their sport.",
+      'Refine the technical skills that make a difference in your sport. Experienced coaches teach proper movement patterns, decision-making, and position-specific techniques. Sessions are tailored to each athlete’s current level and goals. Athletes leave with practical tools to perform with more confidence in competition.',
     icon: <Trophy className="w-8 h-8 text-primary" />,
-    area: "Main Training Area",
-    players: "12 Players",
-    time: "4:00 PM - 5:00 PM",
-    day: "Monday - Friday",
+    area: 'Main Training Area',
+    players: '12 Players',
+    time: '4:00 PM - 5:00 PM',
+    day: 'Monday - Friday',
     price: 40,
   },
 
   {
-    title: "Technical and Skill Training",
+    title: 'Technical and Skill Training',
     description:
-      "AP2T offers team training for athletes of all ages and levels. Many of our current coaches work at the professional and Division-I levels, and all are fully licensed to coach youth soccer teams. Our coaches have achieved success at both the youth and professional levels, winning State, Regional, and National Championships along the way. Many also hold advanced coaching certifications. Please email us to learn more about our Soccer Team Training programs.",
+      'Build stronger technical skills in a focused, supportive training environment. Athletes work on ball control, passing, movement, and game awareness. Coaches adapt instruction to suit different ages and experience levels. Consistent practice helps players make smarter, more confident decisions on the field.',
     icon: <Volleyball className="w-8 h-8 text-primary" />,
-    area: "Main Training Area",
-    players: "12 Players",
-    time: "5:00 PM - 6:00 PM",
-    day: "Monday - Friday",
+    area: 'Main Training Area',
+    players: '12 Players',
+    time: '5:00 PM - 6:00 PM',
+    day: 'Monday - Friday',
     price: 45,
   },
 ];

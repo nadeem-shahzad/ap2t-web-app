@@ -1,13 +1,13 @@
-"use client";
-import axios from "@/lib/axios";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus } from "lucide-react";
-import { useState } from "react";
-import { Controller, useForm } from "react-hook-form";
-import { toast } from "sonner";
-import { z } from "zod";
-import { RequiredStar } from "../required-star";
-import { Button } from "../ui/button";
+'use client';
+import axios from '@/lib/axios';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Plus } from 'lucide-react';
+import { useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import { z } from 'zod';
+import { RequiredStar } from '../required-star';
+import { Button } from '../ui/button';
 import {
   Dialog,
   DialogClose,
@@ -15,13 +15,12 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "../ui/dialog";
-import { Field, FieldError } from "../ui/field";
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
-import { Spinner } from "../ui/spinner";
-import { Textarea } from "../ui/textarea";
-
+} from '../ui/dialog';
+import { Field, FieldError } from '../ui/field';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+import { Spinner } from '../ui/spinner';
+import { Textarea } from '../ui/textarea';
 
 type EditParentsProps = {
   visible: boolean;
@@ -29,61 +28,56 @@ type EditParentsProps = {
 };
 
 const parentSchema = z.object({
-  first_name: z.string().min(2, "First name is required"),
-  last_name: z.string().min(2, "Last name is required"),
+  first_name: z.string().min(2, 'First name is required'),
+  last_name: z.string().min(2, 'Last name is required'),
 
   email: z
     .string()
-    .email("Invalid email")
+    .email('Invalid email')
     .transform((val) => val.trim().toLowerCase()),
 
-  phone_no: z.string().min(6, "Phone is required"),
+  phone_no: z.string().min(6, 'Phone is required'),
 
-  zip_code: z.string().min(3, "Zip code required"),
+  zip_code: z.string().min(3, 'Zip code required'),
 
-  location: z.string().min(2, "Location required"),
+  location: z.string().min(2, 'Location required'),
 });
 type parentSchemaValues = z.infer<typeof parentSchema>;
 
-export function CreateParent({
-  onRefresh,
-}: {
-  onRefresh: () => Promise<void>;
-}) {
+export function CreateParent({ onRefresh }: { onRefresh: () => Promise<void> }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const form = useForm<parentSchemaValues>({
     resolver: zodResolver(parentSchema),
     defaultValues: {
-      first_name: "",
-      last_name: "",
-      email: "",
-      phone_no: "",
-      location: "",
-      zip_code: "",
+      first_name: '',
+      last_name: '',
+      email: '',
+      phone_no: '',
+      location: '',
+      zip_code: '',
     },
   });
 
   const onSubmit = async (values: parentSchemaValues) => {
-
     setLoading(true);
     try {
-      const result = await axios.post("/user", {
+      const result = await axios.post('/user', {
         first_name: values.first_name,
         last_name: values.last_name,
         email: values.email,
         phone_no: values.phone_no,
         location: values.location,
         zip_code: values.zip_code,
-        role: "parent",
+        role: 'parent',
       });
-      toast.success("Parent Created Successfully");
+      toast.success('Parent Created Successfully');
       await onRefresh();
       form.reset();
       setOpen(false);
     } catch (error) {
-      toast.error("Error while creating parent");
+      toast.error('Error while creating parent');
     } finally {
       setLoading(false);
     }
@@ -96,15 +90,9 @@ export function CreateParent({
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-[550px] bg-[#252525]">
-          <form
-            onSubmit={form.handleSubmit(onSubmit, (errors) =>
-              console.log("errors", errors),
-            )}
-          >
+          <form onSubmit={form.handleSubmit(onSubmit, (errors) => console.log('errors', errors))}>
             <DialogHeader className=" pb-4">
-              <DialogTitle className="text-sm font-normal">
-                Add New Parent
-              </DialogTitle>
+              <DialogTitle className="text-sm font-normal">Add New Parent</DialogTitle>
             </DialogHeader>
 
             <div className="grid gap-4 py-4 border-t">
@@ -125,9 +113,7 @@ export function CreateParent({
                           placeholder="john"
                           autoComplete="off"
                         />
-                        {fieldState.invalid && (
-                          <FieldError errors={[fieldState.error]} />
-                        )}
+                        {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                       </Field>
                     )}
                   />
@@ -148,9 +134,7 @@ export function CreateParent({
                           placeholder="martinz"
                           autoComplete="off"
                         />
-                        {fieldState.invalid && (
-                          <FieldError errors={[fieldState.error]} />
-                        )}
+                        {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                       </Field>
                     )}
                   />
@@ -173,9 +157,7 @@ export function CreateParent({
                         placeholder="martinz@example.com"
                         autoComplete="off"
                       />
-                      {fieldState.invalid && (
-                        <FieldError errors={[fieldState.error]} />
-                      )}
+                      {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                     </Field>
                   )}
                 />
@@ -197,9 +179,7 @@ export function CreateParent({
                         placeholder="+1XXXXXX"
                         autoComplete="off"
                       />
-                      {fieldState.invalid && (
-                        <FieldError errors={[fieldState.error]} />
-                      )}
+                      {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                     </Field>
                   )}
                 />
@@ -221,9 +201,7 @@ export function CreateParent({
                         placeholder="1038"
                         autoComplete="off"
                       />
-                      {fieldState.invalid && (
-                        <FieldError errors={[fieldState.error]} />
-                      )}
+                      {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                     </Field>
                   )}
                 />
@@ -243,9 +221,7 @@ export function CreateParent({
                         autoComplete="off"
                         className="min-h-[170px]"
                       />
-                      {fieldState.invalid && (
-                        <FieldError errors={[fieldState.error]} />
-                      )}
+                      {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                     </Field>
                   )}
                 />

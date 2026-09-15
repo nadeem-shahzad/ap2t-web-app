@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogClose,
@@ -8,20 +8,20 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import axios from "@/lib/axios";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { SquarePen } from "lucide-react";
-import { useEffect, useState } from "react";
-import { Controller, useForm } from "react-hook-form";
-import { toast } from "sonner";
-import z from "zod";
-import { RequiredStar } from "../required-star";
-import { Field, FieldError } from "../ui/field";
-import { Spinner } from "../ui/spinner";
-import { Textarea } from "../ui/textarea";
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import axios from '@/lib/axios';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { SquarePen } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import z from 'zod';
+import { RequiredStar } from '../required-star';
+import { Field, FieldError } from '../ui/field';
+import { Spinner } from '../ui/spinner';
+import { Textarea } from '../ui/textarea';
 
 type EditParentsProps = {
   parent_id: number | null;
@@ -35,16 +35,15 @@ type EditParentsProps = {
   onRefresh: () => Promise<void>;
 };
 
-
 const parentSchema = z.object({
-  first_name: z.string().min(2, "First name is required"),
-  last_name: z.string().min(2, "Last name is required"),
+  first_name: z.string().min(2, 'First name is required'),
+  last_name: z.string().min(2, 'Last name is required'),
 
-  phone_no: z.string().min(6, "Phone is required").nullable(),
+  phone_no: z.string().min(6, 'Phone is required').nullable(),
 
-  zip_code: z.string().min(3, "Zip code required").nullable(),
+  zip_code: z.string().min(3, 'Zip code required').nullable(),
 
-  location: z.string().min(2, "Location required").nullable(),
+  location: z.string().min(2, 'Location required').nullable(),
 });
 type parentSchemaValues = z.infer<typeof parentSchema>;
 
@@ -61,11 +60,11 @@ export function EditParents({ parent_id, data, onRefresh }: EditParentsProps) {
   const form = useForm<parentSchemaValues>({
     resolver: zodResolver(parentSchema),
     defaultValues: {
-      first_name: "",
-      last_name: "",
-      phone_no: "",
-      location: "",
-      zip_code: "",
+      first_name: '',
+      last_name: '',
+      phone_no: '',
+      location: '',
+      zip_code: '',
     },
   });
 
@@ -76,7 +75,7 @@ export function EditParents({ parent_id, data, onRefresh }: EditParentsProps) {
         id: parent_id,
         ...values,
       });
-      toast.success("Profile updated");
+      toast.success('Profile updated');
       await onRefresh();
       setOpen(false);
     } finally {
@@ -86,20 +85,14 @@ export function EditParents({ parent_id, data, onRefresh }: EditParentsProps) {
 
   return (
     <>
-      <Button
-        variant={"outline"}
-        className="bg-black dark:bg-black"
-        onClick={() => setOpen(true)}
-      >
+      <Button variant={'outline'} className="bg-black dark:bg-black" onClick={() => setOpen(true)}>
         <SquarePen /> Edit Details
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-[550px] bg-[#252525]">
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <DialogHeader className=" pb-4">
-              <DialogTitle className="text-sm font-normal">
-                Edit Parent Details
-              </DialogTitle>
+              <DialogTitle className="text-sm font-normal">Edit Parent Details</DialogTitle>
             </DialogHeader>
 
             <div className="grid gap-4 py-4 border-t">
@@ -120,9 +113,7 @@ export function EditParents({ parent_id, data, onRefresh }: EditParentsProps) {
                           placeholder="john"
                           autoComplete="off"
                         />
-                        {fieldState.invalid && (
-                          <FieldError errors={[fieldState.error]} />
-                        )}
+                        {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                       </Field>
                     )}
                   />
@@ -143,9 +134,7 @@ export function EditParents({ parent_id, data, onRefresh }: EditParentsProps) {
                           placeholder="martinz"
                           autoComplete="off"
                         />
-                        {fieldState.invalid && (
-                          <FieldError errors={[fieldState.error]} />
-                        )}
+                        {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                       </Field>
                     )}
                   />
@@ -162,7 +151,7 @@ export function EditParents({ parent_id, data, onRefresh }: EditParentsProps) {
                         phone <RequiredStar />
                       </Label>
                       <Input
-                        value={field?.value || ""}
+                        value={field?.value || ''}
                         onChange={(e) => field.onChange(e.target.value)}
                         // {...field}
                         id={field.name}
@@ -170,9 +159,7 @@ export function EditParents({ parent_id, data, onRefresh }: EditParentsProps) {
                         placeholder="+1XXXXXXX"
                         autoComplete="off"
                       />
-                      {fieldState.invalid && (
-                        <FieldError errors={[fieldState.error]} />
-                      )}
+                      {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                     </Field>
                   )}
                 />
@@ -188,16 +175,14 @@ export function EditParents({ parent_id, data, onRefresh }: EditParentsProps) {
                         Zip Code <RequiredStar />
                       </Label>
                       <Input
-                        value={field?.value || ""}
+                        value={field?.value || ''}
                         onChange={(e) => field.onChange(e.target.value)}
                         id={field.name}
                         aria-invalid={fieldState.invalid}
                         placeholder="1038"
                         autoComplete="off"
                       />
-                      {fieldState.invalid && (
-                        <FieldError errors={[fieldState.error]} />
-                      )}
+                      {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                     </Field>
                   )}
                 />
@@ -211,16 +196,14 @@ export function EditParents({ parent_id, data, onRefresh }: EditParentsProps) {
                     <Field data-invalid={fieldState.invalid}>
                       <Label className="text-sm text-[#99A1AF]">Address</Label>
                       <Textarea
-                        value={field?.value || ""}
+                        value={field?.value || ''}
                         onChange={(e) => field.onChange(e.target.value)}
                         id={field.name}
                         aria-invalid={fieldState.invalid}
                         autoComplete="off"
                         className="min-h-[170px]"
                       />
-                      {fieldState.invalid && (
-                        <FieldError errors={[fieldState.error]} />
-                      )}
+                      {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                     </Field>
                   )}
                 />

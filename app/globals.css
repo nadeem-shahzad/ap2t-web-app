@@ -1,13 +1,13 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
-:root [data-rmiz-modal-overlay="hidden"] {
+:root [data-rmiz-modal-overlay='hidden'] {
   background-color: rgba(9, 9, 9, 0);
 }
 
-:root [data-rmiz-modal-overlay="visible"] {
+:root [data-rmiz-modal-overlay='visible'] {
   background-color: rgba(9, 9, 9, 0.96);
 }
-@import "tw-animate-css";
+@import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -268,7 +268,7 @@
   border-radius: 50%;
   display: flex;
   align-items: center;
-  content: "";
+  content: '';
 }
 
 .embla__dot--selected:after {
@@ -377,14 +377,14 @@
   width: 100%;
   height: 500px;
   position: relative;
-  background: url("/images/inhouse/hero.JPG") center/cover no-repeat;
+  background: url('/images/inhouse/hero.JPG') center/cover no-repeat;
   overflow: hidden;
   border-radius: 4px;
 }
 
 /* Top curve */
 .panoramic::before {
-  content: "";
+  content: '';
   position: absolute;
   top: -20px;
   /* curve height */
@@ -400,7 +400,7 @@
 
 /* Bottom curve */
 .panoramic::after {
-  content: "";
+  content: '';
   position: absolute;
   bottom: -20px;
   /* curve height */
