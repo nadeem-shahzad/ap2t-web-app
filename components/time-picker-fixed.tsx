@@ -7,23 +7,14 @@ import { cn } from '@/lib/utils';
 import { Clock } from 'lucide-react';
 import * as React from 'react';
 
-function format12Hour(hour: number) {
+function format12Hour(hour: number, minute: number) {
   const suffix = hour >= 12 ? 'PM' : 'AM';
   const h = hour % 12 || 12;
-  return `${pad(h)}:00 ${suffix}`;
+  return `${pad(h)}:${pad(minute)} ${suffix}`;
 }
 
 function pad(n: number) {
   return String(n).padStart(2, '0');
-}
-
-function parseHour12(time?: string) {
-  if (!time) return null;
-  const [hhmm, suffix] = time.split(' ');
-  let hour = parseInt(hhmm.split(':')[0], 10);
-  if (suffix === 'PM' && hour !== 12) hour += 12;
-  if (suffix === 'AM' && hour === 12) hour = 0;
-  return hour;
 }
 
 export function TimePickerFixed({
@@ -36,10 +27,13 @@ export function TimePickerFixed({
   className?: string;
 }) {
   const [open, setOpen] = React.useState(false);
-  const selectedHour = parseHour12(value);
+  const timeOptions = Array.from({ length: 56 }, (_, index) => {
+    const totalMinutes = 8 * 60 + index * 15;
+    return format12Hour(Math.floor(totalMinutes / 60), totalMinutes % 60);
+  });
 
-  const updateTime = (hour: number) => {
-    onChange(format12Hour(hour));
+  const updateTime = (time: string) => {
+    onChange(time);
     setOpen(false);
   };
 
@@ -66,15 +60,15 @@ export function TimePickerFixed({
       <PopoverContent className="w-fit p-2 bg-[#1A1A1A] border-[#3A3A3A]" align="start">
         <ScrollArea className="max-h-32 w-20">
           <div className=" max-h-32 py-1 flex flex-col gap-1">
-            {Array.from({ length: 14 }, (_, i) => i + 8).map((h) => (
+            {timeOptions.map((time) => (
               <Button
-                key={h}
+                key={time}
                 size="sm"
                 className="h-7"
-                variant={h === selectedHour ? 'default' : 'ghost'}
-                onClick={() => updateTime(h)}
+                variant={time === value ? 'default' : 'ghost'}
+                onClick={() => updateTime(time)}
               >
-                {format12Hour(h)}
+                {time}
               </Button>
             ))}
           </div>

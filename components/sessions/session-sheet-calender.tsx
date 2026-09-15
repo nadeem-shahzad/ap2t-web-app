@@ -64,7 +64,10 @@ export default function SessionSheetCalendar({ sessions, currentMonth, setCurren
       const sessionStart = parseHour(start);
       const sessionEnd = parseHour(end);
 
-      return startHour >= sessionStart && endHour <= sessionEnd;
+      const startsInSlot = sessionStart >= startHour && sessionStart < endHour;
+      const fullyCoversSlot = startHour >= sessionStart && endHour <= sessionEnd;
+
+      return startsInSlot || fullyCoversSlot;
     });
   };
 

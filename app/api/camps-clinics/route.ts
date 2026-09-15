@@ -26,6 +26,7 @@ export async function GET() {
   FROM sessions s
   LEFT JOIN session_players sp ON sp.session_id = s.id
   WHERE s.apply_promotion IS TRUE
+    AND s.end_date::date >= CURRENT_DATE
   GROUP BY s.id
   ORDER BY s.date ASC
 `);
