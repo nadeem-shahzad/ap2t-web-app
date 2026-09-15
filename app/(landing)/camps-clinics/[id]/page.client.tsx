@@ -142,11 +142,11 @@ export default function CampsAndClinicsDetail({ data = null }: { data: CampClini
                   {currentCamp.badge}
                 </div>
 
-                {!data?.is_daily_payment && currentCamp?.left && (
-                  <div className="text-xs font-semibold px-2 py-1 rounded-md bg-red-500/15 text-red-400">
-                    {currentCamp.left} Left
-                  </div>
-                )}
+                {/*{!data?.is_daily_payment && currentCamp?.left && (*/}
+                {/*  <div className="text-xs font-semibold px-2 py-1 rounded-md bg-red-500/15 text-red-400">*/}
+                {/*    {currentCamp.left} Left*/}
+                {/*  </div>*/}
+                {/*)}*/}
               </div>
 
               <div className="font-semibold text-white text-4xl">{currentCamp.title}</div>
@@ -212,16 +212,16 @@ export default function CampsAndClinicsDetail({ data = null }: { data: CampClini
                           <div className="bg-[#DC262652] border-[#EF4444] p-5 rounded-[8px]">
                             <div className="flex items-start gap-3">
                               <CircleAlert className="text-[#EF4444] mt-0.5" />
-
+                        
                               <div className="space-y-1">
                                 <div className="text-[#EF4444] font-medium">
                                   Limited Spots Available
                                 </div>
-
-                                <div className="text-muted text-sm">
-                                  Only {currentCamp?.left} spots remaining. Register soon to avoid
-                                  missing out!
-                                </div>
+                        
+                                {/*<div className="text-muted text-sm">*/}
+                                {/*  Only {currentCamp?.left} spots remaining. Register soon to avoid*/}
+                                {/*  missing out!*/}
+                                {/*</div>*/}
                               </div>
                             </div>
                           </div>

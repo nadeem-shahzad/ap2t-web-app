@@ -44,7 +44,7 @@ export default function Facilities() {
 
           <div className="border-t border-[#282828] mt-4 pt-2">
             <p className="text-[#99A1AF] text-sm sm:text-base">visit us at:</p>
-            <h1 className="text-base sm:text-lg">Matuchen, NJ</h1>
+            <h1 className="text-base sm:text-lg">Metuchen, NJ </h1>
           </div>
         </div>
       </div>
