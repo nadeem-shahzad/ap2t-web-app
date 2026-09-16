@@ -41,7 +41,7 @@ export default function RootLayout({
           <NextTopLoader color="#d3fb20" showSpinner={false} />
           {children}
           <Script
-            src="https://sandbox.web.squarecdn.com/v1/square.js"
+            src="https://web.squarecdn.com/v1/square.js"
             strategy="afterInteractive"
           />
         </Suspense>
