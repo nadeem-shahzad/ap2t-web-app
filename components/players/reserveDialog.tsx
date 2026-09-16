@@ -166,6 +166,9 @@ const RenderEachSession = ({
           <div className="text-sm font-semibold text-foreground">{session.sessionName}</div>
 
           <div className="text-xs text-muted-foreground mt-1">Coach: {session.coachName}</div>
+          {session.requires_upfront_payment && (
+            <div className="mt-2 text-xs font-medium text-primary">Upfront payment required</div>
+          )}
         </div>
 
         <div className="mt-3 text-xs text-muted-foreground flex flex-wrap gap-2 items-center">

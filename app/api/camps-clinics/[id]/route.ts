@@ -34,6 +34,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     s.max_players,
     s.image,
     s.is_daily_payment,
+    s.requires_upfront_payment,
     COUNT(sp.user_id) AS total_enrolled_players,
     (s.max_players - COUNT(sp.user_id)) AS total_left
   FROM sessions s
@@ -70,25 +71,34 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         ? body.session_date
         : null;
 
-    if (!player || !parent) {
-      return NextResponse.json({ error: 'Missing player or parent data' }, { status: 400 });
+    if (!player) {
+      return NextResponse.json({ error: 'Missing player data' }, { status: 400 });
     }
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
   const requiredParent = ['first_name', 'last_name', 'role', 'email', 'password', 'phone_no'];
-  const requiredPlayer = ['first_name', 'last_name', 'role', 'email', 'birth_date'];
-
-  for (const field of requiredParent) {
-    if (!parent[field]) {
-      return NextResponse.json({ error: `Parent field "${field}" is required` }, { status: 400 });
-    }
-  }
+  const requiredPlayer = ['first_name', 'last_name', 'role', 'email', 'password', 'birth_date'];
 
   for (const field of requiredPlayer) {
     if (!player[field]) {
       return NextResponse.json({ error: `Player field "${field}" is required` }, { status: 400 });
+    }
+  }
+
+  const isUnderAged = moment().diff(moment(player.birth_date), 'years') < 18;
+  if (isUnderAged) {
+    for (const field of requiredParent) {
+      if (!parent?.[field]) {
+        return NextResponse.json({ error: `Parent field "${field}" is required` }, { status: 400 });
+      }
+    }
+    if (player.email.trim().toLowerCase() === parent.email.trim().toLowerCase()) {
+      return NextResponse.json(
+        { error: 'Player and parent must use different email addresses.' },
+        { status: 400 }
+      );
     }
   }
 
@@ -147,13 +157,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   try {
-    const existing = await pool.query(`SELECT id FROM users WHERE email = $1`, [
-      parent.email.trim().toLowerCase(),
-    ]);
+    const emails = [player.email, ...(isUnderAged ? [parent.email] : [])].map((email) =>
+      email.trim().toLowerCase()
+    );
+    const existing = await pool.query(`SELECT id FROM users WHERE email = ANY($1)`, [emails]);
 
     if (existing.rows.length > 0) {
       return NextResponse.json(
-        { error: 'An account with this parent email already exists. Please log in.' },
+        { error: 'An account with this email already exists. Please log in.' },
         { status: 409 }
       );
     }
@@ -162,17 +173,28 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: 'Failed to verify parent email' }, { status: 500 });
   }
 
+  const createdFirebaseEmails: string[] = [];
   try {
-    await admin.auth().createUser({
-      email: parent.email.trim().toLowerCase(),
-      password: parent.password,
-    });
+    if (isUnderAged) {
+      await admin.auth().createUser({
+        email: parent.email.trim().toLowerCase(),
+        password: parent.password,
+      });
+      createdFirebaseEmails.push(parent.email.trim().toLowerCase());
+    }
 
     await admin.auth().createUser({
       email: player.email.trim().toLowerCase(),
       password: player.password || defaultPass,
     });
+    createdFirebaseEmails.push(player.email.trim().toLowerCase());
   } catch (err: any) {
+    await Promise.allSettled(
+      createdFirebaseEmails.map(async (email) => {
+        const firebaseUser = await admin.auth().getUserByEmail(email);
+        await admin.auth().deleteUser(firebaseUser.uid);
+      })
+    );
     console.error('Firebase error:', err.message);
     return NextResponse.json(
       { error: 'Failed to create Firebase account: ' + err.message },
@@ -184,15 +206,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   try {
     await client.query('BEGIN');
 
-    const parentUserResult = await client.query(
-      `INSERT INTO users (first_name, last_name, email, phone_no, role)
-       VALUES ($1, $2, $3, $4, 'parent')
-       RETURNING id`,
-      [parent.first_name, parent.last_name, parent.email.trim().toLowerCase(), parent.phone_no]
-    );
-    const parentUserId = parentUserResult.rows[0].id;
-
-    await client.query(`INSERT INTO parents (user_id) VALUES ($1)`, [parentUserId]);
+    let parentUserId: number | null = null;
+    if (isUnderAged) {
+      const parentUserResult = await client.query(
+        `INSERT INTO users (first_name, last_name, email, phone_no, role)
+         VALUES ($1, $2, $3, $4, 'parent')
+         RETURNING id`,
+        [parent.first_name, parent.last_name, parent.email.trim().toLowerCase(), parent.phone_no]
+      );
+      parentUserId = parentUserResult.rows[0].id;
+      await client.query(`INSERT INTO parents (user_id) VALUES ($1)`, [parentUserId]);
+    }
 
     const playerUserResult = await client.query(
       `INSERT INTO users (first_name, last_name, email, birth_date, role)
@@ -210,17 +234,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const playeremaiNotificationData = {
       email: `${player.email}`,
       fullName: `${player.first_name} ${player?.last_name}`,
-      password: `${defaultPass}`,
+      password: `${player.password || defaultPass}`,
     };
     await sendNewJoiningEmail(playeremaiNotificationData);
-    const parentemaiNotificationData = {
-      email: `${parent.email}`,
-      fullName: `${parent.first_name} ${parent?.last_name}`,
-      password: `${parent.password}`,
-    };
-    await sendNewJoiningEmail(parentemaiNotificationData);
+    if (isUnderAged) {
+      await sendNewJoiningEmail({
+        email: `${parent.email}`,
+        fullName: `${parent.first_name} ${parent?.last_name}`,
+        password: `${parent.password}`,
+      });
+    }
     const adminEmailProps = {
-      email: parent.email,
+      email: isUnderAged ? parent.email : player.email,
       fullName: `${player?.first_name} ${player?.last_name}`,
       role: 'user',
     };
@@ -308,11 +333,13 @@ WHERE se.session_id = $1
     await client.query('ROLLBACK');
     console.error('Transaction error:', err.message);
 
-    try {
-      const fbUser = await admin.auth().getUserByEmail(parent.email.trim().toLowerCase());
-      await admin.auth().deleteUser(fbUser.uid);
-    } catch (cleanupErr: any) {
-      console.error('Firebase cleanup failed:', cleanupErr.message);
+    for (const email of createdFirebaseEmails) {
+      try {
+        const fbUser = await admin.auth().getUserByEmail(email.trim().toLowerCase());
+        await admin.auth().deleteUser(fbUser.uid);
+      } catch (cleanupErr: any) {
+        console.error('Firebase cleanup failed:', cleanupErr.message);
+      }
     }
 
     return NextResponse.json({ error: 'Registration failed: ' + err.message }, { status: 500 });

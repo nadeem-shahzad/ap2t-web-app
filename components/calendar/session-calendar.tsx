@@ -89,6 +89,7 @@ export default function SessionCalendar({
         original_price: session?.original_price ?? 0,
         variants: session?.variants ?? [],
         is_daily_payment: session.is_daily_payment,
+        requires_upfront_payment: session.requires_upfront_payment,
         enrolled_dates: session.enrolled_dates,
         enrolled_dates_by_player: session.enrolled_dates_by_player,
       }));

@@ -21,6 +21,7 @@ export async function GET() {
     s.promotion_price,
     s.price,
     s.max_players,
+    s.requires_upfront_payment,
     COUNT(sp.user_id) AS total_enrolled_players,
     (s.max_players - COUNT(sp.user_id)) AS total_left
   FROM sessions s

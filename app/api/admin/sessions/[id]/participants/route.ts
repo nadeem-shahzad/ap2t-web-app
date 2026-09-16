@@ -1,6 +1,7 @@
 import pool from '@/lib/db';
 import { fetchAllAdmins, sendAdminSessionEnrollmentEmail } from '@/lib/email-templates';
 import { sendInAppNotificationBackend } from '@/lib/send-inapp-notification';
+import { getSquareClient } from '@/lib/square';
 import moment from 'moment';
 import { NextRequest, NextResponse } from 'next/server';
 import { email } from 'zod';
@@ -20,7 +21,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     const sessionResult = await client.query(
       `SELECT price, apply_promotion, promotion_price, promotion_start, promotion_end, comped, max_players,
-              is_daily_payment, date, end_date
+              is_daily_payment, requires_upfront_payment, date, end_date
        FROM sessions
        WHERE id = $1
        LIMIT 1
@@ -210,6 +211,67 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       }
     }
 
+    let upfrontPaymentTransactionId: string | null = null;
+    if (sessionData.requires_upfront_payment && !sessionData.comped && Number(amount) > 0) {
+      const cardResult = await client.query(
+        `SELECT
+           player_user.square_customer_id AS player_customer_id,
+           player_user.square_card_id AS player_card_id,
+           parent_user.square_customer_id AS parent_customer_id,
+           parent_user.square_card_id AS parent_card_id
+         FROM players p
+         JOIN users player_user ON player_user.id = p.user_id
+         LEFT JOIN users parent_user ON parent_user.id = p.parent_id
+         WHERE p.user_id = $1`,
+        [player_id]
+      );
+      const cardData = cardResult.rows[0];
+      const payer =
+        cardData?.player_customer_id && cardData?.player_card_id
+          ? {
+              square_customer_id: cardData.player_customer_id,
+              square_card_id: cardData.player_card_id,
+            }
+          : cardData?.parent_customer_id && cardData?.parent_card_id
+            ? {
+                square_customer_id: cardData.parent_customer_id,
+                square_card_id: cardData.parent_card_id,
+              }
+            : null;
+
+      if (!payer?.square_customer_id || !payer?.square_card_id) {
+        await client.query('ROLLBACK');
+        return NextResponse.json(
+          { message: 'A saved payment card is required before enrolling in this session.' },
+          { status: 400 }
+        );
+      }
+
+      try {
+        const squareClient = await getSquareClient();
+        const paymentResult = await squareClient.payments.create({
+          sourceId: payer.square_card_id,
+          customerId: payer.square_customer_id,
+          idempotencyKey: crypto.randomUUID(),
+          amountMoney: {
+            amount: BigInt(Math.round(Number(amount) * 100)),
+            currency: 'USD',
+          },
+        });
+        upfrontPaymentTransactionId = paymentResult.payment?.id ?? null;
+
+        if (!upfrontPaymentTransactionId) {
+          throw new Error('Payment could not be completed');
+        }
+      } catch (error: any) {
+        await client.query('ROLLBACK');
+        return NextResponse.json(
+          { message: error?.message || 'Upfront payment could not be completed.' },
+          { status: 402 }
+        );
+      }
+    }
+
     /* ---------------- INSERT PLAYER ---------------- */
 
     if (!isOverallEnrollment) {
@@ -232,6 +294,23 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           'comped',
           new Date(),
           'Nil',
+          hasSiblingDiscount,
+          isDailyPayment ? selectedSessionDate : null,
+        ]
+      );
+    } else if (upfrontPaymentTransactionId) {
+      await client.query(
+        `INSERT INTO payments
+         (session_id, user_id, amount, status, paid_at, method, transaction_id, siblings_discount, session_date)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        [
+          session_id,
+          player_id,
+          amount,
+          'paid',
+          new Date(),
+          'Debit / Credit Card',
+          upfrontPaymentTransactionId,
           hasSiblingDiscount,
           isDailyPayment ? selectedSessionDate : null,
         ]
@@ -293,7 +372,13 @@ WHERE se.session_id = $1
     }
     const playerName = `${emailData?.first_name || ''} ${emailData?.last_name || ''}`.trim();
 
-    const paymentStatus = sessionData.comped ? 'Comped' : amount === 0 ? 'Free' : 'Pending';
+    const paymentStatus = sessionData.comped
+      ? 'Comped'
+      : upfrontPaymentTransactionId
+        ? 'Paid'
+        : amount === 0
+          ? 'Free'
+          : 'Pending';
 
     const discountText = hasSiblingDiscount ? ' (Sibling discount applied)' : '';
 

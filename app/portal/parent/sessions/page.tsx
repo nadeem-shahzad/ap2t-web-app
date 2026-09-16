@@ -53,6 +53,7 @@ export default function Page() {
             children: s?.children || [],
             variants: s?.variants || [],
             is_daily_payment: s?.is_daily_payment ?? false,
+            requires_upfront_payment: s?.requires_upfront_payment ?? false,
             enrolled_dates_by_player: s?.enrolled_dates_by_player ?? {},
             end_date: s?.end_date ? moment(new Date(s.end_date)).format('YYYY-MM-DD') : null,
           };

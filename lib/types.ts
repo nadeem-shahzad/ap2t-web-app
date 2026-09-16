@@ -20,6 +20,7 @@ export type CalendarEvent = {
   promotion: boolean;
   variants?: { id: number; hour: number; price: string | number }[];
   is_daily_payment?: boolean;
+  requires_upfront_payment?: boolean;
   enrolled_dates?: string[];
   enrolled_dates_by_player?: Record<string, string[]>;
 };
@@ -340,6 +341,7 @@ export type SessionProps = {
   original_price?: string;
   enrolled: boolean;
   is_daily_payment?: boolean;
+  requires_upfront_payment?: boolean;
   enrolled_dates?: string[];
   enrolled_dates_by_player?: Record<string, string[]>;
   children: { user_id: number; last_name: string; first_name: string }[];
@@ -633,6 +635,7 @@ export type CampClinicSession = {
   price: string;
   max_players: number;
   is_daily_payment?: boolean;
+  requires_upfront_payment?: boolean;
   total_enrolled_players: number;
   total_left: number;
   location: string;
@@ -848,6 +851,8 @@ export type PrmotionsType = {
   end_date: string | null;
   price: string;
   promotion_price: string | null;
+  promotion_start : string | null
+  promotion_end : string | null
   save: number;
   max_players: number;
   apply_promotion: boolean;
@@ -865,9 +870,9 @@ export type PrmotionsType = {
   total_participants: number;
   total_revenue: number;
   rawData: any;
-  promotion_end: string | null;
   enrolled?: boolean;
   is_daily_payment?: boolean;
+  requires_upfront_payment?: boolean;
   enrolled_dates?: string[];
 };
 

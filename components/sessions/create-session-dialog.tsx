@@ -50,6 +50,7 @@ export const sessionSchema = z
     end_time: z.string().min(1, 'End time required'),
     price: z.coerce.number<number>().optional(),
     is_daily_payment: z.boolean(),
+    requires_upfront_payment: z.boolean(),
     pricing_mode: z.enum(['single', 'variants']),
     variants: z.array(
       z.object({
@@ -173,6 +174,7 @@ export function CreateSessionDialog({
       end_time: '',
       price: 0,
       is_daily_payment: false,
+      requires_upfront_payment: false,
       pricing_mode: 'single',
       variants: [],
       max_players: 1,
@@ -787,6 +789,31 @@ export function CreateSessionDialog({
                         </p>
                         {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                       </Field>
+                    )}
+                  />
+                  <Controller
+                    name="requires_upfront_payment"
+                    control={form.control}
+                    render={({ field, fieldState }) => (
+                      <div className="flex items-start gap-3 px-4 py-3 bg-[#1A1A1A] border border-[#3A3A3A] rounded-[10px] w-full">
+                        <div className="pt-1 flex-none">
+                          <Checkbox
+                            id="requires-upfront-payment"
+                            checked={field.value}
+                            onCheckedChange={(checked) => field.onChange(checked === true)}
+                            className="h-4 w-4"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <Label htmlFor="requires-upfront-payment" className="text-sm font-medium text-[#D1D5DC]">
+                            Require Upfront Payment
+                          </Label>
+                          <p className="text-sm text-[#6A7282]">
+                            Direct registrations are replaced with the payment sign-up flow.
+                          </p>
+                          {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                        </div>
+                      </div>
                     )}
                   />
                 </div>

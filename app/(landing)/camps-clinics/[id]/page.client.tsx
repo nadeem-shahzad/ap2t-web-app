@@ -10,8 +10,9 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import axios from '@/lib/axios';
 import { formatSessionDateRange } from '@/lib/date';
 import { CampClinicSession } from '@/lib/types';
-import { CircleAlert, CircleCheckBig, DollarSign } from 'lucide-react';
+import { CircleAlert, CircleCheckBig, CreditCard, DollarSign } from 'lucide-react';
 import moment from 'moment';
+import NextLink from 'next/link';
 import { useState } from 'react';
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
@@ -27,6 +28,7 @@ export default function CampsAndClinicsDetail({ data = null }: { data: CampClini
       last_name: '',
       birth_date: null as Date | null,
       email: '',
+      password: '',
       role: 'player',
       medical_notes: '',
     },
@@ -39,6 +41,8 @@ export default function CampsAndClinicsDetail({ data = null }: { data: CampClini
       phone_no: '',
     },
   });
+  const isUnderAged =
+    !!formData.player.birth_date && moment().diff(moment(formData.player.birth_date), 'years') < 18;
   const currentCamp = data
     ? {
         id: data.id,
@@ -81,7 +85,7 @@ export default function CampsAndClinicsDetail({ data = null }: { data: CampClini
       const res = await axios.post(`/camps-clinics/${data?.id}`, formData);
 
       if (res.data.success) {
-        toast.success('Registered Successfully!');
+        toast.success('Registration complete. Please log in to continue.');
       }
     } catch (err: any) {
       const message = err?.response?.data?.error || err?.message || 'Something went wrong';
@@ -203,6 +207,23 @@ export default function CampsAndClinicsDetail({ data = null }: { data: CampClini
                 <div>
                   <Card className="bg-[#131313] rounded border border-white/5">
                     <CardContent className="p-4 space-y-6">
+                      {data?.requires_upfront_payment ? (
+                        <div className="space-y-5 text-center">
+                          <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-primary/15 text-primary">
+                            <CreditCard className="size-6" />
+                          </div>
+                          <div className="space-y-2">
+                            <h3 className="text-2xl font-semibold text-white">Upfront payment required</h3>
+                            <p className="text-sm leading-relaxed text-white/60">
+                              This session requires payment during registration. Continue to sign up
+                              and complete your payment to reserve your place.
+                            </p>
+                          </div>
+                          <Button asChild className="w-full rounded-full">
+                            <NextLink href="/portal/auth?p=signup">Sign up to continue</NextLink>
+                          </Button>
+                        </div>
+                      ) : (
                       <form onSubmit={handleSubmit}>
                         <div className="space-y-1">
                           <h3 className="text-2xl font-semibold text-white">Register Now</h3>
@@ -302,6 +323,18 @@ export default function CampsAndClinicsDetail({ data = null }: { data: CampClini
                                   }))
                                 }
                               />
+                              <input
+                                type="password"
+                                placeholder="Password"
+                                required
+                                className="w-full rounded-[8px] border border-[#6D6D6D] px-3 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:border-white/30"
+                                onChange={(e) =>
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    player: { ...prev.player, password: e.target.value },
+                                  }))
+                                }
+                              />
                             </div>
                             <div className="space-y-2">
                               <h4 className="text-xs font-medium text-white/80">Birth Date</h4>
@@ -322,7 +355,7 @@ export default function CampsAndClinicsDetail({ data = null }: { data: CampClini
                             </div>
                           </div>
 
-                          <div className="space-y-3">
+                          {isUnderAged && <div className="space-y-3">
                             <h4 className="text-sm font-medium text-white/80">
                               Parent / Guardian Information
                             </h4>
@@ -407,21 +440,18 @@ export default function CampsAndClinicsDetail({ data = null }: { data: CampClini
                               }
                             />
 
-                            <textarea
-                              placeholder="Medical Information (Optional)"
-                              rows={3}
-                              className="w-full rounded-[8px] border border-[#6D6D6D] px-3 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:border-white/30"
-                              onChange={(e) =>
-                                setFormData((prev) => ({
-                                  ...prev,
-                                  player: {
-                                    ...prev.player,
-                                    medical_notes: e.target.value,
-                                  },
-                                }))
-                              }
-                            />
-                          </div>
+                          </div>}
+                          <textarea
+                            placeholder="Medical Information (Optional)"
+                            rows={3}
+                            className="w-full rounded-[8px] border border-[#6D6D6D] px-3 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:border-white/30"
+                            onChange={(e) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                player: { ...prev.player, medical_notes: e.target.value },
+                              }))
+                            }
+                          />
                         </div>
 
                         <Button type="submit" className="w-full rounded-full" disabled={loading}>
@@ -434,6 +464,7 @@ export default function CampsAndClinicsDetail({ data = null }: { data: CampClini
                           Registration confirmation will be sent to your email.
                         </p>
                       </form>
+                      )}
                     </CardContent>
                   </Card>
                 </div>

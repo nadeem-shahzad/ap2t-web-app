@@ -33,6 +33,7 @@ LEFT JOIN session_players sp
       ON sp.session_id = s.id
       AND sp.user_id = $1
 WHERE s.apply_promotion IS TRUE
+ AND s.end_date::date >= CURRENT_DATE
   `;
 
   try {

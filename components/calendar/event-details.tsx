@@ -6,7 +6,7 @@ import { Badge } from '../ui/badge';
 import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { ScrollArea } from '../ui/scroll-area';
 import ParticipateButton from './participate-button';
-import { OctagonAlert } from 'lucide-react';
+import { CreditCard, OctagonAlert } from 'lucide-react';
 
 const EventDetail = ({
   open,
@@ -72,6 +72,13 @@ const EventDetail = ({
                           {formatTimeWithAmPm(event.time)} - {formatTimeWithAmPm(event?.end_time)}
                         </span>
                       </div>
+
+                      {event.requires_upfront_payment && (
+                        <div className="flex items-start gap-2 rounded-md border border-primary/30 bg-primary/10 p-3 text-sm text-primary">
+                          <CreditCard className="mt-0.5 h-4 w-4 shrink-0" />
+                          <span>Upfront payment is required to enroll in this session.</span>
+                        </div>
+                      )}
 
                       {enrolledChildren.length > 0 && (
                         <p className="text-xs">

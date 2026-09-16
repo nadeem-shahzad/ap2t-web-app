@@ -31,12 +31,11 @@ export default function Page() {
   const fetchData = async () => {
     try {
       const result = await axios.get('/admin/sessions?promotion=true');
-      setData(result.data);
       if (result.data) {
         const mappedSessions = result.data.map((s: any) => ({
           ...s,
-          date: moment(new Date(s.date)).format('YYYY-MM-DD'),
-          end_date: moment(new Date(s.end_date)).format('YYYY-MM-DD'),
+          date: s.promotion_start ? moment(new Date(s.promotion_start)).format('YYYY-MM-DD') : '',
+          end_date: s.promotion_end ? moment(new Date(s.promotion_end)).format('YYYY-MM-DD') : '',
           time: `${s.start_time} - ${s.end_time}`,
           coachName: joinNames([s.coach_first_name, s.coach_last_name]),
           status: s.status,
@@ -57,10 +56,11 @@ export default function Page() {
 
     return sessions.reduce(
       (acc, session) => {
-        if (session.apply_promotion && session.promotion_end) {
+        if (session.apply_promotion && session.promotion_start && session.promotion_end) {
+          const promoStart = moment(new Date(session.promotion_start));
           const promoEnd = moment(new Date(session.promotion_end));
 
-          if (today.isSameOrBefore(promoEnd, 'day')) {
+          if (today.isSameOrAfter(promoStart, 'day') && today.isSameOrBefore(promoEnd, 'day')) {
             acc.total_active += 1;
           }
         }
@@ -129,7 +129,13 @@ export default function Page() {
     if (filter === 'All') return true;
 
     if (filter === 'Active') {
-      return item.apply_promotion && today.isSameOrBefore(moment(item.promotion_end), 'day');
+      return (
+        item.apply_promotion &&
+        !!item.promotion_start &&
+        !!item.promotion_end &&
+        today.isSameOrAfter(moment(item.promotion_start), 'day') &&
+        today.isSameOrBefore(moment(item.promotion_end), 'day')
+      );
     }
 
     if (filter === 'Upcoming') {
@@ -254,7 +260,7 @@ export default function Page() {
                 <div className="space-y-1 bg-[#1A1A1A] border border-border rounded-xl p-3">
                   <div className="flex gap-2 items-center">
                     <Calendar size={12} className="text-muted-foreground" />
-                    <div className="text-xs text-muted-foreground">Start Date</div>
+                    <div className="text-xs text-muted-foreground">Promotion Start</div>
                   </div>
                   <div className="text-sm text-white">{item.date}</div>
                 </div>
@@ -262,7 +268,7 @@ export default function Page() {
                 <div className="space-y-1 bg-[#1A1A1A] border border-border rounded-xl p-3">
                   <div className="flex gap-2 items-center">
                     <Calendar size={12} className="text-muted-foreground" />
-                    <div className="text-xs text-muted-foreground">End Date</div>
+                    <div className="text-xs text-muted-foreground">Promotion End</div>
                   </div>
                   <div className="text-sm text-white">{item.end_date}</div>
                 </div>
