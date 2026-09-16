@@ -14,6 +14,7 @@ import NextLink from 'next/link';
 import { ReactNode, useEffect, useState } from 'react';
 import { GoDotFill } from 'react-icons/go';
 import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
 
 const allFilters = ['All', 'Active', 'Upcoming', 'Archive'];
 

@@ -7,9 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { formatSessionDateRange } from '@/lib/date';
 import { CampClinicCard, CampClinicSession } from '@/lib/types';
 import { ArrowRight, Search } from 'lucide-react';
-import moment from 'moment';
 import Link from 'next/link';
 import { useState } from 'react';
 import Zoom from 'react-medium-image-zoom';
@@ -173,7 +173,7 @@ export const transformCampClinics = (sessions: CampClinicSession[]): CampClinicC
     price: Number(s.apply_promotion ? s.promotion_price : s.price),
     left: s.total_left,
     details: [
-      `${moment(s.date).format('MMM DD')}–${moment(s.end_date).format('DD, YYYY')}`,
+      formatSessionDateRange(s.date, s.end_date),
       `${s.start_time} - ${s.end_time}`,
       `Ages ${s.age_limit ?? 'All'}`,
       s?.location || '',
