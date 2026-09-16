@@ -107,6 +107,9 @@ export default function SessionMainPage({
   }, [id]);
 
   const allowed = isAdmin ? true : user?.id === data?.coach_id ? true : false;
+  const canMarkDailySessionCompleted =
+    !rawSessionData?.is_daily_payment ||
+    !moment(rawSessionData.end_date || rawSessionData.date).isAfter(moment(), 'day');
 
   const fetchData = async () => {
     try {
@@ -396,6 +399,7 @@ export default function SessionMainPage({
             {data && data.status !== 'completed' && data.status !== 'cancelled' && allowed && (
               <Markbuttons
                 id={id}
+                canMarkCompleted={canMarkDailySessionCompleted}
                 onRefresh={async () => {
                   await fetchData();
                   await fetchParticipants();
@@ -619,9 +623,19 @@ export default function SessionMainPage({
   );
 }
 
-const Markbuttons = ({ id, onRefresh }: { id: number; onRefresh: () => Promise<void> }) => {
+const Markbuttons = ({
+  id,
+  canMarkCompleted,
+  onRefresh,
+}: {
+  id: number;
+  canMarkCompleted: boolean;
+  onRefresh: () => Promise<void>;
+}) => {
   const [loadingStatus, setLoadingStatus] = useState('');
-  const markList = ['completed', 'cancelled'];
+  const markList = ['completed', 'cancelled'].filter(
+    (status) => status !== 'completed' || canMarkCompleted
+  );
 
   const designType = {
     completed: {
