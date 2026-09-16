@@ -147,11 +147,11 @@ export default function CampsAndClinicsDetail({ data = null }: { data: CampClini
                   {currentCamp.badge}
                 </div>
 
-                {/*{!data?.is_daily_payment && currentCamp?.left && (*/}
-                {/*  <div className="text-xs font-semibold px-2 py-1 rounded-md bg-red-500/15 text-red-400">*/}
-                {/*    {currentCamp.left} Left*/}
-                {/*  </div>*/}
-                {/*)}*/}
+                {data?.requires_upfront_payment && currentCamp?.left && (
+                  <div className="text-xs font-semibold px-2 py-1 rounded-md bg-red-500/15 text-red-400">
+                    {currentCamp.left} Left
+                  </div>
+                )}
               </div>
 
               <div className="font-semibold text-white text-4xl">{currentCamp.title}</div>

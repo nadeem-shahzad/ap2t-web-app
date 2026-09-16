@@ -650,6 +650,7 @@ export type CampClinicCard = {
   description: string;
   price: number;
   left: number;
+  requires_upfront_payment?: boolean;
   details: [string, string, string, string];
 };
 

@@ -105,11 +105,11 @@ export default function CampsAndClinics({ data = [] }: { data?: CampClinicSessio
                         {item.badge}
                       </div>
 
-                      {/* {item?.left && (
-                                                <div className="text-xs font-semibold px-2 py-1 rounded-md bg-red-500/15 text-red-400">
-                                                    {item.left} Left
-                                                </div>
-                                            )} */}
+                      {item.requires_upfront_payment && item.left && (
+                        <div className="text-xs font-semibold px-2 py-1 rounded-md bg-red-500/15 text-red-400">
+                          {item.left} Left
+                        </div>
+                      )}
                     </div>
 
                     <Zoom>
@@ -172,6 +172,7 @@ export const transformCampClinics = (sessions: CampClinicSession[]): CampClinicC
     description: s.description,
     price: Number(s.apply_promotion ? s.promotion_price : s.price),
     left: s.total_left,
+    requires_upfront_payment: s.requires_upfront_payment,
     details: [
       formatSessionDateRange(s.date, s.end_date),
       `${s.start_time} - ${s.end_time}`,
