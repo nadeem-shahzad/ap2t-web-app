@@ -27,8 +27,8 @@ export function TimePickerFixed({
   className?: string;
 }) {
   const [open, setOpen] = React.useState(false);
-  const timeOptions = Array.from({ length: 56 }, (_, index) => {
-    const totalMinutes = 8 * 60 + index * 15;
+  const timeOptions = Array.from({ length: 29 }, (_, index) => {
+    const totalMinutes = 8 * 60 + index * 30;
     return format12Hour(Math.floor(totalMinutes / 60), totalMinutes % 60);
   });
 
@@ -58,13 +58,13 @@ export function TimePickerFixed({
       </PopoverTrigger>
 
       <PopoverContent className="w-fit p-2 bg-[#1A1A1A] border-[#3A3A3A]" align="start">
-        <ScrollArea className="max-h-32 w-20">
-          <div className=" max-h-32 py-1 flex flex-col gap-1">
+        <ScrollArea className="h-64 w-[19rem] overflow-hidden">
+          <div className="grid grid-cols-3 gap-1.5 py-1 pr-3">
             {timeOptions.map((time) => (
               <Button
                 key={time}
                 size="sm"
-                className="h-7"
+                className="h-8 w-full px-1 text-xs"
                 variant={time === value ? 'default' : 'ghost'}
                 onClick={() => updateTime(time)}
               >
