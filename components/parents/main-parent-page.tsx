@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/auth-context';
 import { useIsMobile } from '@/hooks/use-mobile';
 import axios from '@/lib/axios';
+import { formatDateOnly } from '@/lib/date';
 import { exportToExcel, getYear, joinNames } from '@/lib/functions';
 import { ParentDetailResponse, PaymentItemParent, SquareSavedCard } from '@/lib/types';
 import { Scrollbar } from '@radix-ui/react-scroll-area';
@@ -349,7 +350,7 @@ export default function MainParentPage({
                         <div className="text-white">Next Session:</div>
                         <div className="text-muted-foreground">
                           {item?.next_session &&
-                            `${moment(new Date(item?.next_session?.date)).format('YYYY-MM-DD')} ${item.next_session?.start_time}`}
+                            `${formatDateOnly(item?.next_session?.date)} ${item.next_session?.start_time}`}
                         </div>
                       </div>
 

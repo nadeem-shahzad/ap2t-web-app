@@ -1,6 +1,7 @@
 'use client';
 import { useAuth } from '@/contexts/auth-context';
 import axios from '@/lib/axios';
+import { parseDateOnly } from '@/lib/date';
 import { BookedSession, SessionCoach, SessionType } from '@/lib/types';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Calendar, Eye, MapPin, SquarePen, Tag, Trash2, Users } from 'lucide-react';
@@ -144,6 +145,71 @@ export function EditSessionDialog({
     setBooked(conflicts.length > 0);
     return conflicts;
   }
+
+  // Fixed-dates sessions have no single date/end_date range to compare —
+  // check each curated occurrence date individually against the coach's
+  // other bookings (both continuous-range sessions and other fixed-dates
+  // sessions) instead.
+  function getFixedDatesConflicts(
+    occurrenceDates: string[],
+    start_time: string,
+    end_time: string
+  ): BookedSession[] {
+    const coachId = form.getValues('coach_id');
+    if (!coachId || occurrenceDates.length === 0 || !start_time || !end_time) return [];
+
+    const newStart = to24Hour(start_time);
+    const newEnd = to24Hour(end_time);
+    const newDates = new Set(occurrenceDates);
+
+    const coachSessions = (all_sessions || []).filter(
+      (session) =>
+        (session.status === 'upcoming' || session.status === 'ongoing') &&
+        Number(coachId) === Number(session.coach_id) &&
+        Number(session.id) !== Number(sessionId)
+    );
+
+    const conflicts: BookedSession[] = [];
+    for (const session of coachSessions) {
+      const sessionStart24 = to24Hour(session.start_time);
+      const sessionEnd24 = to24Hour(session.end_time);
+      const timeOverlap = sessionStart24 < newEnd && sessionEnd24 > newStart;
+      if (!timeOverlap) continue;
+
+      if (session.date_mode === 'fixed_dates') {
+        const matched = (session.dates ?? [])
+          .map((d) => d.date?.slice(0, 10))
+          .find((d): d is string => Boolean(d) && newDates.has(d as string));
+        if (matched) {
+          conflicts.push({
+            name: session.name,
+            date: matched,
+            end_date: matched,
+            start_time: session.start_time,
+            end_time: session.end_time,
+          });
+        }
+      } else {
+        const sessionStartStr = moment(session.date).format('YYYY-MM-DD');
+        const sessionEndStr = moment(session.end_date || session.date).format('YYYY-MM-DD');
+        const matched = occurrenceDates.find((d) => d >= sessionStartStr && d <= sessionEndStr);
+        if (matched) {
+          conflicts.push({
+            name: session.name,
+            date: session.date,
+            end_date: session.end_date,
+            start_time: session.start_time,
+            end_time: session.end_time,
+          });
+        }
+      }
+    }
+
+    setNotAvailableSessions(conflicts);
+    setBooked(conflicts.length > 0);
+    return conflicts;
+  }
+
   function getBlockedConflict(values: SessionSchemaValues) {
     const conflicts = Object.entries(coachSchedule || {}).filter(([blockedDateTime, status]) => {
       if (status !== 'blocked') return false;
@@ -158,6 +224,34 @@ export function EditSessionDialog({
       const blockedTime24 = to24Hour(blockedTimePart);
       const newStart = to24Hour(values.start_time);
       const newEnd = to24Hour(values.end_time);
+
+      return blockedTime24 >= newStart && blockedTime24 < newEnd;
+    });
+
+    setBlocked(conflicts.length > 0);
+    setBlockedHours(conflicts);
+    return conflicts;
+  }
+
+  // Same as getBlockedConflict, but against a curated list of occurrence
+  // dates instead of a date/end_date range.
+  function getFixedDatesBlockedConflict(
+    occurrenceDates: string[],
+    start_time: string,
+    end_time: string
+  ) {
+    if (occurrenceDates.length === 0) return [];
+    const dateSet = new Set(occurrenceDates);
+
+    const conflicts = Object.entries(coachSchedule || {}).filter(([blockedDateTime, status]) => {
+      if (status !== 'blocked') return false;
+
+      const [blockedDateStr, blockedTimePart] = blockedDateTime.split('_');
+      if (!dateSet.has(blockedDateStr)) return false;
+
+      const blockedTime24 = to24Hour(blockedTimePart);
+      const newStart = to24Hour(start_time);
+      const newEnd = to24Hour(end_time);
 
       return blockedTime24 >= newStart && blockedTime24 < newEnd;
     });
@@ -228,7 +322,7 @@ export function EditSessionDialog({
         date_mode: sessionData.date_mode === 'fixed_dates' ? 'fixed_dates' : 'single',
         dates:
           sessionData.dates?.map((entry) => ({
-            date: entry.date ? new Date(entry.date) : null,
+            date: parseDateOnly(entry.date),
             price: Number(entry.price),
             promotion_price:
               entry.promotion_price !== null && entry.promotion_price !== undefined
@@ -264,16 +358,27 @@ export function EditSessionDialog({
     }
 
     try {
-      const sessionConflicts = getSessionsConflicts({
-        date: values.date,
-        end_date: values.end_date,
-        start_time: values.start_time,
-        end_time: values.end_time,
-      });
+      const isFixedDatesSession = values.date_mode === 'fixed_dates';
+      const occurrenceDates = isFixedDatesSession
+        ? values.dates
+            .map((d) => (d.date ? moment(d.date).format('YYYY-MM-DD') : null))
+            .filter((d): d is string => Boolean(d))
+        : [];
+
+      const sessionConflicts = isFixedDatesSession
+        ? getFixedDatesConflicts(occurrenceDates, values.start_time, values.end_time)
+        : getSessionsConflicts({
+            date: values.date,
+            end_date: values.end_date,
+            start_time: values.start_time,
+            end_time: values.end_time,
+          });
 
       const hasSessionConflict = sessionConflicts.length > 0;
       setLoading(true);
-      const blockedConflict = getBlockedConflict(values);
+      const blockedConflict = isFixedDatesSession
+        ? getFixedDatesBlockedConflict(occurrenceDates, values.start_time, values.end_time)
+        : getBlockedConflict(values);
       const hasBlockedConflict = blockedConflict.length > 0;
       if (hasSessionConflict) {
         toast.error("Can't update session because coach is already booked at this time and date");

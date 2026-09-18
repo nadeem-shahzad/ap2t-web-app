@@ -155,7 +155,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
             `SELECT COUNT(DISTINCT user_id)
          FROM payments
          WHERE session_id = $1
-           AND session_date::date = $2::date`,
+           AND session_date::date = $2::date
+           AND status NOT IN ('failed', 'refunded')`,
             [session_id, selectedSessionDate]
           )
         : await client.query(`SELECT COUNT(*) FROM session_players WHERE session_id = $1`, [

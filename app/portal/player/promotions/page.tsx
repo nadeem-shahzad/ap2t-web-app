@@ -83,7 +83,7 @@ const RenderEachItem = ({
   const nearestFixedDate = isFixedDates
     ? [...(item.dates ?? [])]
         .filter((d) => d.is_active && d.is_signup_open)
-        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0]
+        .sort((a, b) => a.date.localeCompare(b.date))[0]
     : null;
   const [selectedDate, setSelectedDate] = useState(
     nearestFixedDate ? moment(nearestFixedDate.date).format('YYYY-MM-DD') : item.date

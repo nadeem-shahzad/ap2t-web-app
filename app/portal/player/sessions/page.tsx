@@ -58,7 +58,7 @@ export default function Page() {
             id: s.id,
             sessionName: s.name,
             type: s.session_type,
-            date: moment(new Date(s.date)).format('YYYY-MM-DD'),
+            date: s.date ? moment(new Date(s.date)).format('YYYY-MM-DD') : '',
             time: `${s.start_time} - ${s.end_time}`,
             coachName: joinNames([s.coach_first_name, s.coach_last_name]),
             coachPicture: s.coach_picture || '',
@@ -73,6 +73,8 @@ export default function Page() {
             requires_upfront_payment: s?.requires_upfront_payment ?? false,
             enrolled_dates: s?.enrolled_dates ?? [],
             end_date: s?.end_date ? moment(new Date(s.end_date)).format('YYYY-MM-DD') : null,
+            date_mode: s?.date_mode ?? 'single',
+            dates: s?.dates ?? [],
           };
         });
         setSessions(mappedSessions);
@@ -109,7 +111,7 @@ export default function Page() {
             id: s.id,
             sessionName: s.name,
             type: s.session_type,
-            date: moment(new Date(s.date)).format('YYYY-MM-DD'),
+            date: s.date ? moment(new Date(s.date)).format('YYYY-MM-DD') : '',
             time: `${s.start_time}`,
             coachName: joinNames([s.coach_first_name, s.coach_last_name]),
             coachPicture: s.coach_picture || '',
@@ -125,6 +127,8 @@ export default function Page() {
             enrolled_dates: s?.enrolled_dates ?? [],
             end_date: s?.end_date ? moment(new Date(s.end_date)).format('YYYY-MM-DD') : null,
             location: s?.location || '',
+            date_mode: s?.date_mode ?? 'single',
+            dates: s?.dates ?? [],
           };
         });
         setReserves(mappedSessions);

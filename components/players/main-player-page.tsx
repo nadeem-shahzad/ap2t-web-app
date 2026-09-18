@@ -682,21 +682,21 @@ function calculateTotalAttendedSessions(sessions: SessionData[] | undefined) {
 
 function generate12WeekCheckins(sessions: SessionData[] | undefined) {
   if (!sessions) return [];
-  const now = moment();
-
-  const validSessions = sessions.filter((session) => {
-    // if (session.status !== "completed") return false;
-
-    const attendance = session.attendance_detail || [];
-    return attendance.some((a: any) => a.status === 'present');
-  });
 
   const weekMap: Record<string, number> = {};
 
-  validSessions.forEach((session) => {
-    const weekKey = moment(session.date).startOf('week').format('YYYY-MM-DD');
-
-    weekMap[weekKey] = (weekMap[weekKey] || 0) + 1;
+  // Bucket by each attendance record's own timestamp, not the parent
+  // session's date — sessions.date is always null for fixed_dates sessions,
+  // and even for daily/multi-day sessions a check-in's own date is the
+  // correct thing to bucket by, not the session's start date.
+  sessions.forEach((session) => {
+    const attendance = session.attendance_detail || [];
+    attendance
+      .filter((a: any) => a.status === 'present' && a.created_at)
+      .forEach((a: any) => {
+        const weekKey = moment(a.created_at).startOf('week').format('YYYY-MM-DD');
+        weekMap[weekKey] = (weekMap[weekKey] || 0) + 1;
+      });
   });
 
   let weeksArray = Object.entries(weekMap)

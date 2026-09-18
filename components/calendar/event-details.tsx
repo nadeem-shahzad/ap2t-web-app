@@ -43,7 +43,8 @@ const EventDetail = ({
             </div>
 
             {events.map((event) => {
-              const enrolledChildren = event.is_daily_payment
+              const usesSessionDate = event.is_daily_payment || event.date_mode === 'fixed_dates';
+              const enrolledChildren = usesSessionDate
                 ? event.children.filter((child) =>
                     event.enrolled_dates_by_player?.[String(child.user_id)]?.includes(event.date)
                   )
@@ -116,7 +117,7 @@ const EventDetail = ({
                         <ParticipateButton
                           player_id={player_id}
                           session_id={event.originalId}
-                          session_date={event.is_daily_payment ? event.date : undefined}
+                          session_date={usesSessionDate ? event.date : undefined}
                           variants={event.variants ?? []}
                           onSuccess={async () => {
                             await onSuccess();
@@ -128,7 +129,7 @@ const EventDetail = ({
                         <AddParticipantDialog
                           parent_id={parent_id}
                           sessionId={Number(event.originalId)}
-                          session_date={event.is_daily_payment ? event.date : undefined}
+                          session_date={usesSessionDate ? event.date : undefined}
                           enrolled_player_ids={enrolledChildren.map((child) => child.user_id)}
                           variants={event.variants ?? []}
                           onSuccess={async () => {

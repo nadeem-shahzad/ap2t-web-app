@@ -10,6 +10,8 @@ import { sendInAppNotificationBackend } from '@/lib/send-inapp-notification';
 import moment from 'moment';
 import { NextRequest, NextResponse } from 'next/server';
 
+class CapacityError extends Error {}
+
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const { id } = await params;
 
@@ -53,6 +55,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
               SELECT COUNT(DISTINCT dp.user_id) FROM payments dp
               WHERE dp.session_id = s.id
                 AND dp.session_date::date = sd.date
+                AND dp.status NOT IN ('failed', 'refunded')
             ), 0)
           ) ORDER BY sd.date
         )
@@ -144,6 +147,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         `SELECT sd.max_players - COALESCE((
            SELECT COUNT(DISTINCT pay.user_id) FROM payments pay
            WHERE pay.session_id = sd.session_id AND pay.session_date::date = sd.date
+             AND pay.status NOT IN ('failed', 'refunded')
          ), 0) AS total_left,
          sd.is_active, sd.is_signup_open
          FROM session_dates sd
@@ -172,6 +176,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
               FROM payments pay
               WHERE pay.session_id = s.id
                 AND pay.session_date::date = $2::date
+                AND pay.status NOT IN ('failed', 'refunded')
             )
           ELSE s.max_players - COUNT(sp.user_id)
           END AS total_left,
@@ -257,6 +262,56 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+
+    // Authoritative capacity check, re-run here (locked) against a possible
+    // race with another signup that slipped past the earlier unlocked
+    // pre-check. FOR UPDATE serializes concurrent signups for the same
+    // session/date so they can't both observe a free seat.
+    if (isFixedDates) {
+      const dateRow = await client.query(
+        `SELECT max_players, is_active, is_signup_open
+         FROM session_dates
+         WHERE session_id = $1 AND date = $2::date
+         FOR UPDATE`,
+        [id, sessionDate]
+      );
+      const row = dateRow.rows[0];
+      if (!row || !row.is_active) {
+        throw new CapacityError('Selected date is not available');
+      }
+      if (!row.is_signup_open) {
+        throw new CapacityError('Signups are closed for the selected date');
+      }
+      const countRes = await client.query(
+        `SELECT COUNT(DISTINCT user_id) FROM payments
+         WHERE session_id = $1 AND session_date::date = $2::date
+           AND status NOT IN ('failed', 'refunded')`,
+        [id, sessionDate]
+      );
+      if (Number(row.max_players) - Number(countRes.rows[0].count) <= 0) {
+        throw new CapacityError('Session is full');
+      }
+    } else {
+      const sessionRow = await client.query(
+        `SELECT max_players FROM sessions WHERE id = $1 FOR UPDATE`,
+        [id]
+      );
+      const row = sessionRow.rows[0];
+      if (!row) {
+        throw new CapacityError('Session not found');
+      }
+      const countRes = isDailyPayment
+        ? await client.query(
+            `SELECT COUNT(DISTINCT user_id) FROM payments
+             WHERE session_id = $1 AND session_date::date = $2::date
+               AND status NOT IN ('failed', 'refunded')`,
+            [id, sessionDate]
+          )
+        : await client.query(`SELECT COUNT(*) FROM session_players WHERE session_id = $1`, [id]);
+      if (Number(row.max_players) - Number(countRes.rows[0].count) <= 0) {
+        throw new CapacityError('Session is full');
+      }
+    }
 
     let parentUserId: number | null = null;
     if (isUnderAged) {
@@ -392,6 +447,10 @@ WHERE se.session_id = $1
       } catch (cleanupErr: any) {
         console.error('Firebase cleanup failed:', cleanupErr.message);
       }
+    }
+
+    if (err instanceof CapacityError) {
+      return NextResponse.json({ error: err.message }, { status: 409 });
     }
 
     return NextResponse.json({ error: 'Registration failed: ' + err.message }, { status: 500 });

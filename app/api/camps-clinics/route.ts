@@ -40,6 +40,7 @@ export async function GET() {
               SELECT COUNT(DISTINCT dp.user_id) FROM payments dp
               WHERE dp.session_id = s.id
                 AND dp.session_date::date = sd.date
+                AND dp.status NOT IN ('failed', 'refunded')
             ), 0)
           ) ORDER BY sd.date
         )

@@ -23,6 +23,8 @@ export type CalendarEvent = {
   requires_upfront_payment?: boolean;
   enrolled_dates?: string[];
   enrolled_dates_by_player?: Record<string, string[]>;
+  date_mode?: DateMode;
+  dates?: SessionDate[];
 };
 
 export type CustomCalendarProps = {
@@ -347,6 +349,8 @@ export type SessionProps = {
   children: { user_id: number; last_name: string; first_name: string }[];
   location?: string;
   variants?: { id: number; hour: number; price: string | number }[];
+  date_mode?: DateMode;
+  dates?: SessionDate[];
 };
 
 export type SquareMode = 'test' | 'live';
@@ -396,6 +400,7 @@ export type FrontDeskActionData = {
   price: number;
   action: 'cash' | 'approval';
   status: 'waiting' | 'accepted' | 'rejected';
+  date_mode?: DateMode;
 };
 
 export interface ParentDetailResponse {
@@ -538,6 +543,8 @@ export type SessionCoach = {
   age_limit: string;
   coach_first_name: string;
   coach_last_name: string;
+  date_mode?: DateMode;
+  dates?: Pick<SessionDate, 'date'>[];
 };
 
 export type SessionType = {

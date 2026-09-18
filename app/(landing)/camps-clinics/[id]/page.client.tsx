@@ -9,7 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import axios from '@/lib/axios';
-import { formatSessionDateRange } from '@/lib/date';
+import { formatSessionDateRange, parseDateOnly } from '@/lib/date';
 import { CampClinicSession, SessionDate } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { CircleAlert, CircleCheckBig, CreditCard, DollarSign } from 'lucide-react';
@@ -67,7 +67,7 @@ export default function CampsAndClinicsDetail({ data = null }: { data: CampClini
   const nearestFixedDate = isFixedDates
     ? [...(data?.dates ?? [])]
         .filter((d) => d.is_active && d.is_signup_open)
-        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0]
+        .sort((a, b) => a.date.localeCompare(b.date))[0]
     : null;
   const [formData, setFormData] = useState({
     session_date:
@@ -299,17 +299,11 @@ export default function CampsAndClinicsDetail({ data = null }: { data: CampClini
                           <Calendar
                             mode="single"
                             required
-                            selected={
-                              formData.session_date
-                                ? new Date(formData.session_date)
-                                : undefined
-                            }
+                            selected={parseDateOnly(formData.session_date) ?? undefined}
                             defaultMonth={
-                              formData.session_date
-                                ? new Date(formData.session_date)
-                                : nearestFixedDate
-                                  ? new Date(nearestFixedDate.date)
-                                  : undefined
+                              parseDateOnly(formData.session_date) ??
+                              parseDateOnly(nearestFixedDate?.date) ??
+                              undefined
                             }
                             onSelect={(value) => {
                               if (!value) return;

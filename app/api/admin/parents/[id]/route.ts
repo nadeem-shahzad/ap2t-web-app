@@ -65,6 +65,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
           s.name,
           s.status,
           s.date,
+          s.date_mode,
           s.start_time,
           s.end_time,
           s.apply_promotion,
@@ -91,6 +92,24 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       );
 
       sessionRows = sessionsResult.rows;
+    }
+
+    /* -------------------------------------------------------
+       3️⃣a Enrolled occurrence dates for fixed-dates sessions
+       (sessions.date is always null for these — the actual date lives on
+       the payment row instead)
+    ------------------------------------------------------- */
+
+    let fixedDatePayments: { user_id: number; session_id: number; session_date: string }[] = [];
+
+    if (childUserIds.length) {
+      const fixedDateResult = await pool.query(
+        `SELECT user_id, session_id, session_date
+         FROM payments
+         WHERE user_id = ANY($1) AND session_date IS NOT NULL`,
+        [childUserIds]
+      );
+      fixedDatePayments = fixedDateResult.rows;
     }
 
     /* -------------------------------------------------------
@@ -158,8 +177,19 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const childrenWithStats = children.map((child) => {
       const childSessions = sessionRows.filter((s) => s.child_id === child.user_id);
 
-      const nextSession = childSessions
-        .filter((s) => new Date(s.date) >= new Date())
+      // For fixed-dates sessions, sessions.date is always null — resolve the
+      // actual enrolled date(s) from this child's payment rows instead.
+      const nextSessionCandidates = childSessions.flatMap((s) => {
+        if (s.date_mode === 'fixed_dates') {
+          return fixedDatePayments
+            .filter((p) => p.user_id === child.user_id && p.session_id === s.session_id)
+            .map((p) => ({ date: p.session_date, start_time: s.start_time }));
+        }
+        return [{ date: s.date, start_time: s.start_time }];
+      });
+
+      const nextSession = nextSessionCandidates
+        .filter((s) => s.date && new Date(s.date) >= new Date())
         .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
 
       return {

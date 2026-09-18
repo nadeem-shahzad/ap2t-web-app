@@ -146,6 +146,20 @@ export default function MainCoachPage({
 
   const weeklyEvents = data?.session_data
     ? data.session_data.flatMap((session) => {
+        if ((session as any).date_mode === 'fixed_dates') {
+          return ((session as any).dates ?? []).map((d: { date: string }) => {
+            const dateStr = d.date.slice(0, 10);
+            return {
+              title: session.name,
+              date: dateStr,
+              time: session.start_time,
+              end_time: session.end_time,
+              status: 'Booked',
+              end_date: dateStr,
+            };
+          });
+        }
+
         const events = [];
 
         let current = moment(session.date);
@@ -426,7 +440,13 @@ export default function MainCoachPage({
                         <div className="flex gap-4 text-xs text-muted-foreground">
                           <div className="flex gap-2  items-center">
                             <Calendar size={12} />{' '}
-                            <p>{moment(new Date(session.date)).format('YYYY-MM-DD')}</p>
+                            <p>
+                              {(session as any).date_mode === 'fixed_dates'
+                                ? `${(session as any).dates?.length ?? 0} dates`
+                                : session.date
+                                  ? moment(new Date(session.date)).format('YYYY-MM-DD')
+                                  : ''}
+                            </p>
                           </div>
                           <div className="flex gap-2  items-center">
                             <Clock size={12} />{' '}

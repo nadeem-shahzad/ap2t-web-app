@@ -6,6 +6,29 @@ import CardStatus from '../card-status';
 import DummyButton from '../dummy-button';
 import { SessionProps } from '@/lib/types';
 
+const DateTimeCell = ({ row }: { row: { original: SessionProps } }) => {
+  const session = row.original;
+
+  if (session.date_mode === 'fixed_dates') {
+    const count = session.dates?.length ?? 0;
+    return (
+      <div className="leading-tight">
+        <div className="text-[#D1D5DC]">{count} {count === 1 ? 'date' : 'dates'}</div>
+        <div className="text-xs text-[#9CA3AF]">{session.time}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="leading-tight">
+      <div className="text-[#D1D5DC]">
+        {session.date}-{session.end_date}
+      </div>
+      <div className="text-xs text-[#9CA3AF]">{session.time}</div>
+    </div>
+  );
+};
+
 export const SESSION_COLUMNS: ColumnDef<SessionProps>[] = [
   {
     accessorKey: 'sessionName',
@@ -51,16 +74,7 @@ export const SESSION_COLUMNS: ColumnDef<SessionProps>[] = [
         <ArrowUpDown />
       </Button>
     ),
-    cell: ({ row }) => {
-      return (
-        <div className="leading-tight">
-          <div className="text-[#D1D5DC]">
-            {row.original.date}-{row.original.end_date}
-          </div>
-          <div className="text-xs text-[#9CA3AF]">{row.original.time}</div>
-        </div>
-      );
-    },
+    cell: DateTimeCell,
   },
 
   {
@@ -177,14 +191,7 @@ export const SESSION_COLUMNS_COACH: ColumnDef<SessionProps>[] = [
         <ArrowUpDown />
       </Button>
     ),
-    cell: ({ row }) => (
-      <div className="leading-tight">
-        <div className="text-[#D1D5DC]">
-          {row.original.date}-{row.original.end_date}
-        </div>
-        <div className="text-xs text-[#9CA3AF]">{row.original.time}</div>
-      </div>
-    ),
+    cell: DateTimeCell,
   },
 
   {

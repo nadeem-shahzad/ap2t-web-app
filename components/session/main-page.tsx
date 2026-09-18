@@ -35,6 +35,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import axios from '@/lib/axios';
 import { joinNames } from '@/lib/functions';
 import { SessionDataType } from '@/lib/types';
+import { cn } from '@/lib/utils';
 import { Scrollbar } from '@radix-ui/react-scroll-area';
 import {
   Calendar,
@@ -244,15 +245,6 @@ export default function SessionMainPage({
         )
       : null;
 
-  const toggleDateSignup = async (dateId: number, is_signup_open: boolean) => {
-    try {
-      await axios.patch(`/admin/sessions/${id}/dates/${dateId}`, { is_signup_open });
-      await fetchData();
-    } catch (error) {
-      console.error('Error updating date signup status', error);
-    }
-  };
-
   function calculatePaymentStats(participants: any[], payments: any[]) {
     let totalAmount = 0;
     let totalPaid = 0;
@@ -331,72 +323,6 @@ export default function SessionMainPage({
             )}
             onChange={(event) => setSelectedSessionDate(event.target.value)}
           />
-        </div>
-      )}
-
-      {rawSessionData?.date_mode === 'fixed_dates' && (
-        <div className="space-y-4">
-          <div className="flex max-w-xs flex-col gap-2">
-            <Label className="flex items-center gap-2">
-              Occurrence Date {dailyDataLoading && <Spinner className="h-4 w-4" />}
-            </Label>
-            <Select value={selectedSessionDate} onValueChange={setSelectedSessionDate}>
-              <SelectTrigger className="w-full dark:bg-[#1A1A1A] rounded-sm">
-                <SelectValue placeholder="Select date" />
-              </SelectTrigger>
-              <SelectContent className="!bg-[#1A1A1A]">
-                <SelectGroup>
-                  <SelectLabel>Dates</SelectLabel>
-                  {rawSessionData.dates?.map((dt: any) => (
-                    <SelectItem key={dt.id} value={moment(dt.date).format('YYYY-MM-DD')}>
-                      {moment(dt.date).format('YYYY-MM-DD')} — ${dt.price}{' '}
-                      {dt.left <= 0 ? '(Sold out)' : `(${dt.left} left)`}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <Card className="rounded-2xl bg-[#252525]">
-            <CardContent className="space-y-2">
-              <h3 className="text-sm font-medium text-[#F3F4F6]">Occurrence dates</h3>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-left text-muted-foreground">
-                      <th className="py-2 pr-4">Date</th>
-                      <th className="py-2 pr-4">Price</th>
-                      <th className="py-2 pr-4">Capacity</th>
-                      <th className="py-2 pr-4">Left</th>
-                      <th className="py-2 pr-4">Signup open</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rawSessionData.dates?.map((dt: any) => (
-                      <tr key={dt.id} className="border-t border-[#3A3A3A] text-[#D1D5DC]">
-                        <td className="py-2 pr-4">{moment(dt.date).format('YYYY-MM-DD')}</td>
-                        <td className="py-2 pr-4">
-                          ${dt.price}
-                          {dt.promotion_price ? ` → $${dt.promotion_price}` : ''}
-                        </td>
-                        <td className="py-2 pr-4">{dt.max_players}</td>
-                        <td className="py-2 pr-4">{dt.left}</td>
-                        <td className="py-2 pr-4">
-                          <Checkbox
-                            checked={dt.is_signup_open}
-                            onCheckedChange={(checked) =>
-                              toggleDateSignup(dt.id, checked === true)
-                            }
-                          />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
         </div>
       )}
 
@@ -507,6 +433,62 @@ export default function SessionMainPage({
           </div>
         </CardContent>
       </Card>
+
+      {rawSessionData?.date_mode === 'fixed_dates' && (
+        <Card className="rounded-2xl bg-[#252525]">
+          <CardContent className="space-y-3">
+            <h3 className="flex items-center gap-2 text-sm font-medium text-[#F3F4F6]">
+              Occurrence Dates {dailyDataLoading && <Spinner className="h-4 w-4" />}
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Click a date to view its sign-ups and payments below. Dates are fixed at creation
+              and can&apos;t be changed here.
+            </p>
+            <ScrollArea className="w-full">
+              <div className="flex gap-3 pb-2">
+                {(rawSessionData.dates ?? []).map((dt: any) => {
+                  const dateKey = moment(dt.date).format('YYYY-MM-DD');
+                  const isToday = moment(dt.date).isSame(moment(), 'day');
+                  const selected = selectedSessionDate === dateKey;
+                  const soldOut = dt.left <= 0 || !dt.is_signup_open;
+
+                  return (
+                    <button
+                      type="button"
+                      key={dt.id}
+                      onClick={() => setSelectedSessionDate(dateKey)}
+                      className={cn(
+                        'flex shrink-0 flex-col items-center gap-1.5 rounded-2xl border px-4 py-3 min-w-[84px] transition-colors',
+                        selected
+                          ? 'border-primary bg-primary/10 text-primary'
+                          : 'border-[#3A3A3A] text-[#D1D5DC] hover:border-white/30'
+                      )}
+                    >
+                      <span className="text-xs font-medium">
+                        {isToday ? 'Today' : moment(dt.date).format('ddd')}
+                      </span>
+                      <span className="text-sm font-semibold">
+                        {moment(dt.date).format('DD MMM')}
+                      </span>
+                      <span
+                        className={cn(
+                          'rounded-full px-2 py-0.5 text-[10px] font-medium',
+                          soldOut
+                            ? 'bg-red-500/15 text-red-400'
+                            : 'bg-active-bg text-active-text'
+                        )}
+                      >
+                        {soldOut ? 'Sold out' : `$${dt.promotion_price ?? dt.price}`}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              <Scrollbar orientation="horizontal" />
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="w-full rounded-2xl bg-[#252525] py-2">
         <Tabs

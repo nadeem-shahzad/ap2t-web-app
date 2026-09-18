@@ -181,9 +181,7 @@ export const transformCampClinics = (sessions: CampClinicSession[]): CampClinicC
       const lowestPrice = Math.min(
         ...dates.map((d) => Number(s.apply_promotion ? (d.promotion_price ?? d.price) : d.price))
       );
-      const nearest = [...dates].sort(
-        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-      )[0];
+      const nearest = [...dates].sort((a, b) => a.date.localeCompare(b.date))[0];
 
       return {
         id: s.id,

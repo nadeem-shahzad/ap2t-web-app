@@ -20,6 +20,7 @@ export async function GET() {
     s.end_date,
     s.start_time,
     s.end_time,
+    s.date_mode,
     fda.price,
     fda.session_date,
     fda.referal_code,
@@ -164,7 +165,8 @@ export async function PUT(req: NextRequest) {
             const dailyCapacity = await client.query(
               `SELECT COUNT(DISTINCT user_id) FROM payments
                WHERE session_id = $1
-                 AND session_date::date = $2::date`,
+                 AND session_date::date = $2::date
+                 AND status NOT IN ('failed', 'refunded')`,
               [session_id, dailySessionDate]
             );
             const dailyMaxPlayers = isFixedDates
@@ -205,7 +207,8 @@ export async function PUT(req: NextRequest) {
               ? await client.query(
                   `SELECT COUNT(DISTINCT user_id) FROM payments
                  WHERE session_id = $1
-                   AND session_date::date = $2::date`,
+                   AND session_date::date = $2::date
+                   AND status NOT IN ('failed', 'refunded')`,
                   [session_id, dailySessionDate]
                 )
               : await client.query(`SELECT COUNT(*) FROM session_players WHERE session_id = $1`, [
