@@ -121,6 +121,12 @@ export default function SessionMainPage({
         setRawSessionData(d);
         if (d.is_daily_payment) {
           setSelectedSessionDate(moment(new Date(d.date)).format('YYYY-MM-DD'));
+        } else if (d.date_mode === 'fixed_dates' && Array.isArray(d.dates) && d.dates.length) {
+          const today = moment().format('YYYY-MM-DD');
+          const nearest =
+            d.dates.find((dt: any) => moment(dt.date).format('YYYY-MM-DD') >= today) ??
+            d.dates[0];
+          setSelectedSessionDate(moment(nearest.date).format('YYYY-MM-DD'));
         }
         setData({
           id: d.id,
@@ -166,11 +172,14 @@ export default function SessionMainPage({
     }
   };
 
+  const usesSessionDateFilter =
+    rawSessionData?.is_daily_payment || rawSessionData?.date_mode === 'fixed_dates';
+
   const fetchParticipants = async () => {
     try {
       const response = await axios.get(`/admin/sessions/${id}/participants`, {
         params:
-          rawSessionData?.is_daily_payment && selectedSessionDate
+          usesSessionDateFilter && selectedSessionDate
             ? { session_date: selectedSessionDate }
             : undefined,
       });
@@ -184,7 +193,7 @@ export default function SessionMainPage({
     try {
       const response = await axios.get(`/admin/sessions/${id}/payments`, {
         params:
-          rawSessionData?.is_daily_payment && selectedSessionDate
+          usesSessionDateFilter && selectedSessionDate
             ? { session_date: selectedSessionDate }
             : undefined,
       });
@@ -222,11 +231,27 @@ export default function SessionMainPage({
   }, [participants, payments, data]);
 
   useEffect(() => {
-    if (rawSessionData?.is_daily_payment && selectedSessionDate) {
+    if (usesSessionDateFilter && selectedSessionDate) {
       setDailyDataLoading(true);
       Promise.all([fetchParticipants(), fetchPayments()]).finally(() => setDailyDataLoading(false));
     }
-  }, [selectedSessionDate, rawSessionData?.is_daily_payment]);
+  }, [selectedSessionDate, usesSessionDateFilter]);
+
+  const selectedFixedDateRow =
+    rawSessionData?.date_mode === 'fixed_dates'
+      ? rawSessionData?.dates?.find(
+          (dt: any) => moment(dt.date).format('YYYY-MM-DD') === selectedSessionDate
+        )
+      : null;
+
+  const toggleDateSignup = async (dateId: number, is_signup_open: boolean) => {
+    try {
+      await axios.patch(`/admin/sessions/${id}/dates/${dateId}`, { is_signup_open });
+      await fetchData();
+    } catch (error) {
+      console.error('Error updating date signup status', error);
+    }
+  };
 
   function calculatePaymentStats(participants: any[], payments: any[]) {
     let totalAmount = 0;
@@ -257,10 +282,15 @@ export default function SessionMainPage({
 
   const stats = [
     {
-      h: `${participants.length}/${data?.max_players || '-'}`,
-      p: rawSessionData?.is_daily_payment
-        ? `Booked for ${selectedSessionDate}`
-        : 'Overall Enrolled',
+      h: `${participants.length}/${
+        rawSessionData?.date_mode === 'fixed_dates'
+          ? (selectedFixedDateRow?.max_players ?? '-')
+          : data?.max_players || '-'
+      }`,
+      p:
+        rawSessionData?.is_daily_payment || rawSessionData?.date_mode === 'fixed_dates'
+          ? `Booked for ${selectedSessionDate}`
+          : 'Overall Enrolled',
       icon: <Users />,
       type: 'info',
     },
@@ -301,6 +331,72 @@ export default function SessionMainPage({
             )}
             onChange={(event) => setSelectedSessionDate(event.target.value)}
           />
+        </div>
+      )}
+
+      {rawSessionData?.date_mode === 'fixed_dates' && (
+        <div className="space-y-4">
+          <div className="flex max-w-xs flex-col gap-2">
+            <Label className="flex items-center gap-2">
+              Occurrence Date {dailyDataLoading && <Spinner className="h-4 w-4" />}
+            </Label>
+            <Select value={selectedSessionDate} onValueChange={setSelectedSessionDate}>
+              <SelectTrigger className="w-full dark:bg-[#1A1A1A] rounded-sm">
+                <SelectValue placeholder="Select date" />
+              </SelectTrigger>
+              <SelectContent className="!bg-[#1A1A1A]">
+                <SelectGroup>
+                  <SelectLabel>Dates</SelectLabel>
+                  {rawSessionData.dates?.map((dt: any) => (
+                    <SelectItem key={dt.id} value={moment(dt.date).format('YYYY-MM-DD')}>
+                      {moment(dt.date).format('YYYY-MM-DD')} — ${dt.price}{' '}
+                      {dt.left <= 0 ? '(Sold out)' : `(${dt.left} left)`}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <Card className="rounded-2xl bg-[#252525]">
+            <CardContent className="space-y-2">
+              <h3 className="text-sm font-medium text-[#F3F4F6]">Occurrence dates</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-muted-foreground">
+                      <th className="py-2 pr-4">Date</th>
+                      <th className="py-2 pr-4">Price</th>
+                      <th className="py-2 pr-4">Capacity</th>
+                      <th className="py-2 pr-4">Left</th>
+                      <th className="py-2 pr-4">Signup open</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rawSessionData.dates?.map((dt: any) => (
+                      <tr key={dt.id} className="border-t border-[#3A3A3A] text-[#D1D5DC]">
+                        <td className="py-2 pr-4">{moment(dt.date).format('YYYY-MM-DD')}</td>
+                        <td className="py-2 pr-4">
+                          ${dt.price}
+                          {dt.promotion_price ? ` → $${dt.promotion_price}` : ''}
+                        </td>
+                        <td className="py-2 pr-4">{dt.max_players}</td>
+                        <td className="py-2 pr-4">{dt.left}</td>
+                        <td className="py-2 pr-4">
+                          <Checkbox
+                            checked={dt.is_signup_open}
+                            onCheckedChange={(checked) =>
+                              toggleDateSignup(dt.id, checked === true)
+                            }
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
 

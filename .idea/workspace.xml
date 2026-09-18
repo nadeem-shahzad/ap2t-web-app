@@ -38,6 +38,7 @@
 }</component>
   <component name="HighlightingSettingsPerFile">
     <setting file="file://$PROJECT_DIR$/node_modules/tailwindcss/dist/default-theme.d.mts" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/package-lock.json" root0="SKIP_HIGHLIGHTING" />
   </component>
   <component name="McpProjectServerCommands">
     <commands />
@@ -46,61 +47,61 @@
   <component name="MetaFilesCheckinStateConfiguration" checkMetaFiles="true" />
   <component name="NextEditCompletionFeaturesState">
     <decayedCancelled>
-      <entry key="MS100" value="1.5226254003690927" />
-      <entry key="MS500" value="3.9866653504379665" />
-      <entry key="S2" value="7.9116779303379206" />
-      <entry key="S5" value="9.578512591780594" />
-      <entry key="S10" value="10.25349678783591" />
-      <entry key="S30" value="10.742719090546887" />
-      <entry key="S60" value="10.870270789874784" />
-      <entry key="M2" value="10.934860668886875" />
-      <entry key="M5" value="10.97394876086376" />
-      <entry key="M10" value="11.003750987731845" />
-      <entry key="M15" value="11.095503925348124" />
-      <entry key="M30" value="11.641305340821713" />
-      <entry key="H1" value="12.604885196278726" />
-      <entry key="H2" value="13.534311318373764" />
-      <entry key="H4" value="14.184043664180503" />
-      <entry key="D1" value="14.85077938843661" />
-      <entry key="W1" value="14.978334294353456" />
+      <entry key="MS100" value="1.0" />
+      <entry key="MS500" value="1.0000000010276529" />
+      <entry key="S2" value="1.0056618935370274" />
+      <entry key="S5" value="1.1274131431856778" />
+      <entry key="S10" value="1.4689456290643212" />
+      <entry key="S30" value="4.103480713609654" />
+      <entry key="S60" value="6.974398024341671" />
+      <entry key="M2" value="9.431372295715407" />
+      <entry key="M5" value="11.410745925624253" />
+      <entry key="M10" value="12.191173605779973" />
+      <entry key="M15" value="12.542671899000121" />
+      <entry key="M30" value="13.348005024980688" />
+      <entry key="H1" value="14.445356051152986" />
+      <entry key="H2" value="15.448507104621173" />
+      <entry key="H4" value="16.139047089015964" />
+      <entry key="D1" value="16.842922963504243" />
+      <entry key="W1" value="16.977202205089156" />
     </decayedCancelled>
     <decayedSelected>
-      <entry key="MS100" value="0.0" />
-      <entry key="MS500" value="0.0" />
-      <entry key="S2" value="0.0" />
-      <entry key="S5" value="1.6889243055941703E-260" />
-      <entry key="S10" value="1.2995862055262708E-130" />
-      <entry key="S30" value="5.065259475188169E-44" />
-      <entry key="S60" value="2.2506131331679746E-22" />
-      <entry key="M2" value="1.500204363801136E-11" />
-      <entry key="M5" value="4.68231006762877E-5" />
-      <entry key="M10" value="0.006842740728413412" />
-      <entry key="M15" value="0.03604292736092717" />
-      <entry key="M30" value="0.18984974943604002" />
-      <entry key="H1" value="0.43571751105049705" />
-      <entry key="H2" value="0.6600890175199835" />
-      <entry key="H4" value="0.812458625112678" />
-      <entry key="D1" value="0.9659771993854294" />
-      <entry key="W1" value="0.9950671995367019" />
+      <entry key="MS100" value="2.6180545940410443E-160" />
+      <entry key="MS500" value="1.2128153692051017E-32" />
+      <entry key="S2" value="1.3099185948805458E-8" />
+      <entry key="S5" value="0.0013258274812782724" />
+      <entry key="S10" value="0.07026580616443623" />
+      <entry key="S30" value="1.031843151436084" />
+      <entry key="S60" value="2.0296978783894843" />
+      <entry key="M2" value="2.848691458122057" />
+      <entry key="M5" value="3.492008149804766" />
+      <entry key="M10" value="3.7436754182910352" />
+      <entry key="M15" value="3.8571866021855463" />
+      <entry key="M30" value="4.095604797068255" />
+      <entry key="H1" value="4.385270145652555" />
+      <entry key="H2" value="4.633394234972612" />
+      <entry key="H4" value="4.798616325090118" />
+      <entry key="D1" value="4.9635873895985485" />
+      <entry key="W1" value="4.994723561928978" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="1.4581997521555372" />
-      <entry key="MS500" value="3.952205957651945" />
-      <entry key="S2" value="7.894673020461185" />
-      <entry key="S5" value="9.570292857440652" />
-      <entry key="S10" value="10.24910023541025" />
-      <entry key="S30" value="10.741184349401337" />
-      <entry key="S60" value="10.86949439768241" />
-      <entry key="M2" value="10.93447018880316" />
-      <entry key="M5" value="10.973838491062784" />
-      <entry key="M10" value="11.01048423074989" />
-      <entry key="M15" value="11.131376655761219" />
-      <entry key="M30" value="11.8307909283679" />
-      <entry key="H1" value="13.040183906927613" />
-      <entry key="H2" value="14.194079285979015" />
-      <entry key="H4" value="14.996303184519096" />
-      <entry key="D1" value="15.816716852669732" />
-      <entry key="W1" value="15.973395639064476" />
+      <entry key="MS100" value="0.27739236801696127" />
+      <entry key="MS500" value="0.7737824977038095" />
+      <entry key="S2" value="0.9434222859166633" />
+      <entry key="S5" value="1.1019291731379683" />
+      <entry key="S10" value="1.5168652068433723" />
+      <entry key="S30" value="5.088676006345601" />
+      <entry key="S60" value="8.960041553549491" />
+      <entry key="M2" value="12.249443464406474" />
+      <entry key="M5" value="14.88779021134966" />
+      <entry key="M10" value="15.926819061408517" />
+      <entry key="M15" value="16.394291382584274" />
+      <entry key="M30" value="17.440490818176517" />
+      <entry key="H1" value="18.828815107907015" />
+      <entry key="H2" value="20.080879616518768" />
+      <entry key="H4" value="20.937112607431043" />
+      <entry key="D1" value="21.806411780738294" />
+      <entry key="W1" value="21.97191150098689" />
     </decayedShown>
   </component>
   <component name="ProjectColorInfo">{
@@ -112,28 +113,29 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.MCP Project settings loaded": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.cidr.known.project.marker": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "RunOnceActivity.readMode.enableVisualFormatting": "true",
-    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
-    "cidr.known.project.marker": "true",
-    "codeWithMe.voiceChat.enabledByDefault": "false",
-    "git-widget-placeholder": "development",
-    "js.debugger.nextJs.config.created.client": "true",
-    "js.debugger.nextJs.config.created.server": "true",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "ts.external.directory.path": "/Users/nadeemshahzad/Documents/Projects/NPlays/ap2t-web-app/node_modules/typescript/lib"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.readMode.enableVisualFormatting&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;development&quot;,
+    &quot;js.debugger.nextJs.config.created.client&quot;: &quot;true&quot;,
+    &quot;js.debugger.nextJs.config.created.server&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;settings.javascript.prettier&quot;,
+    &quot;ts.external.directory.path&quot;: &quot;/Users/nadeemshahzad/Documents/Projects/NPlays/ap2t-web-app/node_modules/typescript/lib&quot;
   }
-}]]></component>
+}</component>
   <component name="RunManager" selected="npm.Next.js: server-side">
     <configuration name="Next.js: debug client-side" type="JavascriptDebugType" uri="http://localhost:3000/">
       <method v="2" />
@@ -189,5 +191,9 @@
         </breakpoint>
       </breakpoints>
     </breakpoint-manager>
+  </component>
+  <component name="XSLT-Support.FileAssociations.UIState">
+    <expand />
+    <select />
   </component>
 </project>

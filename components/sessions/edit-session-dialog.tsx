@@ -183,6 +183,8 @@ export function EditSessionDialog({
       is_daily_payment: false,
       pricing_mode: 'single',
       variants: [],
+      date_mode: 'single',
+      dates: [],
       max_players: 0,
       apply_promotion: promotion,
       show_storefront: false,
@@ -198,6 +200,7 @@ export function EditSessionDialog({
   const selectedCoachId = form.watch('coach_id');
   const applyPromotion = form.watch('apply_promotion');
   const promotionImage = form.watch('image');
+  const dateMode = form.watch('date_mode');
   const isExistingPromotion = Boolean(sessionData?.apply_promotion);
 
   useEffect(() => {
@@ -221,6 +224,18 @@ export function EditSessionDialog({
           sessionData.variants?.map((variant) => ({
             hour: Number(variant.hour),
             price: Number(variant.price),
+          })) ?? [],
+        date_mode: sessionData.date_mode === 'fixed_dates' ? 'fixed_dates' : 'single',
+        dates:
+          sessionData.dates?.map((entry) => ({
+            date: entry.date ? new Date(entry.date) : null,
+            price: Number(entry.price),
+            promotion_price:
+              entry.promotion_price !== null && entry.promotion_price !== undefined
+                ? Number(entry.promotion_price)
+                : undefined,
+            max_players: Number(entry.max_players),
+            is_signup_open: Boolean(entry.is_signup_open),
           })) ?? [],
         max_players: Number(sessionData.max_players),
         apply_promotion: sessionData.apply_promotion,
@@ -271,7 +286,19 @@ export function EditSessionDialog({
         return;
       }
 
-      const lockedFields = new Set(['price', 'is_daily_payment', 'pricing_mode', 'variants']);
+      const lockedFields = new Set([
+        'price',
+        'is_daily_payment',
+        'pricing_mode',
+        'variants',
+        'date_mode',
+        'dates',
+      ]);
+      if (sessionData?.date_mode === 'fixed_dates') {
+        // Fixed-dates capacity/pricing lives per-date; the admin dashboard's
+        // per-date controls own it, not this general edit form.
+        lockedFields.add('max_players');
+      }
       if (isExistingPromotion) {
         lockedFields.add('apply_promotion');
         lockedFields.add('promotion_price');
@@ -517,49 +544,75 @@ export function EditSessionDialog({
                   <h1 className="text-[#F3F4F6]">Schedule</h1>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <div className="space-y-2">
-                    <Controller
-                      name="date"
-                      control={form.control}
-                      render={({ field, fieldState }) => (
-                        <Field data-invalid={fieldState.invalid}>
-                          <Label className="text-sm text-[#99A1AF]">
-                            Start Date <RequiredStar />
-                          </Label>
-                          <AppCalendar
-                            className="h-9"
-                            date={field.value ? new Date(field.value) : undefined}
-                            onChange={field.onChange}
-                            required
-                          />
-                          {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                        </Field>
-                      )}
-                    />
+                {dateMode === 'fixed_dates' ? (
+                  <div className="space-y-2 rounded-md border border-[#3A3A3A] bg-[#1A1A1A] p-3">
+                    <p className="text-sm font-medium text-[#F3F4F6]">Occurrence dates (locked)</p>
+                    <p className="text-xs text-muted-foreground">
+                      Manage per-date price, capacity and signup status from the promotion&apos;s
+                      detail page.
+                    </p>
+                    <div className="space-y-1">
+                      {form.getValues('dates').map((entry, index) => (
+                        <div
+                          key={index}
+                          className="flex flex-wrap justify-between gap-2 text-sm text-[#D1D5DC] border-b border-[#3A3A3A] py-1 last:border-b-0"
+                        >
+                          <span>{entry.date ? moment(entry.date).format('YYYY-MM-DD') : '—'}</span>
+                          <span>
+                            ${entry.price}
+                            {entry.promotion_price ? ` → $${entry.promotion_price}` : ''}
+                          </span>
+                          <span>{entry.max_players} max</span>
+                          <span>{entry.is_signup_open ? 'Signup open' : 'Signup closed'}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div className="space-y-2">
+                      <Controller
+                        name="date"
+                        control={form.control}
+                        render={({ field, fieldState }) => (
+                          <Field data-invalid={fieldState.invalid}>
+                            <Label className="text-sm text-[#99A1AF]">
+                              Start Date <RequiredStar />
+                            </Label>
+                            <AppCalendar
+                              className="h-9"
+                              date={field.value ? new Date(field.value) : undefined}
+                              onChange={field.onChange}
+                              required
+                            />
+                            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                          </Field>
+                        )}
+                      />
+                    </div>
 
-                  <div className="space-y-2">
-                    <Controller
-                      name="end_date"
-                      control={form.control}
-                      render={({ field, fieldState }) => (
-                        <Field data-invalid={fieldState.invalid}>
-                          <Label className="text-sm text-[#99A1AF]">
-                            End Date <RequiredStar />
-                          </Label>
-                          <AppCalendar
-                            className="h-9"
-                            date={field.value ? new Date(field.value) : undefined}
-                            onChange={field.onChange}
-                            required
-                          />
-                          {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                        </Field>
-                      )}
-                    />
+                    <div className="space-y-2">
+                      <Controller
+                        name="end_date"
+                        control={form.control}
+                        render={({ field, fieldState }) => (
+                          <Field data-invalid={fieldState.invalid}>
+                            <Label className="text-sm text-[#99A1AF]">
+                              End Date <RequiredStar />
+                            </Label>
+                            <AppCalendar
+                              className="h-9"
+                              date={field.value ? new Date(field.value) : undefined}
+                              onChange={field.onChange}
+                              required
+                            />
+                            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                          </Field>
+                        )}
+                      />
+                    </div>
                   </div>
-                </div>
+                )}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div className="space-y-2">
                     <Controller
@@ -650,34 +703,38 @@ export function EditSessionDialog({
                   </div>
                 </div>
 
-                <div className="flex gap-2 text-md ">
-                  <Users className="text-primary w-4 w-4" />
-                  <h1 className="text-[#F3F4F6]">Capacity</h1>
-                </div>
+                {dateMode !== 'fixed_dates' && (
+                  <>
+                    <div className="flex gap-2 text-md ">
+                      <Users className="text-primary w-4 w-4" />
+                      <h1 className="text-[#F3F4F6]">Capacity</h1>
+                    </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <div className="space-y-2">
-                    <Controller
-                      name="max_players"
-                      control={form.control}
-                      render={({ field, fieldState }) => (
-                        <Field data-invalid={fieldState.invalid}>
-                          <Label className="text-sm text-[#99A1AF]">
-                            Max Players <RequiredStar />
-                          </Label>
-                          <Input
-                            {...field}
-                            id={field.name}
-                            aria-invalid={fieldState.invalid}
-                            placeholder=""
-                            autoComplete="off"
-                          />
-                          {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                        </Field>
-                      )}
-                    />
-                  </div>
-                </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <div className="space-y-2">
+                        <Controller
+                          name="max_players"
+                          control={form.control}
+                          render={({ field, fieldState }) => (
+                            <Field data-invalid={fieldState.invalid}>
+                              <Label className="text-sm text-[#99A1AF]">
+                                Max Players <RequiredStar />
+                              </Label>
+                              <Input
+                                {...field}
+                                id={field.name}
+                                aria-invalid={fieldState.invalid}
+                                placeholder=""
+                                autoComplete="off"
+                              />
+                              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                            </Field>
+                          )}
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
 
                 <div className="flex gap-2 text-md">
                   <Tag className="text-primary w-4 h-4" />

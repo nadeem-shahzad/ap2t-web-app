@@ -247,14 +247,30 @@ export default function Page() {
                 <p className="text-sm text-muted-foreground">{item.description}</p>
               </div>
 
-              <div className="flex items-center gap-2">
-                <DollarSign size={16} className="text-success-text" />
-                <span className="text-xl font-semibold">{item.promotion_price}</span>
-                <span className="text-sm line-through text-muted-foreground">{item.price}</span>
-                <Badge className="bg-active-bg text-active-text rounded-md">
-                  Save ${item.save}
-                </Badge>
-              </div>
+              {item.rawData?.date_mode === 'fixed_dates' && item.rawData?.dates?.length ? (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <DollarSign size={16} className="text-success-text" />
+                  <span className="text-xl font-semibold">
+                    From $
+                    {Math.min(
+                      ...item.rawData.dates.map((d: any) => Number(d.promotion_price ?? d.price))
+                    )}
+                  </span>
+                  <Badge className="bg-active-bg text-active-text rounded-md">
+                    {item.rawData.dates.length}{' '}
+                    {item.rawData.dates.length === 1 ? 'date' : 'dates'}
+                  </Badge>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <DollarSign size={16} className="text-success-text" />
+                  <span className="text-xl font-semibold">{item.promotion_price}</span>
+                  <span className="text-sm line-through text-muted-foreground">{item.price}</span>
+                  <Badge className="bg-active-bg text-active-text rounded-md">
+                    Save ${item.save}
+                  </Badge>
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1 bg-[#1A1A1A] border border-border rounded-xl p-3">
@@ -308,7 +324,11 @@ export default function Page() {
                   <ShoppingBag size={16} />
                   <span>{item?.show_storefront ? 'Visible' : 'Not visible'} on Storefront</span>
                 </div>
-                <span>Users can signup</span>
+                <span>
+                  {item.rawData?.date_mode === 'fixed_dates'
+                    ? 'Per-date signup control'
+                    : 'Users can signup'}
+                </span>
               </div>
 
               <Separator />

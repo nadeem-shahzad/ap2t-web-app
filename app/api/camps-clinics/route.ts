@@ -22,12 +22,47 @@ export async function GET() {
     s.price,
     s.max_players,
     s.requires_upfront_payment,
+    s.date_mode,
     COUNT(sp.user_id) AS total_enrolled_players,
-    (s.max_players - COUNT(sp.user_id)) AS total_left
+    (s.max_players - COUNT(sp.user_id)) AS total_left,
+    COALESCE(
+      (
+        SELECT jsonb_agg(
+          jsonb_build_object(
+            'id', sd.id,
+            'date', sd.date,
+            'price', sd.price,
+            'promotion_price', sd.promotion_price,
+            'max_players', sd.max_players,
+            'is_active', sd.is_active,
+            'is_signup_open', sd.is_signup_open,
+            'left', sd.max_players - COALESCE((
+              SELECT COUNT(DISTINCT dp.user_id) FROM payments dp
+              WHERE dp.session_id = s.id
+                AND dp.session_date::date = sd.date
+            ), 0)
+          ) ORDER BY sd.date
+        )
+        FROM session_dates sd
+        WHERE sd.session_id = s.id
+          AND sd.is_active
+          AND sd.date >= CURRENT_DATE
+      ),
+      '[]'
+    ) AS dates
   FROM sessions s
   LEFT JOIN session_players sp ON sp.session_id = s.id
   WHERE s.apply_promotion IS TRUE
-    AND s.end_date::date >= CURRENT_DATE
+    AND (
+      (s.date_mode != 'fixed_dates' AND s.end_date::date >= CURRENT_DATE)
+      OR (
+        s.date_mode = 'fixed_dates'
+        AND EXISTS (
+          SELECT 1 FROM session_dates sd
+          WHERE sd.session_id = s.id AND sd.is_active AND sd.date >= CURRENT_DATE
+        )
+      )
+    )
   GROUP BY s.id
   ORDER BY s.date ASC
 `);

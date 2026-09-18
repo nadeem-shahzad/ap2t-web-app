@@ -39,6 +39,7 @@ CREATE TABLE session_dates (
   promotion_price NUMERIC,          -- required only if sessions.apply_promotion
   max_players INTEGER NOT NULL,
   is_active BOOLEAN NOT NULL DEFAULT true,
+  is_signup_open BOOLEAN NOT NULL DEFAULT true, -- per-date storefront visibility/signup toggle
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (session_id, date)
 );
@@ -124,22 +125,20 @@ Both already branch on `is_daily_payment` for per-date capacity — add a
   left, is_active }`, and extend `CampClinicCard` with an optional
   `dates: SessionDate[]`.
 
-## Migration strategy (no staging DB available)
+## Migration strategy
 
-Project has no staging database and is live in production. Chosen approach:
+`.env.development.local` already points at a separate Neon **project** from
+production (not a branch of it) — this is the project's existing dev/staging
+database. Chosen approach:
 
-1. Use **Neon branching** to create an instant copy-on-write clone of
-   production (schema + data) as a temporary branch — effectively free
-   staging specific to Neon.
-2. Point a temporary `.env.local` `DATABASE_URL` at the branch's connection
-   string.
-3. Run the migration (`CREATE TABLE session_dates`, `ALTER TABLE sessions
-   ADD COLUMN date_mode`) and the full feature build against the branch.
-4. Verify admin creation flow, storefront selection flow, capacity checks,
-   and payment amount resolution end-to-end on the branch.
-5. Once verified, apply the same migration SQL to production (additive-only,
+1. Run the migration (`CREATE TABLE session_dates`, `ALTER TABLE sessions
+   ADD COLUMN date_mode`) and the full feature build against the dev Neon
+   project.
+2. Verify admin creation flow, storefront selection flow, capacity checks,
+   and payment amount resolution end-to-end there.
+3. Once verified, apply the same migration SQL to production (additive-only,
    safe to run without downtime), then deploy the app code.
-6. Do **not** run any schema-altering command directly against production
+4. Do **not** run any schema-altering command directly against production
    without explicit confirmation at each step, given it's live.
 
 ## Data migration for existing promotions (separate, later step)
@@ -156,10 +155,192 @@ one-time data migration:
   deployed — treat it as its own careful, reviewed operation, not part of
   the initial rollout.
 
-## Open questions to resolve before/while implementing
+## Open questions — resolved
 
-1. Grid card summary (see "Storefront changes" above): "From $X" + which
-   seat count to display.
-2. Whether the admin "Users can signup" / "Visible on storefront" toggle
-   should be global to the promotion, per date, or both (global default +
-   per-date override).
+1. Grid card summary: show **"From $X"** (lowest active date's price) +
+   **remaining seats for the nearest upcoming date**.
+2. Admin "Users can signup" / "Visible on storefront" toggle is **per-date
+   only** — each date row gets its own toggle, no global master switch.
+
+## Implementation checklist
+
+Work happens against the dev Neon project first (see "Migration strategy"),
+verified end-to-end, then the same SQL is applied to production and the app
+code deployed. Check items off as they land; do not reorder — later steps
+depend on earlier ones (schema → types → admin write path → admin read/UI →
+storefront read → storefront UI → payment resolution → data migration).
+
+### 0. Environment / branch setup
+- [x] `.env.development.local` already points at a separate Neon project
+      from production — no branching needed, build/test directly against it
+
+### 1. Schema (on the dev Neon project first)
+- [x] `CREATE TABLE session_dates` (id, session_id FK, date, price,
+      promotion_price, max_players, is_active, is_signup_open, created_at,
+      UNIQUE(session_id, date)) — includes the per-date signup/visibility
+      toggle resolved above (`is_signup_open` alongside `is_active`).
+      Applied via `db/migrations/2026-09-18_session_dates.sql` against the
+      dev Neon project, verified column-by-column.
+- [x] `ALTER TABLE sessions ADD COLUMN date_mode` with CHECK constraint,
+      default `'single'`. Applied in the same migration, verified.
+- [x] Verified additive-only migration doesn't affect existing sessions —
+      spot-checked existing rows on dev DB, all default to
+      `date_mode: 'single'` with `is_daily_payment`/`apply_promotion`
+      unchanged; every read path added returns `dates: []` for them.
+
+### 2. Types
+- [x] `lib/types.ts`: added `DateMode` union + `date_mode` on
+      `CampClinicSession`/`CampClinicCard`
+- [x] `lib/types.ts`: added `SessionDate` type
+      `{ id, date, price, promotion_price, max_players, left, is_active, is_signup_open }`
+- [x] `lib/types.ts`: extended `CampClinicCard` and `CampClinicSession` with
+      optional `dates: SessionDate[]`
+
+### 3. Admin write path
+- [x] `app/api/admin/sessions/route.ts` (POST): when `date_mode ===
+      'fixed_dates'`, validates and inserts `session_dates` rows in the same
+      transaction; backfills `sessions.price`/`promotion_price`/
+      `max_players` (min price, min promo price, summed capacity) for
+      backward-compat reads, mirroring the `session_variants` trick
+- [x] `app/api/admin/sessions/route.ts` (PUT): deletes + re-inserts
+      `session_dates` rows on edit (same diff-by-replace pattern as
+      `session_variants`); clears `session_dates` if `date_mode` changes
+      away from `fixed_dates`
+- [x] `components/sessions/create-session-dialog.tsx`: added `date_mode`
+      field + "Add multiple dates" toggle button (mirrors "Convert to
+      variants"); when `fixed_dates`, single date/end_date, top-level price,
+      max players, payment-type, and single promotion-price fields are
+      hidden and replaced by a repeatable date-row editor (date, price,
+      promo price if `apply_promotion`, max players, is_signup_open
+      checkbox, remove button); mutually exclusive with variants pricing
+      mode and `is_daily_payment`. Typechecks clean.
+- [x] `components/sessions/edit-session-dialog.tsx`: fixed-dates fields are
+      **locked** on edit, consistent with the existing pattern that already
+      locks `price`/`is_daily_payment`/`pricing_mode`/`variants` post-
+      creation — `date_mode`/`dates` added to that locked set, plus
+      `max_players` locked specifically for fixed-dates sessions (its value
+      is a derived aggregate, not editable directly). Shows a read-only
+      per-date summary (date, price → promo price, max players, signup
+      status) instead of editable rows; per-date editing lives on the
+      promotions detail page (step 4) instead. Typechecks clean.
+- [x] `app/api/admin/sessions/route.ts` GET: extended to also return a
+      `dates` jsonb array per session (id, date, price, promotion_price,
+      max_players, is_active, is_signup_open, left — capacity computed the
+      same way as the existing daily-payment check). Verified against dev DB.
+- [x] End-to-end verified on dev DB: inserted a fixed-dates session +
+      session_dates rows via the same transaction shape as the route,
+      confirmed correct rows back, cleaned up test data.
+
+### 4. Admin read / promotions dashboard
+- [x] `app/api/admin/sessions/[id]/route.ts` GET: also returns the `dates[]`
+      array (same shape as the list GET) for the session detail page /
+      edit-dialog prefill.
+- [x] `app/api/admin/sessions/[id]/participants/route.ts`: GET's
+      `session_date` filter was already generic (matches whatever date is
+      passed) — works for `fixed_dates` with no change needed. POST
+      (admin-recorded enrollment) now branches on `date_mode ===
+      'fixed_dates'`: requires + validates the date against `session_dates`
+      (active + signup-open), checks per-date capacity from
+      `session_dates.max_players`, resolves price/promo-price from the
+      matching `session_dates` row instead of `sessions.price`, and stores
+      `session_date` on the payment row — mirrors the existing
+      `is_daily_payment` branch throughout. Typechecks clean.
+- [x] `app/portal/admin/promotions/page.tsx`: card stays one-per-promotion;
+      for `fixed_dates` promotions the price line shows "From $X" + a
+      "N dates" badge instead of a single before/after price, and the
+      storefront-visibility row says "Per-date signup control" instead of
+      "Users can signup" (control itself lives on the detail page).
+- [x] `app/api/admin/sessions/[id]/dates/[dateId]/route.ts` (new): PATCH
+      endpoint to update a single date's `is_signup_open`/`is_active`/
+      `max_players`.
+- [x] `components/session/main-page.tsx` (promotion detail page, shared with
+      coach view): for `fixed_dates` sessions, adds an occurrence-date
+      picker (reuses the existing daily-payment participants/payments
+      date-filter plumbing) and a per-date breakdown table — date, price →
+      promo price, capacity, left, signup-open checkbox wired to the new
+      PATCH endpoint. Header "enrolled" stat uses the selected date's
+      capacity instead of the session-level aggregate. Typechecks clean.
+
+### 5. Storefront read (API)
+- [x] `app/api/camps-clinics/route.ts` GET: returns a `dates[]` array (only
+      active, still-upcoming dates) per session; the storefront UI derives
+      "From $X" + nearest date's seats from it. Availability WHERE clause
+      extended so `fixed_dates` sessions (whose `end_date` is null) are no
+      longer excluded — matched via `EXISTS` against `session_dates` instead
+      of the `end_date >= CURRENT_DATE` check. Verified against dev DB.
+- [x] `app/api/camps-clinics/[id]/route.ts` GET: returns the full
+      `dates[]` array (date, price, promo price, left, is_active,
+      is_signup_open) for the detail page's date picker.
+- [x] Capacity query: `session_dates.max_players - COUNT(DISTINCT
+      payments.user_id for that session_id + date)`, same shape as the
+      existing `is_daily_payment` per-date COUNT check — used consistently
+      across every read path added.
+
+### 6. Storefront UI
+- [x] `app/(landing)/camps-clinics/[id]/page.client.tsx`: added a selectable
+      date-card list alongside (not replacing) the existing daily-payment
+      `<input type="date">` — each card shows date, effective price
+      (promo-aware), and "N left"/"Sold out", disabled when sold out or
+      signup closed. Defaults to the nearest open upcoming date. Price/left
+      shown elsewhere on the page (badge, event-details price line) are now
+      dynamic off the selected date for `fixed_dates` sessions.
+- [x] `app/(landing)/camps-clinics/page.client.tsx`: grid card shows
+      "From $X" (lowest active/promo price) + nearest upcoming date's seats
+      left, plus an "N dates available" detail line, for `fixed_dates`
+      sessions specifically — other modes' card layout is unchanged.
+- [x] Verified `/api/camps-clinics/[id]` end-to-end against dev DB: created
+      a fixed-dates session with two dates, confirmed the GET response
+      shape (`date_mode`, `dates[]` with price/promo/left/is_signup_open)
+      matches what the client component expects, cleaned up test data.
+
+### 7. Payment / checkout price resolution
+- [x] `app/api/camps-clinics/[id]/route.ts` POST (self-signup): validates
+      the submitted `session_date` against `session_dates`
+      (`is_active`/`is_signup_open`/capacity) for `fixed_dates` sessions,
+      same as the `is_daily_payment` date-range check it already had.
+      **Note:** this endpoint inserts every enrollment's payment as pending
+      `amount: 0` regardless of mode (single/daily/fixed) — that was already
+      true before this feature; actual charging elsewhere reads
+      `payments.amount` as-is. Not something this feature changed or needed
+      to fix; flagging only because it's a pre-existing gap worth a look
+      separately if pending amounts are ever charged as $0 in practice.
+- [x] `app/api/admin/sessions/[id]/participants/route.ts` (admin-recorded
+      enrollment): full `date_mode === 'fixed_dates'` branch — required
+      date, validated against `session_dates`, capacity from
+      `session_dates.max_players`, price/promo resolved from the matching
+      `session_dates` row.
+- [x] `app/api/front-desk/route.ts` (cash/approval flow): mirrors the
+      `is_daily_payment` branches with a `date_mode === 'fixed_dates'`
+      branch for date validity, capacity, and re-signup-for-a-different-date
+      handling. Also fixed a related bug this surfaced: the "mark cash
+      payment paid" query picked *any* pending payment row for
+      non-daily-payment sessions, which would have grabbed the wrong date's
+      row for a `fixed_dates` session with multiple pending payments for the
+      same user — now requires the `session_date` match whenever the
+      session isn't a plain single/date-range session.
+
+### 8. End-to-end verification (on the dev Neon project)
+- [ ] Admin: create a `fixed_dates` promotion with multiple dates/prices/
+      capacities
+- [ ] Admin: edit it (add/remove/change a date row)
+- [ ] Storefront: grid shows correct "From $X" + nearest seats left
+- [ ] Storefront: detail page lists all dates with correct price/left per
+      date, blocks sold-out/closed dates
+- [ ] Checkout: correct amount charged for the selected date
+      (Square + admin-recorded + front-desk paths)
+- [ ] Admin dashboard: per-date sign-ups/revenue/capacity reporting correct
+- [ ] Confirm `single` and `daily_range` sessions are fully unaffected
+
+### 9. Ship to production
+- [ ] Apply the same schema SQL to production (additive-only) — explicit
+      confirmation before running against prod
+- [ ] Deploy app code
+- [ ] Smoke-test one real `fixed_dates` promotion end-to-end in prod
+
+### 10. Data migration for existing promotions (separate, later)
+- [ ] Consolidate existing duplicate "CAGE Youth Pickup" rows into one
+      `fixed_dates` promotion with a `session_dates` entry per date
+- [ ] Reassign existing `session_players`/`payments` rows to the
+      consolidated `session_id`
+- [ ] Do this only after step 9 is live and stable; treat as its own
+      reviewed operation

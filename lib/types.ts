@@ -564,6 +564,8 @@ export type SessionType = {
   promotion_end: null | Date;
   show_storefront: boolean;
   coach_schedule_preference?: any;
+  date_mode?: DateMode;
+  dates?: SessionDate[];
 };
 export type BookedSession = {
   name: string;
@@ -619,6 +621,19 @@ export type SessionRecord = {
   coach_name: string;
 };
 
+export type DateMode = 'single' | 'daily_range' | 'fixed_dates';
+
+export type SessionDate = {
+  id: number;
+  date: string;
+  price: number;
+  promotion_price: number | null;
+  max_players: number;
+  left: number;
+  is_active: boolean;
+  is_signup_open: boolean;
+};
+
 export type CampClinicSession = {
   id: number;
   session_type: string;
@@ -635,11 +650,13 @@ export type CampClinicSession = {
   price: string;
   max_players: number;
   is_daily_payment?: boolean;
+  date_mode?: DateMode;
   requires_upfront_payment?: boolean;
   total_enrolled_players: number;
   total_left: number;
   location: string;
   image?: string;
+  dates?: SessionDate[];
 };
 
 export type CampClinicCard = {
@@ -652,6 +669,8 @@ export type CampClinicCard = {
   left: number;
   requires_upfront_payment?: boolean;
   details: [string, string, string, string];
+  date_mode?: DateMode;
+  dates?: SessionDate[];
 };
 
 export type ParentData = {
@@ -875,6 +894,8 @@ export type PrmotionsType = {
   is_daily_payment?: boolean;
   requires_upfront_payment?: boolean;
   enrolled_dates?: string[];
+  date_mode?: DateMode;
+  dates?: SessionDate[];
 };
 
 export type ConfirmationProps = {

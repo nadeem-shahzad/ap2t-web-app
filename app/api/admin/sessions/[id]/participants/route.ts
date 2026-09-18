@@ -21,7 +21,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     const sessionResult = await client.query(
       `SELECT price, apply_promotion, promotion_price, promotion_start, promotion_end, comped, max_players,
-              is_daily_payment, requires_upfront_payment, date, end_date
+              is_daily_payment, requires_upfront_payment, date, end_date, date_mode
        FROM sessions
        WHERE id = $1
        LIMIT 1
@@ -37,17 +37,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
 
     const isDailyPayment = Boolean(sessionData.is_daily_payment);
+    const isFixedDates = sessionData.date_mode === 'fixed_dates';
     const selectedSessionDate =
       typeof session_date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(session_date)
         ? session_date
         : null;
 
-    if (isDailyPayment && !selectedSessionDate) {
+    if ((isDailyPayment || isFixedDates) && !selectedSessionDate) {
       await client.query('ROLLBACK');
-      return NextResponse.json(
-        { message: 'A session date is required for daily enrollment' },
-        { status: 400 }
-      );
+      return NextResponse.json({ message: 'A session date is required' }, { status: 400 });
     }
 
     if (isDailyPayment) {
@@ -65,18 +63,41 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       }
     }
 
+    let selectedSessionDateRow: any = null;
+    if (isFixedDates) {
+      const dateRow = await client.query(
+        `SELECT id, price, promotion_price, max_players, is_active, is_signup_open
+         FROM session_dates
+         WHERE session_id = $1 AND date = $2::date
+         FOR UPDATE`,
+        [session_id, selectedSessionDate]
+      );
+      selectedSessionDateRow = dateRow.rows[0];
+      if (!selectedSessionDateRow || !selectedSessionDateRow.is_active) {
+        await client.query('ROLLBACK');
+        return NextResponse.json({ message: 'Selected date is not available' }, { status: 400 });
+      }
+      if (!selectedSessionDateRow.is_signup_open) {
+        await client.query('ROLLBACK');
+        return NextResponse.json(
+          { message: 'Signups are closed for the selected date' },
+          { status: 400 }
+        );
+      }
+    }
+
     const check = await client.query(
       `SELECT 1 FROM session_players WHERE session_id = $1 AND user_id = $2`,
       [session_id, player_id]
     );
     const isOverallEnrollment = check.rows.length > 0;
 
-    if (!isDailyPayment && isOverallEnrollment) {
+    if (!isDailyPayment && !isFixedDates && isOverallEnrollment) {
       await client.query('ROLLBACK');
       return NextResponse.json({ message: 'Player already enrolled' }, { status: 409 });
     }
 
-    if (isDailyPayment) {
+    if (isDailyPayment || isFixedDates) {
       const existingDailyPayment = await client.query(
         `SELECT 1
          FROM payments
@@ -128,20 +149,23 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ message: 'This session does not have variants' }, { status: 400 });
     }
 
-    const player_in_session = isDailyPayment
-      ? await client.query(
-          `SELECT COUNT(DISTINCT user_id)
+    const player_in_session =
+      isDailyPayment || isFixedDates
+        ? await client.query(
+            `SELECT COUNT(DISTINCT user_id)
          FROM payments
          WHERE session_id = $1
            AND session_date::date = $2::date`,
-          [session_id, selectedSessionDate]
-        )
-      : await client.query(`SELECT COUNT(*) FROM session_players WHERE session_id = $1`, [
-          session_id,
-        ]);
+            [session_id, selectedSessionDate]
+          )
+        : await client.query(`SELECT COUNT(*) FROM session_players WHERE session_id = $1`, [
+            session_id,
+          ]);
 
     const currentPlayers = Number(player_in_session.rows[0].count);
-    const maxPlayers = Number(sessionData.max_players);
+    const maxPlayers = isFixedDates
+      ? Number(selectedSessionDateRow.max_players)
+      : Number(sessionData.max_players);
 
     if (currentPlayers >= maxPlayers) {
       await client.query('ROLLBACK');
@@ -154,11 +178,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     /* ---------------- CALCULATE AMOUNT ---------------- */
 
     const now = moment();
-    let amount = selectedVariant ? Number(selectedVariant.price) : sessionData.price;
+    let amount = isFixedDates
+      ? Number(selectedSessionDateRow.price)
+      : selectedVariant
+        ? Number(selectedVariant.price)
+        : sessionData.price;
 
     if (sessionData.comped) {
       amount = 0;
     } else if (
+      isFixedDates &&
+      sessionData.apply_promotion &&
+      selectedSessionDateRow.promotion_price !== null
+    ) {
+      amount = Number(selectedSessionDateRow.promotion_price);
+    } else if (
+      !isFixedDates &&
       sessionData.apply_promotion &&
       sessionData.promotion_start &&
       sessionData.promotion_end &&
@@ -295,7 +330,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           new Date(),
           'Nil',
           hasSiblingDiscount,
-          isDailyPayment ? selectedSessionDate : null,
+          isDailyPayment || isFixedDates ? selectedSessionDate : null,
         ]
       );
     } else if (upfrontPaymentTransactionId) {
@@ -312,7 +347,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           'Debit / Credit Card',
           upfrontPaymentTransactionId,
           hasSiblingDiscount,
-          isDailyPayment ? selectedSessionDate : null,
+          isDailyPayment || isFixedDates ? selectedSessionDate : null,
         ]
       );
     } else {
@@ -326,7 +361,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           amount,
           'pending',
           hasSiblingDiscount,
-          isDailyPayment ? selectedSessionDate : null,
+          isDailyPayment || isFixedDates ? selectedSessionDate : null,
         ]
       );
     }

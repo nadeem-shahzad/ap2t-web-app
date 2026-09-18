@@ -22,15 +22,85 @@ function timeToMinutes(time: string): number | null {
   return hours * 60 + minutes;
 }
 
+function validateFixedDates(dates: any, applyPromotion: boolean): string | null {
+  if (!Array.isArray(dates) || dates.length === 0) {
+    return 'At least one date is required for a fixed-dates session';
+  }
+
+  const seen = new Set<string>();
+  for (const entry of dates) {
+    if (!entry?.date || Number.isNaN(Date.parse(entry.date))) {
+      return 'Every date row requires a valid date';
+    }
+    if (seen.has(entry.date)) {
+      return 'Duplicate dates are not allowed';
+    }
+    seen.add(entry.date);
+
+    const price = Number(entry.price);
+    if (!Number.isFinite(price) || price <= 0) {
+      return 'Every date requires a positive price';
+    }
+
+    if (applyPromotion) {
+      const promoPrice = Number(entry.promotion_price);
+      if (!Number.isFinite(promoPrice) || promoPrice <= 0) {
+        return 'Every date requires a positive promotion price';
+      }
+    }
+
+    const maxPlayers = Number(entry.max_players);
+    if (!Number.isInteger(maxPlayers) || maxPlayers <= 0) {
+      return 'Every date requires a positive max players value';
+    }
+  }
+
+  return null;
+}
+
 export async function POST(req: NextRequest) {
   const client = await pool.connect();
   let transactionStarted = false;
   try {
     const body = await req.json();
-    const { byAdmin, pricing_mode = 'single', variants = [], ...data } = body;
+    const { byAdmin, pricing_mode = 'single', variants = [], dates = [], ...data } = body;
 
     if (!data || Object.keys(data).length === 0) {
       return NextResponse.json({ message: 'Required parameters missing' }, { status: 400 });
+    }
+
+    if (data.date_mode === 'fixed_dates') {
+      if (data.is_daily_payment) {
+        return NextResponse.json(
+          { message: 'Fixed-dates sessions cannot also be daily-payment sessions' },
+          { status: 400 }
+        );
+      }
+      if (pricing_mode === 'variants') {
+        return NextResponse.json(
+          { message: 'Fixed-dates sessions cannot have hourly variants' },
+          { status: 400 }
+        );
+      }
+
+      const dateError = validateFixedDates(dates, Boolean(data.apply_promotion));
+      if (dateError) {
+        return NextResponse.json({ message: dateError }, { status: 400 });
+      }
+
+      // Maintain sessions.price/promotion_price/max_players for existing
+      // queries until fixed-dates-aware reads are added everywhere, mirroring
+      // the session_variants backward-compat trick above.
+      data.price = Math.min(...dates.map((d: { price: number }) => Number(d.price)));
+      if (data.apply_promotion) {
+        data.promotion_price = Math.min(
+          ...dates.map((d: { promotion_price: number }) => Number(d.promotion_price))
+        );
+      }
+      data.max_players = dates.reduce(
+        (sum: number, d: { max_players: number }) => sum + Number(d.max_players),
+        0
+      );
     }
 
     if (pricing_mode !== 'single' && pricing_mode !== 'variants') {
@@ -125,6 +195,25 @@ export async function POST(req: NextRequest) {
           `INSERT INTO session_variants (session_id, hour, price)
            VALUES ($1, $2, $3)`,
           [session_id, Number(variant.hour), Number(variant.price)]
+        );
+      }
+    }
+
+    if (data.date_mode === 'fixed_dates') {
+      for (const entry of dates) {
+        await client.query(
+          `INSERT INTO session_dates
+             (session_id, date, price, promotion_price, max_players, is_active, is_signup_open)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+          [
+            session_id,
+            entry.date,
+            Number(entry.price),
+            data.apply_promotion ? Number(entry.promotion_price) : null,
+            Number(entry.max_players),
+            entry.is_active ?? true,
+            entry.is_signup_open ?? true,
+          ]
         );
       }
     }
@@ -227,7 +316,31 @@ export async function GET(req: NextRequest) {
       )
     ) FILTER (WHERE sp.user_id IS NOT NULL),
     '[]'
-  ) AS participants
+  ) AS participants,
+
+  COALESCE(
+    (
+      SELECT jsonb_agg(
+        jsonb_build_object(
+          'id', sd.id,
+          'date', sd.date,
+          'price', sd.price,
+          'promotion_price', sd.promotion_price,
+          'max_players', sd.max_players,
+          'is_active', sd.is_active,
+          'is_signup_open', sd.is_signup_open,
+          'left', sd.max_players - COALESCE((
+            SELECT COUNT(DISTINCT dp.user_id) FROM payments dp
+            WHERE dp.session_id = s.id
+              AND dp.session_date::date = sd.date
+          ), 0)
+        ) ORDER BY sd.date
+      )
+      FROM session_dates sd
+      WHERE sd.session_id = s.id
+    ),
+    '[]'
+  ) AS dates
 
 FROM sessions s
 LEFT JOIN users u ON u.id = s.coach_id
@@ -257,10 +370,41 @@ export async function PUT(req: NextRequest) {
   let transactionStarted = false;
   try {
     const data = await req.json();
-    const { id, byAdmin, pricing_mode, variants, ...updates } = data;
+    const { id, byAdmin, pricing_mode, variants, dates, ...updates } = data;
 
     if (!id) {
       return NextResponse.json({ message: 'ID is required' }, { status: 400 });
+    }
+
+    if (updates.date_mode === 'fixed_dates') {
+      if (updates.is_daily_payment) {
+        return NextResponse.json(
+          { message: 'Fixed-dates sessions cannot also be daily-payment sessions' },
+          { status: 400 }
+        );
+      }
+      if (pricing_mode === 'variants') {
+        return NextResponse.json(
+          { message: 'Fixed-dates sessions cannot have hourly variants' },
+          { status: 400 }
+        );
+      }
+
+      const dateError = validateFixedDates(dates, Boolean(updates.apply_promotion));
+      if (dateError) {
+        return NextResponse.json({ message: dateError }, { status: 400 });
+      }
+
+      updates.price = Math.min(...dates.map((d: { price: number }) => Number(d.price)));
+      if (updates.apply_promotion) {
+        updates.promotion_price = Math.min(
+          ...dates.map((d: { promotion_price: number }) => Number(d.promotion_price))
+        );
+      }
+      updates.max_players = dates.reduce(
+        (sum: number, d: { max_players: number }) => sum + Number(d.max_players),
+        0
+      );
     }
 
     if (pricing_mode !== undefined && pricing_mode !== 'single' && pricing_mode !== 'variants') {
@@ -384,6 +528,28 @@ export async function PUT(req: NextRequest) {
           [id, Number(variant.hour), Number(variant.price)]
         );
       }
+    }
+
+    if (updates.date_mode === 'fixed_dates') {
+      await client.query(`DELETE FROM session_dates WHERE session_id = $1`, [id]);
+      for (const entry of dates) {
+        await client.query(
+          `INSERT INTO session_dates
+             (session_id, date, price, promotion_price, max_players, is_active, is_signup_open)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+          [
+            id,
+            entry.date,
+            Number(entry.price),
+            updates.apply_promotion ? Number(entry.promotion_price) : null,
+            Number(entry.max_players),
+            entry.is_active ?? true,
+            entry.is_signup_open ?? true,
+          ]
+        );
+      }
+    } else if (updates.date_mode !== undefined) {
+      await client.query(`DELETE FROM session_dates WHERE session_id = $1`, [id]);
     }
 
     await client.query('COMMIT');

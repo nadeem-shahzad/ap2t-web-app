@@ -35,8 +35,34 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     s.image,
     s.is_daily_payment,
     s.requires_upfront_payment,
+    s.date_mode,
     COUNT(sp.user_id) AS total_enrolled_players,
-    (s.max_players - COUNT(sp.user_id)) AS total_left
+    (s.max_players - COUNT(sp.user_id)) AS total_left,
+    COALESCE(
+      (
+        SELECT jsonb_agg(
+          jsonb_build_object(
+            'id', sd.id,
+            'date', sd.date,
+            'price', sd.price,
+            'promotion_price', sd.promotion_price,
+            'max_players', sd.max_players,
+            'is_active', sd.is_active,
+            'is_signup_open', sd.is_signup_open,
+            'left', sd.max_players - COALESCE((
+              SELECT COUNT(DISTINCT dp.user_id) FROM payments dp
+              WHERE dp.session_id = s.id
+                AND dp.session_date::date = sd.date
+            ), 0)
+          ) ORDER BY sd.date
+        )
+        FROM session_dates sd
+        WHERE sd.session_id = s.id
+          AND sd.is_active
+          AND sd.date >= CURRENT_DATE
+      ),
+      '[]'
+    ) AS dates
   FROM sessions s
   LEFT JOIN session_players sp ON sp.session_id = s.id
   WHERE s.id = $1
@@ -102,54 +128,80 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
   }
 
+  let isFixedDates = false;
   try {
-    const sessionType = await pool.query(`SELECT is_daily_payment FROM sessions WHERE id = $1`, [
-      id,
-    ]);
-    if (sessionType.rows[0]?.is_daily_payment && !sessionDate) {
-      return NextResponse.json(
-        { error: 'A session date is required for daily enrollment' },
-        { status: 400 }
-      );
-    }
-
-    const session = await pool.query(
-      `SELECT s.id, s.max_players, s.is_daily_payment,
-        CASE WHEN s.is_daily_payment THEN
-          s.max_players - (
-            SELECT COUNT(DISTINCT pay.user_id)
-            FROM payments pay
-            WHERE pay.session_id = s.id
-              AND pay.session_date::date = $2::date
-          )
-        ELSE s.max_players - COUNT(sp.user_id)
-        END AS total_left,
-        CASE WHEN s.is_daily_payment THEN
-          $2::date BETWEEN s.date::date
-                        AND COALESCE(s.end_date, s.date)::date
-        ELSE true END AS is_valid_date
-       FROM sessions s
-       LEFT JOIN session_players sp ON sp.session_id = s.id
-       WHERE s.id = $1
-       GROUP BY s.id`,
-      [id, sessionDate]
+    const sessionType = await pool.query(
+      `SELECT is_daily_payment, date_mode FROM sessions WHERE id = $1`,
+      [id]
     );
-
-    if (session.rows.length === 0) {
-      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
+    isFixedDates = sessionType.rows[0]?.date_mode === 'fixed_dates';
+    if ((sessionType.rows[0]?.is_daily_payment || isFixedDates) && !sessionDate) {
+      return NextResponse.json({ error: 'A session date is required' }, { status: 400 });
     }
 
-    if (Number(session.rows[0].total_left) <= 0) {
-      return NextResponse.json({ error: 'Session is full' }, { status: 409 });
-    }
-
-    isDailyPayment = Boolean(session.rows[0].is_daily_payment);
-
-    if (!session.rows[0].is_valid_date) {
-      return NextResponse.json(
-        { error: 'Selected date is outside the session period' },
-        { status: 400 }
+    if (isFixedDates) {
+      const dateRow = await pool.query(
+        `SELECT sd.max_players - COALESCE((
+           SELECT COUNT(DISTINCT pay.user_id) FROM payments pay
+           WHERE pay.session_id = sd.session_id AND pay.session_date::date = sd.date
+         ), 0) AS total_left,
+         sd.is_active, sd.is_signup_open
+         FROM session_dates sd
+         WHERE sd.session_id = $1 AND sd.date = $2::date`,
+        [id, sessionDate]
       );
+
+      if (dateRow.rows.length === 0 || !dateRow.rows[0].is_active) {
+        return NextResponse.json({ error: 'Selected date is not available' }, { status: 400 });
+      }
+      if (!dateRow.rows[0].is_signup_open) {
+        return NextResponse.json(
+          { error: 'Signups are closed for the selected date' },
+          { status: 400 }
+        );
+      }
+      if (Number(dateRow.rows[0].total_left) <= 0) {
+        return NextResponse.json({ error: 'Session is full' }, { status: 409 });
+      }
+    } else {
+      const session = await pool.query(
+        `SELECT s.id, s.max_players, s.is_daily_payment,
+          CASE WHEN s.is_daily_payment THEN
+            s.max_players - (
+              SELECT COUNT(DISTINCT pay.user_id)
+              FROM payments pay
+              WHERE pay.session_id = s.id
+                AND pay.session_date::date = $2::date
+            )
+          ELSE s.max_players - COUNT(sp.user_id)
+          END AS total_left,
+          CASE WHEN s.is_daily_payment THEN
+            $2::date BETWEEN s.date::date
+                          AND COALESCE(s.end_date, s.date)::date
+          ELSE true END AS is_valid_date
+         FROM sessions s
+         LEFT JOIN session_players sp ON sp.session_id = s.id
+         WHERE s.id = $1
+         GROUP BY s.id`,
+        [id, sessionDate]
+      );
+
+      if (session.rows.length === 0) {
+        return NextResponse.json({ error: 'Session not found' }, { status: 404 });
+      }
+
+      if (Number(session.rows[0].total_left) <= 0) {
+        return NextResponse.json({ error: 'Session is full' }, { status: 409 });
+      }
+
+      isDailyPayment = Boolean(session.rows[0].is_daily_payment);
+
+      if (!session.rows[0].is_valid_date) {
+        return NextResponse.json(
+          { error: 'Selected date is outside the session period' },
+          { status: 400 }
+        );
+      }
     }
   } catch (err: any) {
     console.error('Session check error:', err.message);
@@ -260,7 +312,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     await client.query(
       `INSERT INTO payments (session_id, user_id, amount, status, session_date)
    VALUES ($1, $2, $3, $4, $5)`,
-      [id, playerUserId, 0, 'pending', isDailyPayment ? sessionDate : null]
+      [id, playerUserId, 0, 'pending', isDailyPayment || isFixedDates ? sessionDate : null]
     );
 
     await client.query('COMMIT');

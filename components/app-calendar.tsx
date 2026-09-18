@@ -39,6 +39,7 @@ const AppCalendar = ({
           className="z-20"
           mode="single"
           selected={date || undefined}
+          defaultMonth={date || undefined}
           onSelect={(e: any) => {
             onChange(e);
             setIsCalendarOpen(false);
