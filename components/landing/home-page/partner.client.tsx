@@ -21,11 +21,6 @@ const logos = [
     href: 'https://www.performbetter.com/',
   },
   { src: '/images/partnerlogos/runner1.png', alt: 'Runner', href: 'https://runnershighnj.com/' },
-  {
-    src: '/images/partnerlogos/gitterman.png',
-    alt: 'Gitterman',
-    href: 'https://gittermanwealth.com/',
-  },
   { src: '/images/partnerlogos/psa.png', alt: 'PSA', href: 'https://princetonsocceracademy.com/' },
 ];
 

@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="CMakeProjectFlavorService">
+    <option name="flavorId" value="CMakePlainProjectFlavor" />
+  </component>
+  <component name="CMakeSettings">
+    <configurations />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="2c049c5f-5b6e-476d-80b8-bb9df9482f02" name="Changes" comment="" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="main" />
+      </map>
+    </option>
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;nadeem-shahzad&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;git@github.com:nadeem-shahzad/ap2t-web-app.git&quot;,
+    &quot;accountId&quot;: &quot;a6af357c-0c12-468d-b018-b7e15f2be8bc&quot;
+  }
+}</component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="file://$PROJECT_DIR$/node_modules/tailwindcss/dist/default-theme.d.mts" root0="FORCE_HIGHLIGHTING" />
+  </component>
+  <component name="McpProjectServerCommands">
+    <commands />
+    <urls />
+  </component>
+  <component name="MetaFilesCheckinStateConfiguration" checkMetaFiles="true" />
+  <component name="NextEditCompletionFeaturesState">
+    <decayedCancelled>
+      <entry key="MS100" value="1.5226254003690927" />
+      <entry key="MS500" value="3.9866653504379665" />
+      <entry key="S2" value="7.9116779303379206" />
+      <entry key="S5" value="9.578512591780594" />
+      <entry key="S10" value="10.25349678783591" />
+      <entry key="S30" value="10.742719090546887" />
+      <entry key="S60" value="10.870270789874784" />
+      <entry key="M2" value="10.934860668886875" />
+      <entry key="M5" value="10.97394876086376" />
+      <entry key="M10" value="11.003750987731845" />
+      <entry key="M15" value="11.095503925348124" />
+      <entry key="M30" value="11.641305340821713" />
+      <entry key="H1" value="12.604885196278726" />
+      <entry key="H2" value="13.534311318373764" />
+      <entry key="H4" value="14.184043664180503" />
+      <entry key="D1" value="14.85077938843661" />
+      <entry key="W1" value="14.978334294353456" />
+    </decayedCancelled>
+    <decayedSelected>
+      <entry key="MS100" value="0.0" />
+      <entry key="MS500" value="0.0" />
+      <entry key="S2" value="0.0" />
+      <entry key="S5" value="1.6889243055941703E-260" />
+      <entry key="S10" value="1.2995862055262708E-130" />
+      <entry key="S30" value="5.065259475188169E-44" />
+      <entry key="S60" value="2.2506131331679746E-22" />
+      <entry key="M2" value="1.500204363801136E-11" />
+      <entry key="M5" value="4.68231006762877E-5" />
+      <entry key="M10" value="0.006842740728413412" />
+      <entry key="M15" value="0.03604292736092717" />
+      <entry key="M30" value="0.18984974943604002" />
+      <entry key="H1" value="0.43571751105049705" />
+      <entry key="H2" value="0.6600890175199835" />
+      <entry key="H4" value="0.812458625112678" />
+      <entry key="D1" value="0.9659771993854294" />
+      <entry key="W1" value="0.9950671995367019" />
+    </decayedSelected>
+    <decayedShown>
+      <entry key="MS100" value="1.4581997521555372" />
+      <entry key="MS500" value="3.952205957651945" />
+      <entry key="S2" value="7.894673020461185" />
+      <entry key="S5" value="9.570292857440652" />
+      <entry key="S10" value="10.24910023541025" />
+      <entry key="S30" value="10.741184349401337" />
+      <entry key="S60" value="10.86949439768241" />
+      <entry key="M2" value="10.93447018880316" />
+      <entry key="M5" value="10.973838491062784" />
+      <entry key="M10" value="11.01048423074989" />
+      <entry key="M15" value="11.131376655761219" />
+      <entry key="M30" value="11.8307909283679" />
+      <entry key="H1" value="13.040183906927613" />
+      <entry key="H2" value="14.194079285979015" />
+      <entry key="H4" value="14.996303184519096" />
+      <entry key="D1" value="15.816716852669732" />
+      <entry key="W1" value="15.973395639064476" />
+    </decayedShown>
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 8,
+  &quot;fromUser&quot;: false
+}</component>
+  <component name="ProjectId" id="3JMlNjnEyTJFazbRhrcpgwlNe6B" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.MCP Project settings loaded": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.cidr.known.project.marker": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.readMode.enableVisualFormatting": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "cidr.known.project.marker": "true",
+    "codeWithMe.voiceChat.enabledByDefault": "false",
+    "git-widget-placeholder": "development",
+    "js.debugger.nextJs.config.created.client": "true",
+    "js.debugger.nextJs.config.created.server": "true",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "ts.external.directory.path": "/Users/nadeemshahzad/Documents/Projects/NPlays/ap2t-web-app/node_modules/typescript/lib"
+  }
+}]]></component>
+  <component name="RunManager" selected="npm.Next.js: server-side">
+    <configuration name="Next.js: debug client-side" type="JavascriptDebugType" uri="http://localhost:3000/">
+      <method v="2" />
+    </configuration>
+    <configuration name="Next.js: server-side" type="js.build_tools.npm">
+      <package-json value="$PROJECT_DIR$/package.json" />
+      <command value="run" />
+      <scripts>
+        <script value="dev" />
+      </scripts>
+      <node-interpreter value="project" />
+      <envs />
+      <method v="2" />
+    </configuration>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="2c049c5f-5b6e-476d-80b8-bb9df9482f02" name="Changes" comment="" />
+      <created>1789478783640</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1789478783640</updated>
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="UnityCheckinConfiguration" checkUnsavedScenes="true" />
+  <component name="UnityProjectConfiguration" hasMinimizedUI="false" />
+  <component name="VcsManagerConfiguration">
+    <option name="CLEAR_INITIAL_COMMIT_MESSAGE" value="true" />
+    <MESSAGE value="fix: correct location name and update time slots in weekly schedule" />
+    <MESSAGE value="feat: add upfront payment requirement display for available slots" />
+    <MESSAGE value="fix: update Square.js script source to production URL" />
+    <MESSAGE value="feat: add plans for single promotion with multiple selectable dates" />
+    <option name="LAST_COMMIT_MESSAGE" value="feat: add plans for single promotion with multiple selectable dates" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <breakpoint enabled="true" type="DotNet_Exception_Breakpoints">
+          <properties exception="System.OperationCanceledException" breakIfHandledByOtherCode="false" displayValue="System.OperationCanceledException" />
+          <option name="timeStamp" value="1" />
+        </breakpoint>
+        <breakpoint enabled="true" type="DotNet_Exception_Breakpoints">
+          <properties exception="System.Threading.Tasks.TaskCanceledException" breakIfHandledByOtherCode="false" displayValue="System.Threading.Tasks.TaskCanceledException" />
+          <option name="timeStamp" value="2" />
+        </breakpoint>
+        <breakpoint enabled="true" type="DotNet_Exception_Breakpoints">
+          <properties exception="System.Threading.ThreadAbortException" breakIfHandledByOtherCode="false" displayValue="System.Threading.ThreadAbortException" />
+          <option name="timeStamp" value="3" />
+        </breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+  </component>
+</project>
