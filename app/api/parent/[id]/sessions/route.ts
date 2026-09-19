@@ -56,6 +56,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
             WHERE p.session_id = s.id
               AND p.user_id = ANY($1)
               AND p.session_date IS NOT NULL
+              AND p.status <> 'refunded'
             GROUP BY p.user_id
           ) daily_payment
         ),

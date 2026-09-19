@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/auth-context';
 import axios from '@/lib/axios';
 import { joinNames } from '@/lib/functions';
+import { isPromotionActive } from '@/lib/promotion';
 import { ReserveProps, SessionProps } from '@/lib/types';
 import { Calendar, List } from 'lucide-react';
 import moment, { Moment } from 'moment';
@@ -42,14 +43,7 @@ export default function Page() {
         const mappedSessions = result.data.map((s: any) => {
           let finalPrice = s.price;
           let promotion = false;
-          if (
-            s.apply_promotion &&
-            s.promotion_price &&
-            s.promotion_start &&
-            s.promotion_end &&
-            moment(s.promotion_start).isBefore(moment()) &&
-            moment(s.promotion_end).isAfter(moment())
-          ) {
+          if (isPromotionActive(s.apply_promotion, s.promotion_start, s.promotion_end)) {
             finalPrice = s.promotion_price;
             promotion = true;
           }
@@ -65,6 +59,9 @@ export default function Page() {
             price: finalPrice,
             original_price: s.price,
             promotion: promotion,
+            apply_promotion: s.apply_promotion ?? false,
+            promotion_start: s.promotion_start ?? null,
+            promotion_end: s.promotion_end ?? null,
             children: s?.children || [],
             variants: s?.variants || [],
             status: s?.status || 'upcoming',
@@ -72,7 +69,9 @@ export default function Page() {
             is_daily_payment: s?.is_daily_payment ?? false,
             requires_upfront_payment: s?.requires_upfront_payment ?? false,
             enrolled_dates: s?.enrolled_dates ?? [],
-            end_date: s?.end_date ? moment(new Date(s.end_date)).format('YYYY-MM-DD') : null,
+            end_date: s?.end_date
+              ? moment(new Date(s.end_date)).format('YYYY-MM-DD')
+              : null,
             date_mode: s?.date_mode ?? 'single',
             dates: s?.dates ?? [],
           };
@@ -95,14 +94,7 @@ export default function Page() {
         const mappedSessions = result.data.map((s: any) => {
           let finalPrice = s.price;
           let promotion = false;
-          if (
-            s.apply_promotion &&
-            s.promotion_price &&
-            s.promotion_start &&
-            s.promotion_end &&
-            moment(s.promotion_start).isBefore(moment()) &&
-            moment(s.promotion_end).isAfter(moment())
-          ) {
+          if (isPromotionActive(s.apply_promotion, s.promotion_start, s.promotion_end)) {
             finalPrice = s.promotion_price;
             promotion = true;
           }
@@ -118,6 +110,9 @@ export default function Page() {
             price: finalPrice,
             original_price: s.price,
             promotion: promotion,
+            apply_promotion: s.apply_promotion ?? false,
+            promotion_start: s.promotion_start ?? null,
+            promotion_end: s.promotion_end ?? null,
             children: s?.children || [],
             variants: s?.variants || [],
             status: s?.status || 'upcoming',
@@ -125,7 +120,9 @@ export default function Page() {
             is_daily_payment: s?.is_daily_payment ?? false,
             requires_upfront_payment: s?.requires_upfront_payment ?? false,
             enrolled_dates: s?.enrolled_dates ?? [],
-            end_date: s?.end_date ? moment(new Date(s.end_date)).format('YYYY-MM-DD') : null,
+            end_date: s?.end_date
+              ? moment(new Date(s.end_date)).format('YYYY-MM-DD')
+              : null,
             location: s?.location || '',
             date_mode: s?.date_mode ?? 'single',
             dates: s?.dates ?? [],

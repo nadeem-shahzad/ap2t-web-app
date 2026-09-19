@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { formatSessionDateRange } from '@/lib/date';
+import { isPromotionActive } from '@/lib/promotion';
 import { CampClinicCard, CampClinicSession } from '@/lib/types';
 import { ArrowRight, Search } from 'lucide-react';
 import Link from 'next/link';
@@ -175,11 +176,16 @@ export default function CampsAndClinics({ data = [] }: { data?: CampClinicSessio
 export const transformCampClinics = (sessions: CampClinicSession[]): CampClinicCard[] => {
   return sessions.map((s) => {
     const isFixedDates = s.date_mode === 'fixed_dates' && (s.dates?.length ?? 0) > 0;
+    const promotionActive = isPromotionActive(
+      s.apply_promotion,
+      s.promotion_start,
+      s.promotion_end
+    );
 
     if (isFixedDates) {
       const dates = s.dates!;
       const lowestPrice = Math.min(
-        ...dates.map((d) => Number(s.apply_promotion ? (d.promotion_price ?? d.price) : d.price))
+        ...dates.map((d) => Number(promotionActive ? (d.promotion_price ?? d.price) : d.price))
       );
       const nearest = [...dates].sort((a, b) => a.date.localeCompare(b.date))[0];
 
@@ -209,7 +215,7 @@ export const transformCampClinics = (sessions: CampClinicSession[]): CampClinicC
       image: s.image,
       title: s.name,
       description: s.description,
-      price: Number(s.apply_promotion ? s.promotion_price : s.price),
+      price: Number(promotionActive ? s.promotion_price : s.price),
       left: s.total_left,
       requires_upfront_payment: s.requires_upfront_payment,
       date_mode: s.date_mode,

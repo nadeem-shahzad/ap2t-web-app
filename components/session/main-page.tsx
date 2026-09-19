@@ -34,6 +34,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { useIsMobile } from '@/hooks/use-mobile';
 import axios from '@/lib/axios';
 import { joinNames } from '@/lib/functions';
+import { formatDateOnly } from '@/lib/date';
 import { SessionDataType } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Scrollbar } from '@radix-ui/react-scroll-area';
@@ -125,9 +126,9 @@ export default function SessionMainPage({
         } else if (d.date_mode === 'fixed_dates' && Array.isArray(d.dates) && d.dates.length) {
           const today = moment().format('YYYY-MM-DD');
           const nearest =
-            d.dates.find((dt: any) => moment(dt.date).format('YYYY-MM-DD') >= today) ??
+            d.dates.find((dt: any) => formatDateOnly(dt.date) >= today) ??
             d.dates[0];
-          setSelectedSessionDate(moment(nearest.date).format('YYYY-MM-DD'));
+          setSelectedSessionDate(formatDateOnly(nearest.date));
         }
         setData({
           id: d.id,
@@ -241,7 +242,7 @@ export default function SessionMainPage({
   const selectedFixedDateRow =
     rawSessionData?.date_mode === 'fixed_dates'
       ? rawSessionData?.dates?.find(
-          (dt: any) => moment(dt.date).format('YYYY-MM-DD') === selectedSessionDate
+          (dt: any) => formatDateOnly(dt.date) === selectedSessionDate
         )
       : null;
 
@@ -447,8 +448,8 @@ export default function SessionMainPage({
             <ScrollArea className="w-full">
               <div className="flex gap-3 pb-2">
                 {(rawSessionData.dates ?? []).map((dt: any) => {
-                  const dateKey = moment(dt.date).format('YYYY-MM-DD');
-                  const isToday = moment(dt.date).isSame(moment(), 'day');
+                  const dateKey = formatDateOnly(dt.date);
+                  const isToday = dateKey === moment().format('YYYY-MM-DD');
                   const selected = selectedSessionDate === dateKey;
                   const soldOut = dt.left <= 0 || !dt.is_signup_open;
 
@@ -465,10 +466,10 @@ export default function SessionMainPage({
                       )}
                     >
                       <span className="text-xs font-medium">
-                        {isToday ? 'Today' : moment(dt.date).format('ddd')}
+                        {isToday ? 'Today' : formatDateOnly(dt.date, 'ddd')}
                       </span>
                       <span className="text-sm font-semibold">
-                        {moment(dt.date).format('DD MMM')}
+                        {formatDateOnly(dt.date, 'DD MMM')}
                       </span>
                       <span
                         className={cn(
@@ -535,9 +536,9 @@ export default function SessionMainPage({
               <AddParticipantDialog
                 sessionId={Number(id)}
                 variants={rawSessionData?.variants ?? []}
-                session_date={rawSessionData?.is_daily_payment ? selectedSessionDate : undefined}
+                session_date={usesSessionDateFilter ? selectedSessionDate : undefined}
                 enrolled_player_ids={
-                  rawSessionData?.is_daily_payment
+                  usesSessionDateFilter
                     ? participants.map((participant) => participant.player_id)
                     : []
                 }

@@ -2,6 +2,7 @@ import pool from '@/lib/db';
 import { fetchAllAdmins, sendAdminSessionEnrollmentEmail } from '@/lib/email-templates';
 import { sendInAppNotificationBackend } from '@/lib/send-inapp-notification';
 import { getSquareClient } from '@/lib/square';
+import { isPromotionActive } from '@/lib/promotion';
 import moment from 'moment';
 import { NextRequest, NextResponse } from 'next/server';
 import { email } from 'zod';
@@ -104,6 +105,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
          WHERE session_id = $1
            AND user_id = $2
            AND session_date::date = $3::date
+           AND status <> 'refunded'
          LIMIT 1`,
         [session_id, player_id, selectedSessionDate]
       );
@@ -152,16 +154,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const player_in_session =
       isDailyPayment || isFixedDates
         ? await client.query(
-            `SELECT COUNT(DISTINCT user_id)
+          `SELECT COUNT(DISTINCT user_id)
          FROM payments
          WHERE session_id = $1
            AND session_date::date = $2::date
            AND status NOT IN ('failed', 'refunded')`,
-            [session_id, selectedSessionDate]
-          )
+          [session_id, selectedSessionDate]
+        )
         : await client.query(`SELECT COUNT(*) FROM session_players WHERE session_id = $1`, [
-            session_id,
-          ]);
+          session_id,
+        ]);
 
     const currentPlayers = Number(player_in_session.rows[0].count);
     const maxPlayers = isFixedDates
@@ -179,31 +181,35 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     /* ---------------- CALCULATE AMOUNT ---------------- */
 
     const now = moment();
+    const promotionActive = isPromotionActive(
+      sessionData.apply_promotion,
+      sessionData.promotion_start,
+      sessionData.promotion_end,
+      now
+    );
     let amount = isFixedDates
       ? Number(selectedSessionDateRow.price)
       : selectedVariant
         ? Number(selectedVariant.price)
-        : sessionData.price;
+        : Number(sessionData.price);
 
-    if (sessionData.comped) {
-      amount = 0;
-    } else if (
+    if (
       isFixedDates &&
-      sessionData.apply_promotion &&
+      promotionActive &&
       selectedSessionDateRow.promotion_price !== null
     ) {
       amount = Number(selectedSessionDateRow.promotion_price);
     } else if (
       !isFixedDates &&
-      sessionData.apply_promotion &&
-      sessionData.promotion_start &&
-      sessionData.promotion_end &&
-      moment(sessionData.promotion_end).isAfter(now)
+      !selectedVariant &&
+      promotionActive
     ) {
-      amount = sessionData.promotion_price;
+      amount = Number(sessionData.promotion_price);
     }
 
     /* ---------------- SIBLING DISCOUNT ---------------- */
+
+    const baseAmount = amount;
 
     const parent_data = await client.query(`SELECT parent_id FROM players WHERE user_id = $1`, [
       player_id,
@@ -212,40 +218,35 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const parent_id = parent_data.rows[0]?.parent_id;
     let hasSiblingDiscount = false;
 
-    if (parent_id !== null && parent_id !== undefined) {
+    if (!sessionData.comped && parent_id !== null && parent_id !== undefined) {
       const siblings_data = await client.query(
         `SELECT COUNT(*)
-         FROM players
-         WHERE parent_id = $1
-           AND user_id IN (
-             SELECT DISTINCT user_id
-             FROM session_players
-             WHERE session_id = $2
-           )`,
-        [parent_id, session_id]
+         FROM players sibling
+         INNER JOIN payments pay ON pay.user_id = sibling.user_id
+         WHERE sibling.parent_id = $1
+           AND sibling.user_id <> $3
+           AND pay.session_id = $2
+           AND ($4::date IS NULL OR pay.session_date::date = $4::date)
+           AND ($5::integer IS NULL OR pay.variant_id = $5::integer)
+           AND pay.status NOT IN ('comped', 'failed', 'refunded')`,
+        [
+          parent_id,
+          session_id,
+          player_id,
+          isDailyPayment || isFixedDates ? selectedSessionDate : null,
+          selectedVariant?.id ?? null,
+        ]
       );
 
       const siblingCount = parseInt(siblings_data.rows[0].count, 10);
 
       if (siblingCount >= 1) {
         hasSiblingDiscount = true;
-        amount = amount * 0.9;
-
-        // await client.query(
-        //   `UPDATE payments
-        //    SET amount = amount * 0.9,
-        //        siblings_discount = true
-        //    WHERE session_id = $1
-        //      AND status = 'pending'
-        //      AND user_id != $3
-        //      AND user_id IN (
-        //        SELECT user_id FROM players
-        //        WHERE parent_id = $2
-        //      )`,
-        //   [session_id, parent_id, player_id]
-        // );
+        amount = baseAmount * 0.9;
       }
     }
+
+    if (sessionData.comped) amount = 0;
 
     let upfrontPaymentTransactionId: string | null = null;
     if (sessionData.requires_upfront_payment && !sessionData.comped && Number(amount) > 0) {
@@ -265,14 +266,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       const payer =
         cardData?.player_customer_id && cardData?.player_card_id
           ? {
-              square_customer_id: cardData.player_customer_id,
-              square_card_id: cardData.player_card_id,
-            }
+            square_customer_id: cardData.player_customer_id,
+            square_card_id: cardData.player_card_id,
+          }
           : cardData?.parent_customer_id && cardData?.parent_card_id
             ? {
-                square_customer_id: cardData.parent_customer_id,
-                square_card_id: cardData.parent_card_id,
-              }
+              square_customer_id: cardData.parent_customer_id,
+              square_card_id: cardData.parent_card_id,
+            }
             : null;
 
       if (!payer?.square_customer_id || !payer?.square_card_id) {
@@ -321,8 +322,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (sessionData.comped) {
       await client.query(
         `INSERT INTO payments
-         (session_id, user_id, amount, status, paid_at, method, siblings_discount, session_date)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+         (session_id, user_id, amount, status, paid_at, method, siblings_discount, session_date, variant_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
         [
           session_id,
           player_id,
@@ -332,13 +333,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           'Nil',
           hasSiblingDiscount,
           isDailyPayment || isFixedDates ? selectedSessionDate : null,
+          selectedVariant?.id ?? null,
         ]
       );
     } else if (upfrontPaymentTransactionId) {
       await client.query(
         `INSERT INTO payments
-         (session_id, user_id, amount, status, paid_at, method, transaction_id, siblings_discount, session_date)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+         (session_id, user_id, amount, status, paid_at, method, transaction_id, siblings_discount, session_date, variant_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
         [
           session_id,
           player_id,
@@ -349,13 +351,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           upfrontPaymentTransactionId,
           hasSiblingDiscount,
           isDailyPayment || isFixedDates ? selectedSessionDate : null,
+          selectedVariant?.id ?? null,
         ]
       );
     } else {
       await client.query(
         `INSERT INTO payments
-         (session_id, user_id, amount, status, siblings_discount, session_date)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
+         (session_id, user_id, amount, status, siblings_discount, session_date, variant_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
         [
           session_id,
           player_id,
@@ -363,6 +366,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           'pending',
           hasSiblingDiscount,
           isDailyPayment || isFixedDates ? selectedSessionDate : null,
+          selectedVariant?.id ?? null,
         ]
       );
     }
@@ -488,6 +492,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
             WHERE pay.session_id = sp.session_id
               AND pay.user_id = sp.user_id
               AND pay.session_date::date = $2::date
+              AND pay.status <> 'refunded'
           )
         )
       `,

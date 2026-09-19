@@ -9,6 +9,8 @@ import { Spinner } from '@/components/ui/spinner';
 import { useAuth } from '@/contexts/auth-context';
 import axios from '@/lib/axios';
 import { joinNames } from '@/lib/functions';
+import { formatDateOnly } from '@/lib/date';
+import { isPromotionActive } from '@/lib/promotion';
 import { PrmotionsType } from '@/lib/types';
 import { Calendar, ChevronDown, CreditCard, DollarSign, Users } from 'lucide-react';
 import moment from 'moment';
@@ -86,11 +88,16 @@ const RenderEachItem = ({
         .sort((a, b) => a.date.localeCompare(b.date))[0]
     : null;
   const [selectedDate, setSelectedDate] = useState(
-    nearestFixedDate ? moment(nearestFixedDate.date).format('YYYY-MM-DD') : item.date
+    nearestFixedDate ? formatDateOnly(nearestFixedDate.date) : item.date
   );
   const enrolledDateKeys = new Set(item.enrolled_dates ?? []);
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
   const usesSessionDate = item.is_daily_payment || isFixedDates;
+  const promotionActive = isPromotionActive(
+    item.apply_promotion,
+    item.promotion_start,
+    item.promotion_end
+  );
   const isEnrolledForSelectedDate = item.is_daily_payment
     ? (item.enrolled_dates?.includes(selectedDate) ?? false)
     : item.enrolled;
@@ -99,22 +106,24 @@ const RenderEachItem = ({
     ? (item.dates ?? []).filter((d) => d.is_active)
     : [];
   const availableFixedDates = selectableFixedDates.filter(
-    (d) => !enrolledDateKeys.has(moment(d.date).format('YYYY-MM-DD'))
+    (d) => !enrolledDateKeys.has(formatDateOnly(d.date))
   );
 
   const selectedFixedDateRows = selectableFixedDates.filter((d) =>
-    selectedDates.includes(moment(d.date).format('YYYY-MM-DD'))
+    selectedDates.includes(formatDateOnly(d.date))
   );
   const fixedDatesTotal = selectedFixedDateRows.reduce(
-    (sum, d) => sum + Number(d.promotion_price ?? d.price),
+    (sum, d) => sum + Number(promotionActive ? (d.promotion_price ?? d.price) : d.price),
     0
   );
 
   const displayPrice = isFixedDates
     ? selectedFixedDateRows.length
       ? fixedDatesTotal
-      : `From $${Math.min(...selectableFixedDates.map((d) => Number(d.promotion_price ?? d.price)))}`
-    : item.promotion_price;
+      : `From $${Math.min(...selectableFixedDates.map((d) => Number(promotionActive ? (d.promotion_price ?? d.price) : d.price)))}`
+    : promotionActive
+      ? item.promotion_price
+      : item.price;
   const displayOriginalPrice = isFixedDates ? undefined : item.price;
 
   function toggleDate(dateKey: string) {
@@ -271,10 +280,10 @@ const RenderEachItem = ({
               </PopoverTrigger>
               <PopoverContent className="w-[300px] p-2 space-y-1" align="start">
                 {selectableFixedDates.map((d) => {
-                  const dateKey = moment(d.date).format('YYYY-MM-DD');
+                  const dateKey = formatDateOnly(d.date);
                   const alreadyEnrolled = enrolledDateKeys.has(dateKey);
                   const soldOut = !alreadyEnrolled && (d.left <= 0 || !d.is_signup_open);
-                  const effectivePrice = d.promotion_price ?? d.price;
+                  const effectivePrice = promotionActive ? (d.promotion_price ?? d.price) : d.price;
                   return (
                     <label
                       key={d.id}

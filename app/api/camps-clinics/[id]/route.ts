@@ -31,6 +31,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     s.age_limit,
     s.location,
     s.apply_promotion,
+    s.promotion_start,
+    s.promotion_end,
     s.promotion_price,
     s.price,
     s.max_players,

@@ -2,6 +2,8 @@
 
 import { useIsMobile } from '@/hooks/use-mobile';
 import { SessionProps } from '@/lib/types';
+import { formatDateOnly } from '@/lib/date';
+import { isPromotionActive } from '@/lib/promotion';
 import { Scrollbar } from '@radix-ui/react-scroll-area';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import moment from 'moment';
@@ -52,7 +54,7 @@ export default function ReserveComponent({
 
       if (s.date_mode === 'fixed_dates') {
         return (s.dates ?? []).some(
-          (d) => d.is_active && moment(d.date).format('YYYY-MM-DD') === selectedDate
+          (d) => d.is_active && formatDateOnly(d.date) === selectedDate
         );
       }
 
@@ -158,10 +160,13 @@ const RenderEachSession = ({
 
   const selectedFixedDateRow =
     session.date_mode === 'fixed_dates'
-      ? session.dates?.find((d) => moment(d.date).format('YYYY-MM-DD') === selectedDate)
+      ? session.dates?.find((d) => formatDateOnly(d.date) === selectedDate)
       : null;
   const displayPrice = selectedFixedDateRow
-    ? (selectedFixedDateRow.promotion_price ?? selectedFixedDateRow.price)
+    ? isPromotionActive(session.apply_promotion, session.promotion_start, session.promotion_end) &&
+      selectedFixedDateRow.promotion_price !== null
+      ? selectedFixedDateRow.promotion_price
+      : selectedFixedDateRow.price
     : session.price;
   const displayOriginalPrice = selectedFixedDateRow ? selectedFixedDateRow.price : session.original_price;
 

@@ -34,6 +34,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
           WHERE p.session_id = s.id
             AND p.user_id = $1
             AND p.session_date IS NOT NULL
+            AND p.status <> 'refunded'
         ),
         '[]'::jsonb
       ) AS enrolled_dates,

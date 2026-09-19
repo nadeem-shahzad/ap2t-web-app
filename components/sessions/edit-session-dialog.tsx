@@ -1,7 +1,7 @@
 'use client';
 import { useAuth } from '@/contexts/auth-context';
 import axios from '@/lib/axios';
-import { parseDateOnly } from '@/lib/date';
+import { formatDateOnly, parseDateOnly } from '@/lib/date';
 import { BookedSession, SessionCoach, SessionType } from '@/lib/types';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Calendar, Eye, MapPin, SquarePen, Tag, Trash2, Users } from 'lucide-react';
@@ -361,7 +361,7 @@ export function EditSessionDialog({
       const isFixedDatesSession = values.date_mode === 'fixed_dates';
       const occurrenceDates = isFixedDatesSession
         ? values.dates
-            .map((d) => (d.date ? moment(d.date).format('YYYY-MM-DD') : null))
+            .map((d) => (d.date ? formatDateOnly(d.date) : null))
             .filter((d): d is string => Boolean(d))
         : [];
 

@@ -1,7 +1,7 @@
 'use client';
 import { useAuth } from '@/contexts/auth-context';
 import axios from '@/lib/axios';
-import { parseDateOnly } from '@/lib/date';
+import { formatDateOnly } from '@/lib/date';
 import { BookedSession, SessionCoach } from '@/lib/types';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Calendar, DollarSign, Eye, Image, MapPin, Plus, Tag, Users } from 'lucide-react';
@@ -547,7 +547,7 @@ export function CreateSessionDialog({
       const isFixedDatesSession = values.date_mode === 'fixed_dates';
       const occurrenceDates = isFixedDatesSession
         ? values.dates
-            .map((d) => (d.date ? moment(d.date).format('YYYY-MM-DD') : null))
+            .map((d) => (d.date ? formatDateOnly(d.date) : null))
             .filter((d): d is string => Boolean(d))
         : [];
 
@@ -576,8 +576,12 @@ export function CreateSessionDialog({
         return;
       }
 
-      const res = await axios.post('/admin/sessions', {
+      await axios.post('/admin/sessions', {
         ...values,
+        dates: values.dates.map((entry) => ({
+          ...entry,
+          date: entry.date ? formatDateOnly(entry.date) : null,
+        })),
         byAdmin: isAdmin,
       });
       toast.success('Session Created!');

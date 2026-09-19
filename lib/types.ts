@@ -340,6 +340,9 @@ export type SessionProps = {
   status: string;
   original: any;
   promotion?: boolean;
+  apply_promotion?: boolean;
+  promotion_start?: string | Date | null;
+  promotion_end?: string | Date | null;
   original_price?: string;
   enrolled: boolean;
   is_daily_payment?: boolean;
@@ -485,6 +488,8 @@ export interface ParentSession {
   coach_last_name: string;
   price: string;
   apply_promotion: boolean;
+  promotion_start?: string | Date | null;
+  promotion_end?: string | Date | null;
   promotion_price: string;
   players: SessionPlayer[];
 }
@@ -653,6 +658,8 @@ export type CampClinicSession = {
   end_time: string;
   age_limit: string;
   apply_promotion: boolean;
+  promotion_start?: string | Date | null;
+  promotion_end?: string | Date | null;
   promotion_price: string;
   price: string;
   max_players: number;
@@ -878,8 +885,8 @@ export type PrmotionsType = {
   end_date: string | null;
   price: string;
   promotion_price: string | null;
-  promotion_start : string | null
-  promotion_end : string | null
+  promotion_start: string | null;
+  promotion_end: string | null;
   save: number;
   max_players: number;
   apply_promotion: boolean;

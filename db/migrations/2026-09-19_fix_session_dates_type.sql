@@ -10,4 +10,4 @@
 -- 'YYYY-MM-DD' string, so it only ever held midnight-UTC timestamps.
 
 ALTER TABLE session_dates
-  ALTER COLUMN date TYPE DATE USING date::date;
+  ALTER COLUMN date TYPE DATE USING (date AT TIME ZONE 'UTC')::date;

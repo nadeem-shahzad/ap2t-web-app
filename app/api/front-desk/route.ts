@@ -151,6 +151,7 @@ export async function PUT(req: NextRequest) {
               `SELECT 1 FROM payments
                WHERE session_id = $1 AND user_id = $2
                  AND session_date::date = $3::date
+                 AND status <> 'refunded'
                LIMIT 1`,
               [session_id, user_id, dailySessionDate]
             );
