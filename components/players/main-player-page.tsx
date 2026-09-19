@@ -115,8 +115,8 @@ export default function MainPlayerPage({
   };
 
   function pendingString() {
-    const totalPendingCount = calculateTotalPendingPayments(data?.sessions_data);
-    const totalPendingValue = calculatePendingStats(data?.sessions_data);
+    const totalPendingCount = calculateTotalPendingPayments(data?.payment_data);
+    const totalPendingValue = calculatePendingStats(data?.payment_data);
 
     if (totalPendingCount && totalPendingCount > 0) {
       return `${totalPendingCount} session${totalPendingCount > 1 ? 's' : ''} pending payment${totalPendingCount > 1 ? 's' : ''} totalling $${totalPendingValue}`;
@@ -127,8 +127,8 @@ export default function MainPlayerPage({
 
   const attendancePercent = calculateAttendancePercentage(data?.sessions_data);
   const totalAttended = calculateTotalAttendedSessions(data?.sessions_data);
-  const totalPendingCount = calculateTotalPendingPayments(data?.sessions_data);
-  const totalCompedCount = calculateTotalCompedPayments(data?.sessions_data);
+  const totalPendingCount = calculateTotalPendingPayments(data?.payment_data);
+  const totalCompedCount = calculateTotalCompedPayments(data?.payment_data);
   const totalSessionsCount = data?.sessions_data?.length ? data?.sessions_data.length : 0;
 
   if (loading) {
@@ -439,7 +439,7 @@ export default function MainPlayerPage({
                     <div className="flex gap-2 items-center text-xs text-muted-foreground flex-wrap">
                       <div className="flex gap-2">
                         <Calendar size={14} />
-                        <p>{item?.date && moment(new Date(item?.date)).format('YYYY-MM-DD')}</p>
+                        <p>{formatSessionDates(item)}</p>
                       </div>
                       <div className="flex gap-2">
                         <Clock size={14} />
@@ -493,41 +493,41 @@ export default function MainPlayerPage({
               </Card>
             )}
 
-            {data?.sessions_data &&
-              data?.sessions_data?.map((item, i) => (
+            {data?.payment_data &&
+              data.payment_data.map((item, i) => (
                 <Card key={i} className="bg-black">
                   <CardContent className="space-y-2">
                     <div className="flex justify-between gap-4 flex-wrap">
                       <div className="flex gap-4 items-center text-sm">
-                        <p>{item.name}</p>
-                        <CardStatus value={item.payment_detail?.status || 'pending'} />
+                        <p>{item.session_name || 'Session payment'}</p>
+                        <CardStatus value={item.status || 'pending'} />
                       </div>
                       <p
-                        className={`text-md ${item.payment_detail?.status !== 'paid' && item.payment_detail?.status !== 'comped' && 'text-alternative-text'}`}
+                        className={`text-md ${item.status !== 'paid' && item.status !== 'comped' && 'text-alternative-text'}`}
                       >
-                        {item.payment_detail?.status === 'comped'
+                        {item.status === 'comped'
                           ? 'Free'
-                          : `$${item?.payment_detail?.amount}`}
+                          : `$${item.amount ?? 0}`}
                       </p>
                     </div>
 
                     <div className="flex gap-2 items-center text-xs text-muted-foreground flex-wrap">
                       <div className="flex gap-2">
                         <Calendar size={14} />
-                        <p>{item?.date && moment(new Date(item?.date)).format('YYYY-MM-DD')}</p>
+                        <p>{formatPaymentDate(item)}</p>
                       </div>
                       <div className="flex gap-2">
                         <User size={14} />
-                        <p>Coach {joinNames([item?.coach_first_name, item?.coach_last_name])}</p>
+                        <p>Coach {joinNames([item.coach_first_name, item.coach_last_name])}</p>
                       </div>
                     </div>
 
-                    {item?.payment_detail?.status &&
-                      !['paid', 'comped'].includes(item?.payment_detail?.status) && (
+                    {item.status &&
+                      !['paid', 'comped'].includes(item.status) && (
                         <DiscountDialog
-                          data={item?.payment_detail}
+                          data={item}
                           onRefresh={fetchData}
-                          original={item?.price}
+                          original={item.original_price}
                         />
                       )}
                   </CardContent>
@@ -618,36 +618,41 @@ const HeaderCard = ({
   );
 };
 
-function calculateTotalPendingPayments(sessions: SessionData[] | undefined) {
-  if (!sessions) return 0;
+function calculateTotalPendingPayments(payments: PlayerResponse['payment_data'] | undefined) {
+  if (!payments) return 0;
 
-  return sessions.reduce((count, session) => {
-    const isPending = !session.payment_detail || session.payment_detail.status === 'pending';
-
-    return isPending ? count + 1 : count;
+  return payments.reduce((count, payment) => {
+    return payment.status === 'pending' ? count + 1 : count;
   }, 0);
 }
 
-function calculateTotalCompedPayments(sessions: SessionData[] | undefined) {
-  if (!sessions) return 0;
+function calculateTotalCompedPayments(payments: PlayerResponse['payment_data'] | undefined) {
+  if (!payments) return 0;
 
-  return sessions.reduce((count, session) => {
-    const isComped = session?.payment_detail?.status === 'comped';
-
-    return isComped ? count + 1 : count;
+  return payments.reduce((count, payment) => {
+    return payment.status === 'comped' ? count + 1 : count;
   }, 0);
 }
 
-function calculatePendingStats(sessions: SessionData[] | undefined) {
-  if (!sessions) return 0;
-  return sessions.reduce((total, session) => {
-    const isPending = !session.payment_detail || session.payment_detail.status === 'pending';
-
-    if (!isPending) return total;
-    const amount = session?.payment_detail?.amount;
-
-    return total + Number(amount || 0);
+function calculatePendingStats(payments: PlayerResponse['payment_data'] | undefined) {
+  if (!payments) return 0;
+  return payments.reduce((total, payment) => {
+    if (payment.status !== 'pending') return total;
+    return total + Number(payment.amount || 0);
   }, 0);
+}
+
+function formatSessionDates(session: SessionData) {
+  if (session.enrolled_dates?.length) {
+    return session.enrolled_dates.map((date) => moment.utc(date).format('YYYY-MM-DD')).join(', ');
+  }
+
+  return session.date ? moment.utc(session.date).format('YYYY-MM-DD') : 'Date to be confirmed';
+}
+
+function formatPaymentDate(payment: PlayerResponse['payment_data'][number]) {
+  const date = payment.session_date || payment.session_start_date;
+  return date ? moment.utc(date).format('YYYY-MM-DD') : 'Date to be confirmed';
 }
 
 function calculateAttendancePercentage(sessions: SessionData[] | undefined) {

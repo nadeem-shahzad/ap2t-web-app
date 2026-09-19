@@ -138,20 +138,10 @@ const RenderEachItem = ({
     setLoading(true);
     try {
       if (isFixedDates) {
-        const results = await Promise.allSettled(
-          selectedDates.map((session_date) =>
-            axios.post(`/admin/sessions/${item.id}/participants`, {
-              player_id: user?.id,
-              session_date,
-            })
-          )
-        );
-        const failed = results.filter((r) => r.status === 'rejected').length;
-        if (failed > 0) {
-          toast.error(
-            `Failed to register for ${failed} of ${selectedDates.length} selected date(s).`
-          );
-        }
+        await axios.post(`/admin/sessions/${item.id}/participants`, {
+          player_id: user?.id,
+          session_dates: selectedDates,
+        });
         setSelectedDates([]);
       } else {
         await axios.post(`/admin/sessions/${item.id}/participants`, {

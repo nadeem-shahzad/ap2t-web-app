@@ -53,11 +53,24 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     cu.first_name AS coach_first_name,
     cu.last_name AS coach_last_name,
 
+    COALESCE(
+      (
+        SELECT jsonb_agg(DISTINCT (pay.session_date::date)::text)
+        FROM payments pay
+        WHERE pay.session_id = s.id
+          AND pay.user_id = $1
+          AND pay.session_date IS NOT NULL
+          AND pay.status <> 'refunded'
+      ),
+      '[]'::jsonb
+    ) AS enrolled_dates,
+
     (
       SELECT to_json(pay.*)
       FROM payments pay
       WHERE pay.session_id = s.id
       AND pay.user_id = $1
+      ORDER BY pay.created_at DESC
       LIMIT 1
     ) AS payment_detail,
 
@@ -92,9 +105,21 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     // ---------------- PAYMENT DATA ----------------
     const paymentsResult = await pool.query(
       `
-      SELECT *
-      FROM payments
-      WHERE user_id = $1
+      SELECT
+        pay.*,
+        s.name AS session_name,
+        s.date AS session_start_date,
+        s.end_date AS session_end_date,
+        s.start_time,
+        s.end_time,
+        s.session_type,
+        cu.first_name AS coach_first_name,
+        cu.last_name AS coach_last_name
+      FROM payments pay
+      LEFT JOIN sessions s ON s.id = pay.session_id
+      LEFT JOIN users cu ON cu.id = s.coach_id
+      WHERE pay.user_id = $1
+      ORDER BY pay.created_at DESC, pay.id DESC
       `,
       [player_id]
     );

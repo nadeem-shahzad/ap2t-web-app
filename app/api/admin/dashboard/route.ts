@@ -51,18 +51,16 @@ export async function GET() {
     const pendingTodayRes = await pool.query(
       `SELECT COUNT(*) AS pending_count
        FROM payments
-       WHERE status != ANY($1::text[])
-         AND DATE(created_at AT TIME ZONE 'UTC') = DATE(NOW() AT TIME ZONE 'UTC')`,
-      [['paid', 'comped']]
+       WHERE status NOT IN ('paid', 'comped')
+         AND DATE(created_at AT TIME ZONE 'UTC') = DATE(NOW() AT TIME ZONE 'UTC')`
     );
     const pendingToday = Number(pendingTodayRes.rows[0]?.pending_count || 0);
 
     const pendingYesterdayRes = await pool.query(
       `SELECT COUNT(*) AS pending_count
        FROM payments
-       WHERE status != ANY($1::text[])
-         AND DATE(created_at AT TIME ZONE 'UTC') = DATE(NOW() AT TIME ZONE 'UTC') - INTERVAL '1 day'`,
-      [['paid', 'comped']]
+       WHERE status NOT IN ('paid', 'comped')
+        AND DATE(created_at AT TIME ZONE 'UTC') = DATE(NOW() AT TIME ZONE 'UTC') - INTERVAL '1 day'`
     );
     const pendingYesterday = Number(pendingYesterdayRes.rows[0]?.pending_count || 0);
 

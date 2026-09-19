@@ -15,7 +15,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
+import { Calendar as SessionDateCalendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Select,
@@ -34,7 +35,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { useIsMobile } from '@/hooks/use-mobile';
 import axios from '@/lib/axios';
 import { joinNames } from '@/lib/functions';
-import { formatDateOnly } from '@/lib/date';
+import { formatDateOnly, parseDateOnly } from '@/lib/date';
 import { SessionDataType } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Scrollbar } from '@radix-ui/react-scroll-area';
@@ -91,6 +92,7 @@ export default function SessionMainPage({
   const [payments, setPayments] = useState<any[]>([]);
   const [selectedSessionDate, setSelectedSessionDate] = useState('');
   const [dailyDataLoading, setDailyDataLoading] = useState(false);
+  const [isSessionDateCalendarOpen, setIsSessionDateCalendarOpen] = useState(false);
   const [notes, setNotes] = useState([]);
   const [paymentStats, setPaymentStats] = useState({
     total_revenue: 0,
@@ -102,16 +104,23 @@ export default function SessionMainPage({
     if (id) {
       fetchData();
       fetchAllSessions();
-      fetchParticipants();
       fetchNotes();
-      fetchPayments();
     }
   }, [id]);
 
   const allowed = isAdmin ? true : user?.id === data?.coach_id ? true : false;
-  const canMarkDailySessionCompleted =
-    !rawSessionData?.is_daily_payment ||
-    !moment(rawSessionData.end_date || rawSessionData.date).isAfter(moment(), 'day');
+  const lastFixedSessionDate =
+    rawSessionData?.date_mode === 'fixed_dates' && Array.isArray(rawSessionData.dates)
+      ? rawSessionData.dates.reduce<string | null>((lastDate: string | null, date: any) => {
+          const dateKey = formatDateOnly(date.date);
+          return !lastDate || dateKey > lastDate ? dateKey : lastDate;
+        }, null)
+      : null;
+  const canMarkSessionCompleted =
+    rawSessionData?.date_mode === 'fixed_dates'
+      ? Boolean(lastFixedSessionDate) && !moment(lastFixedSessionDate).isAfter(moment(), 'day')
+      : !rawSessionData?.is_daily_payment ||
+        !moment(rawSessionData.end_date || rawSessionData.date).isAfter(moment(), 'day');
 
   const fetchData = async () => {
     try {
@@ -122,7 +131,7 @@ export default function SessionMainPage({
         const d = result.data;
         setRawSessionData(d);
         if (d.is_daily_payment) {
-          setSelectedSessionDate(moment(new Date(d.date)).format('YYYY-MM-DD'));
+          setSelectedSessionDate(formatDateOnly(d.date));
         } else if (d.date_mode === 'fixed_dates' && Array.isArray(d.dates) && d.dates.length) {
           const today = moment().format('YYYY-MM-DD');
           const nearest =
@@ -133,8 +142,8 @@ export default function SessionMainPage({
         setData({
           id: d.id,
           sessionName: d.name,
-          date: moment(new Date(d.date)).format('YYYY-MM-DD'),
-          end_date: moment(new Date(d.end_date)).format('YYYY-MM-DD'),
+          date: formatDateOnly(d.date),
+          end_date: formatDateOnly(d.end_date),
           time: `${d.start_time} - ${d.end_time}`,
           coachName: joinNames([d.coach_first_name, d.coach_last_name]),
           scehedule_preferences: d.coach?.coach_schedule_preference,
@@ -233,11 +242,20 @@ export default function SessionMainPage({
   }, [participants, payments, data]);
 
   useEffect(() => {
-    if (usesSessionDateFilter && selectedSessionDate) {
+    if (!rawSessionData) return;
+
+    // Date-based sessions must always load from payment rows for the selected
+    // occurrence. Waiting for session data here avoids an unfiltered request
+    // racing the selected-date request on the initial page load.
+    if (usesSessionDateFilter) {
+      if (!selectedSessionDate) return;
       setDailyDataLoading(true);
       Promise.all([fetchParticipants(), fetchPayments()]).finally(() => setDailyDataLoading(false));
+      return;
     }
-  }, [selectedSessionDate, usesSessionDateFilter]);
+
+    void Promise.all([fetchParticipants(), fetchPayments()]);
+  }, [rawSessionData, selectedSessionDate, usesSessionDateFilter]);
 
   const selectedFixedDateRow =
     rawSessionData?.date_mode === 'fixed_dates'
@@ -315,15 +333,40 @@ export default function SessionMainPage({
           <Label className="flex items-center gap-2">
             Session Date {dailyDataLoading && <Spinner className="h-4 w-4" />}
           </Label>
-          <Input
-            type="date"
-            value={selectedSessionDate}
-            min={moment(new Date(rawSessionData.date)).format('YYYY-MM-DD')}
-            max={moment(new Date(rawSessionData.end_date || rawSessionData.date)).format(
-              'YYYY-MM-DD'
-            )}
-            onChange={(event) => setSelectedSessionDate(event.target.value)}
-          />
+          <Popover
+            open={isSessionDateCalendarOpen}
+            onOpenChange={setIsSessionDateCalendarOpen}
+          >
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="justify-start bg-[#1A1A1A] font-normal">
+                <Calendar className="mr-2 h-4 w-4" />
+                {selectedSessionDate
+                  ? formatDateOnly(selectedSessionDate, 'DD MMMM YYYY')
+                  : 'Select a session date'}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <SessionDateCalendar
+                mode="single"
+                required
+                selected={parseDateOnly(selectedSessionDate) ?? undefined}
+                defaultMonth={
+                  parseDateOnly(selectedSessionDate) ?? parseDateOnly(rawSessionData.date) ?? undefined
+                }
+                disabled={(date) => {
+                  const start = parseDateOnly(rawSessionData.date);
+                  const end = parseDateOnly(rawSessionData.end_date || rawSessionData.date);
+                  return Boolean((start && date < start) || (end && date > end));
+                }}
+                onSelect={(date) => {
+                  if (!date) return;
+                  setSelectedSessionDate(formatDateOnly(date));
+                  setIsSessionDateCalendarOpen(false);
+                }}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
         </div>
       )}
 
@@ -422,7 +465,7 @@ export default function SessionMainPage({
             {data && data.status !== 'completed' && data.status !== 'cancelled' && allowed && (
               <Markbuttons
                 id={id}
-                canMarkCompleted={canMarkDailySessionCompleted}
+                canMarkCompleted={canMarkSessionCompleted}
                 onRefresh={async () => {
                   await fetchData();
                   await fetchParticipants();

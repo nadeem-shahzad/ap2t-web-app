@@ -425,6 +425,7 @@ export type PaymentItemParent = {
   status: 'paid' | 'pending' | 'failed' | 'comped' | 'refunded';
   paid_at: string; // ISO date string
   created_at: string; // ISO date string
+  session_date?: string | null;
   comped_category: string | null;
   comped_reason: string | null;
 };
@@ -491,6 +492,7 @@ export interface ParentSession {
   promotion_start?: string | Date | null;
   promotion_end?: string | Date | null;
   promotion_price: string;
+  enrolled_dates?: string[];
   players: SessionPlayer[];
 }
 export interface SessionPlayer {
@@ -824,6 +826,8 @@ export interface SessionData {
 
   payment_detail: Payment | null;
 
+  enrolled_dates?: string[];
+
   note_detail: SessionNote[];
   session_rating: number;
   attendance_detail: Attendance[];
@@ -837,6 +841,18 @@ export type Payment = {
   amount?: string | number;
   created_at?: string;
   original_price?: string | number;
+  session_date?: string | null;
+  method?: string | null;
+  paid_at?: string | null;
+  transaction_id?: string | null;
+  session_name?: string | null;
+  session_start_date?: string | null;
+  session_end_date?: string | null;
+  start_time?: string | null;
+  end_time?: string | null;
+  session_type?: string | null;
+  coach_first_name?: string | null;
+  coach_last_name?: string | null;
 };
 
 export type SessionNote = {

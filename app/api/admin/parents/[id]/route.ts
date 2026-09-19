@@ -123,9 +123,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         `
         SELECT COALESCE(SUM(amount), 0) AS total_spent
         FROM payments
-        WHERE user_id = ANY($1) AND status = $2
+        WHERE (user_id = $1 OR user_id = ANY($2)) AND status = $3
         `,
-        [childUserIds, 'paid']
+        [parentId, childUserIds, 'paid']
       );
 
       paymentTotal = Number(paymentResult.rows[0].total_spent || 0);
@@ -151,6 +151,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
           apply_promotion: row.apply_promotion,
           price: row.price,
           promotion_price: row.promotion_price,
+          enrolled_dates: Array.from(
+            new Set(
+              fixedDatePayments
+                .filter((payment) => payment.session_id === row.session_id)
+                .map((payment) => payment.session_date)
+            )
+          ).sort(),
           players: [],
           comped: row.comped,
         });
