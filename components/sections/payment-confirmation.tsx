@@ -17,7 +17,7 @@ export default function PaymentConfirmedPage({ setStep }: { setStep: (val: numbe
   const {loading, error} = useApproval(
     player?.id,
     currentSession?.id,
-    currentSession?.is_daily_payment ? new Date().toISOString().slice(0, 10) : undefined,
+    currentSession?.occurrence_date ?? (currentSession?.is_daily_payment ? new Date().toISOString().slice(0, 10) : undefined),
   )
 
   const handleDone = () => {

@@ -36,10 +36,10 @@ export default function PaymentRequiredPage({ setStep }: { setStep: (val: number
         user_id: player?.id,
         session_id: session?.id,
         referal_code: code,
-        price: session?.price,
         action: "approval",
         status: "waiting",
-        session_date: currentSession.is_daily_payment ? new Date().toISOString().slice(0, 10) : null,
+        session_date: currentSession.occurrence_date ?? (currentSession.is_daily_payment ? new Date().toISOString().slice(0, 10) : null),
+        variant_id: currentSession.selectedVariant?.id ?? null,
         created_at: new Date()
       })
       setStep(8)

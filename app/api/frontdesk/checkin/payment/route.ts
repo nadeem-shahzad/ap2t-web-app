@@ -17,9 +17,8 @@ export async function GET(req: NextRequest) {
   const user_id = searchParams.get("id");
   const session_id = searchParams.get("sid");
   const variant_id = searchParams.get("variant_id");
-  const price = searchParams.get("price");
   let toSend = false;
-  let amount = Number(price);
+  let amount = 0;
 
   if (!user_id || !session_id) {
     return NextResponse.json(
@@ -35,7 +34,7 @@ export async function GET(req: NextRequest) {
     /* ---------------- SESSION ---------------- */
 
     const sessionResult = await client.query(
-      `SELECT id, price, apply_promotion, promotion_price, comped, max_players, promotion_start, promotion_end, is_daily_payment
+      `SELECT id, price, apply_promotion, promotion_price, comped, max_players, promotion_start, promotion_end, is_daily_payment, date_mode
              FROM sessions
              WHERE id = $1
              FOR UPDATE`,
@@ -52,7 +51,21 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    const isFixedDates = session.date_mode === "fixed_dates";
     const isDailyPayment = session.is_daily_payment === true;
+    const usesSessionDate = isDailyPayment || isFixedDates;
+    let fixedDate: any = null;
+    if (isFixedDates) {
+      const fixed = await client.query(
+        `SELECT id, price, promotion_price, max_players, is_active FROM session_dates
+         WHERE session_id = $1 AND date = CURRENT_DATE FOR UPDATE`, [session_id]
+      );
+      fixedDate = fixed.rows[0];
+      if (!fixedDate || !fixedDate.is_active) {
+        await client.query("ROLLBACK");
+        return NextResponse.json({ message: "Selected date is unavailable" }, { status: 400 });
+      }
+    }
 
     /* ---------------- PLAYER ---------------- */
 
@@ -93,7 +106,7 @@ export async function GET(req: NextRequest) {
            )
          ORDER BY id DESC
          LIMIT 1`,
-        [session_id, user_id, isDailyPayment],
+        [session_id, user_id, usesSessionDate],
       )
     ).rows?.[0];
 
@@ -126,9 +139,9 @@ export async function GET(req: NextRequest) {
         );
       }
 
-      if (isDailyPayment || playerCheck.rows.length === 0) {
+      if (usesSessionDate || playerCheck.rows.length === 0) {
         const countResult = await client.query(
-          isDailyPayment
+          usesSessionDate
             ? `SELECT COUNT(DISTINCT user_id) FROM payments
                WHERE session_id = $1 AND session_date::date = CURRENT_DATE`
             : `SELECT COUNT(*) FROM session_players WHERE session_id = $1`,
@@ -136,7 +149,7 @@ export async function GET(req: NextRequest) {
         );
 
         const currentPlayers = Number(countResult.rows[0].count);
-        const maxPlayers = Number(session.max_players);
+        const maxPlayers = Number(isFixedDates ? fixedDate.max_players : session.max_players);
 
         if (currentPlayers >= maxPlayers) {
           await client.query("ROLLBACK");
@@ -152,13 +165,13 @@ export async function GET(req: NextRequest) {
 
       /* ---------------- CALCULATE AMOUNT ---------------- */
 
-      amount = selectedVariant ? selectedVariant.price : session.price;
+      amount = selectedVariant ? selectedVariant.price : isFixedDates ? fixedDate.price : session.price;
       const now = moment();
       if (session.comped) {
         amount = 0;
       } else if (
         session.apply_promotion &&
-        session.promotion_price &&
+        (isFixedDates ? fixedDate.promotion_price : session.promotion_price) &&
         session.promotion_start &&
         session.promotion_end &&
         now.isBetween(
@@ -168,7 +181,7 @@ export async function GET(req: NextRequest) {
           "[]",
         )
       ) {
-        amount = session.promotion_price;
+        amount = isFixedDates ? fixedDate.promotion_price : session.promotion_price;
       }
 
       /* ---------------- SIBLING DISCOUNT ---------------- */
@@ -228,7 +241,7 @@ export async function GET(req: NextRequest) {
             new Date(),
             "Nil",
             hasSiblingDiscount,
-            isDailyPayment ? new Date() : null,
+            usesSessionDate ? new Date() : null,
           ],
         );
         payment = paymentResult.rows[0];
@@ -238,7 +251,7 @@ export async function GET(req: NextRequest) {
                      (session_id, user_id, amount, status, siblings_discount, session_date)
                      VALUES ($1, $2, $3, $4, $5, $6)
                      RETURNING id, status, amount`,
-          [session_id, user_id, amount, "pending", hasSiblingDiscount, isDailyPayment ? new Date() : null],
+          [session_id, user_id, amount, "pending", hasSiblingDiscount, usesSessionDate ? new Date() : null],
         );
         payment = paymentResult.rows[0];
       }
