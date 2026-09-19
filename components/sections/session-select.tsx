@@ -19,7 +19,7 @@ export default function SessionSelectPage({ setStep }: { setStep: (val: number) 
 
   async function fetchData() {
 
-    axios.get(`/frontdesk/sessions`)
+    axios.get(`/frontdesk/sessions?user_id=${player?.id ?? ''}`)
       .then((response) => {
         setSessions(response.data)
       })
@@ -51,7 +51,7 @@ export default function SessionSelectPage({ setStep }: { setStep: (val: number) 
 
   useEffect(() => {
     fetchData()
-  }, [])
+  }, [player?.id])
 
   function handleVariantSelect(variant: NonNullable<Session['variants']>[number]) {
     if (!sessionForVariant) return

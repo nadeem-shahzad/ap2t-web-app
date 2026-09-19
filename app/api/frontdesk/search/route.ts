@@ -72,7 +72,10 @@ WHERE
       s.apply_promotion,
       s.promotion_price,
       s.date,
-      s.is_daily_payment
+      s.is_daily_payment,
+      s.date_mode,
+      p.session_date,
+      p.variant_id
     FROM session_players se
     JOIN sessions s ON s.id = se.session_id
     LEFT JOIN LATERAL (
@@ -80,21 +83,25 @@ WHERE
       FROM payments
       WHERE session_id = se.session_id
         AND user_id = se.user_id
-        AND (
-          NOT COALESCE(s.is_daily_payment, FALSE)
-          OR session_date::date = CURRENT_DATE
-        )
+        AND (NOT (COALESCE(s.is_daily_payment, FALSE) OR s.date_mode = 'fixed_dates') OR session_date::date = CURRENT_DATE)
       ORDER BY id DESC
       LIMIT 1
     ) p ON true
     WHERE 
       se.user_id = ANY($1::int[])
-      AND CURRENT_DATE BETWEEN s.date AND s.end_date
+      AND (
+        (s.date_mode = 'fixed_dates' AND EXISTS (
+          SELECT 1 FROM session_dates sd WHERE sd.session_id = s.id AND sd.date = CURRENT_DATE AND sd.is_active
+        ))
+        OR (s.date_mode <> 'fixed_dates' AND CURRENT_DATE BETWEEN s.date::date AND COALESCE(s.end_date, s.date)::date)
+      )
       AND s.status = ANY($2::text[])
       AND (
-        NOT COALESCE(s.is_daily_payment, FALSE)
-        OR p.id IS NOT NULL
+        (NOT (COALESCE(s.is_daily_payment, FALSE) OR s.date_mode = 'fixed_dates') OR p.id IS NOT NULL)
       )
+      -- A failed charge remains a valid booking: the kiosk can retry it.
+      -- Refunded payments are the only bookings that must disappear.
+      AND (p.status IS NULL OR p.status <> 'refunded')
   `,
             [userIds, ["upcoming", "ongoing"]]
         );

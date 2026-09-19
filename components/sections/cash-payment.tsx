@@ -30,10 +30,10 @@ export default function CashPaymentPage({ setStep }: { setStep: (val: number) =>
       await axios.post(`/frontdesk/actions`, {
         user_id: player?.id,
         session_id: session?.id,
-        price: session?.price,
         action: "cash",
         status: "waiting",
-        session_date: currentSession.is_daily_payment ? moment().format("YYYY-MM-DD") : null,
+        session_date: currentSession.occurrence_date ?? (currentSession.is_daily_payment ? moment().format("YYYY-MM-DD") : null),
+        variant_id: currentSession.selectedVariant?.id ?? null,
         created_at: new Date()
       })
       setStep(7)

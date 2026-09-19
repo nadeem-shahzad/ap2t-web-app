@@ -21,6 +21,10 @@ export interface Session {
   total_enrolled: number
   spots_left  : number
   is_daily_payment?: boolean
+  date_mode?: 'single' | 'daily_range' | 'fixed_dates'
+  occurrence_date?: string | null
+  session_date_id?: number | null
+  sibling_discount?: boolean
   variants?: SessionVariant[]
   selectedVariant?: SessionVariant | null
 }

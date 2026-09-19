@@ -16,7 +16,7 @@ export default function ApprovalWaitingPage({ setStep }: { setStep: (val: number
   const { loading: isWaiting, error } = useApproval(
     player?.id,
     currentSession?.id,
-    currentSession?.is_daily_payment ? new Date().toISOString().slice(0, 10) : undefined,
+    currentSession?.occurrence_date ?? (currentSession?.is_daily_payment ? new Date().toISOString().slice(0, 10) : undefined),
   )
 
 
