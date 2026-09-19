@@ -4,6 +4,7 @@ import { Moment } from 'moment';
 import CustomCalendar from './custom-calendar';
 import './calenderstyle.css';
 import { SessionProps } from '@/lib/types';
+import { isPromotionActive } from '@/lib/promotion';
 
 type SessionCalendarProps = {
   sessions?: SessionProps[];
@@ -25,6 +26,65 @@ export default function SessionCalendar({
   loading,
 }: SessionCalendarProps) {
   const events = sessions.flatMap((session) => {
+    let type = 'info';
+    const status = session.status?.toLowerCase() || '';
+    if (['completed', 'paid', 'active'].includes(status)) type = 'active';
+    else if (status === 'cancelled') type = 'danger';
+    else if (status === 'pending') type = 'warning';
+    else if (status === 'upcoming') type = 'info';
+    else if (status === 'ongoing') type = 'other';
+
+    const isPrivateSession =
+      session.type?.trim().toLowerCase() === 'private session';
+
+    if (session.date_mode === 'fixed_dates') {
+      return (session.dates ?? [])
+        .filter((d) => d.is_active)
+        .map((dateRow) => ({ ...dateRow, date: dateRow.date.slice(0, 10) }))
+        .filter((dateRow) => {
+          const date = dateRow.date;
+          const day = new Date(`${date}T00:00:00Z`).getUTCDay();
+          const isWeekend = day === 0 || day === 6;
+          return !isWeekend || isPrivateSession;
+        })
+        .map((dateRow) => {
+          const date = dateRow.date;
+          const hasDatePromotion =
+            isPromotionActive(
+              session.apply_promotion,
+              session.promotion_start,
+              session.promotion_end
+            ) &&
+            dateRow.promotion_price !== null;
+
+          return {
+            id: `${session.id}-${date}`,
+            originalId: session.id,
+            status,
+            title: session.sessionName,
+            sessionType: session.type,
+            date,
+            time: session.time?.split(' - ')[0],
+            end_time: session?.time?.split(' - ')[1],
+            type: type as any,
+            children: session.children,
+            enrolled: session.enrolled_dates?.includes(date) ?? false,
+            isMultiDay: false,
+            end_date: date,
+            start_date: date,
+            price: hasDatePromotion ? dateRow.promotion_price! : dateRow.price,
+            promotion: hasDatePromotion,
+            original_price: dateRow.price,
+            variants: session?.variants ?? [],
+            is_daily_payment: false,
+            requires_upfront_payment: session.requires_upfront_payment,
+            enrolled_dates: session.enrolled_dates,
+            enrolled_dates_by_player: session.enrolled_dates_by_player,
+            date_mode: session.date_mode,
+          };
+        });
+    }
+
     const rawStart = session.rawDate || session.date;
     const rawEnd = session.end_date;
 
@@ -49,16 +109,7 @@ export default function SessionCalendar({
 
     if (!startDate) return [];
 
-    let type = 'info';
-    const status = session.status?.toLowerCase() || '';
-    if (['completed', 'paid', 'active'].includes(status)) type = 'active';
-    else if (status === 'cancelled') type = 'danger';
-    else if (status === 'pending') type = 'warning';
-    else if (status === 'upcoming') type = 'info';
-    else if (status === 'ongoing') type = 'other';
-
     const dates = endDate ? expandDateRange(startDate, endDate) : [startDate];
-    const isPrivateSession = session.type?.trim().toLowerCase() === 'private session';
 
     return dates
       .filter((date) => {
@@ -92,6 +143,7 @@ export default function SessionCalendar({
         requires_upfront_payment: session.requires_upfront_payment,
         enrolled_dates: session.enrolled_dates,
         enrolled_dates_by_player: session.enrolled_dates_by_player,
+        date_mode: session.date_mode,
       }));
   });
 

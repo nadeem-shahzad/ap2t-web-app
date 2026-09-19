@@ -65,6 +65,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
           s.name,
           s.status,
           s.date,
+          s.date_mode,
           s.start_time,
           s.end_time,
           s.apply_promotion,
@@ -94,6 +95,24 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     }
 
     /* -------------------------------------------------------
+       3️⃣a Enrolled occurrence dates for fixed-dates sessions
+       (sessions.date is always null for these — the actual date lives on
+       the payment row instead)
+    ------------------------------------------------------- */
+
+    let fixedDatePayments: { user_id: number; session_id: number; session_date: string }[] = [];
+
+    if (childUserIds.length) {
+      const fixedDateResult = await pool.query(
+        `SELECT user_id, session_id, session_date
+         FROM payments
+         WHERE user_id = ANY($1) AND session_date IS NOT NULL`,
+        [childUserIds]
+      );
+      fixedDatePayments = fixedDateResult.rows;
+    }
+
+    /* -------------------------------------------------------
        4️⃣ Payments (Total Spent)
     ------------------------------------------------------- */
 
@@ -104,9 +123,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         `
         SELECT COALESCE(SUM(amount), 0) AS total_spent
         FROM payments
-        WHERE user_id = ANY($1) AND status = $2
+        WHERE (user_id = $1 OR user_id = ANY($2)) AND status = $3
         `,
-        [childUserIds, 'paid']
+        [parentId, childUserIds, 'paid']
       );
 
       paymentTotal = Number(paymentResult.rows[0].total_spent || 0);
@@ -132,6 +151,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
           apply_promotion: row.apply_promotion,
           price: row.price,
           promotion_price: row.promotion_price,
+          enrolled_dates: Array.from(
+            new Set(
+              fixedDatePayments
+                .filter((payment) => payment.session_id === row.session_id)
+                .map((payment) => payment.session_date)
+            )
+          ).sort(),
           players: [],
           comped: row.comped,
         });
@@ -158,8 +184,19 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const childrenWithStats = children.map((child) => {
       const childSessions = sessionRows.filter((s) => s.child_id === child.user_id);
 
-      const nextSession = childSessions
-        .filter((s) => new Date(s.date) >= new Date())
+      // For fixed-dates sessions, sessions.date is always null — resolve the
+      // actual enrolled date(s) from this child's payment rows instead.
+      const nextSessionCandidates = childSessions.flatMap((s) => {
+        if (s.date_mode === 'fixed_dates') {
+          return fixedDatePayments
+            .filter((p) => p.user_id === child.user_id && p.session_id === s.session_id)
+            .map((p) => ({ date: p.session_date, start_time: s.start_time }));
+        }
+        return [{ date: s.date, start_time: s.start_time }];
+      });
+
+      const nextSession = nextSessionCandidates
+        .filter((s) => s.date && new Date(s.date) >= new Date())
         .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
 
       return {

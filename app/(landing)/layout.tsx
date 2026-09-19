@@ -1,5 +1,5 @@
-import Footer from '@/components/landing/footer';
-import Header from '@/components/landing/header';
+import Footer from "@/components/landing/footer";
+import Header from "@/components/landing/header";
 
 export default function RootLayout({
   children,

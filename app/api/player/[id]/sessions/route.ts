@@ -34,11 +34,37 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
           WHERE p.session_id = s.id
             AND p.user_id = $1
             AND p.session_date IS NOT NULL
+            AND p.status <> 'refunded'
         ),
         '[]'::jsonb
-      ) AS enrolled_dates
+      ) AS enrolled_dates,
+      COALESCE(
+        (
+          SELECT jsonb_agg(
+            jsonb_build_object(
+              'id', sd.id,
+              'date', sd.date,
+              'price', sd.price,
+              'promotion_price', sd.promotion_price,
+              'max_players', sd.max_players,
+              'is_active', sd.is_active,
+              'is_signup_open', sd.is_signup_open,
+              'left', sd.max_players - COALESCE((
+                SELECT COUNT(DISTINCT dp.user_id) FROM payments dp
+                WHERE dp.session_id = s.id
+                  AND dp.session_date::date = sd.date
+                  AND dp.status NOT IN ('failed', 'refunded')
+              ), 0)
+            ) ORDER BY sd.date
+          )
+          FROM session_dates sd
+          WHERE sd.session_id = s.id
+            AND sd.is_active
+        ),
+        '[]'
+      ) AS dates
     FROM sessions s
-    LEFT JOIN users u 
+    LEFT JOIN users u
       ON u.id = s.coach_id
     LEFT JOIN session_players sp
       ON sp.session_id = s.id
@@ -47,10 +73,24 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
     if (month) {
       queryParams.push(month ? `${month}-01T00:00:00Z` : null);
-      query += ` 
-    WHERE
-      s.date < DATE_TRUNC('month', COALESCE($2::timestamptz, NOW())) + INTERVAL '1 month'
-      AND COALESCE(s.end_date, s.date) >= DATE_TRUNC('month', COALESCE($2::timestamptz, NOW()))
+      query += `
+    WHERE (
+      (
+        s.date_mode != 'fixed_dates'
+        AND s.date < DATE_TRUNC('month', COALESCE($2::timestamptz, NOW())) + INTERVAL '1 month'
+        AND COALESCE(s.end_date, s.date) >= DATE_TRUNC('month', COALESCE($2::timestamptz, NOW()))
+      )
+      OR (
+        s.date_mode = 'fixed_dates'
+        AND EXISTS (
+          SELECT 1 FROM session_dates sd
+          WHERE sd.session_id = s.id
+            AND sd.is_active
+            AND sd.date >= DATE_TRUNC('month', COALESCE($2::timestamptz, NOW()))
+            AND sd.date < DATE_TRUNC('month', COALESCE($2::timestamptz, NOW())) + INTERVAL '1 month'
+        )
+      )
+    )
     `;
     }
 

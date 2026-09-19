@@ -20,6 +20,8 @@ type SessionProps = {
   coachName: string;
   price: string | number;
   status: string;
+  date_mode?: string;
+  dates?: { date: string }[];
 };
 
 type Props = {
@@ -55,9 +57,17 @@ export default function SessionSheetCalendar({ sessions, currentMonth, setCurren
 
   const getSession = (day: Moment, coach: string, startHour: number, endHour: number) => {
     return sessions.find((s) => {
-      const sessionStartDay = moment(s.date).startOf('day');
-      const sessionEndDay = moment(s.end_date).startOf('day');
-      if (!day.isSameOrAfter(sessionStartDay) || !day.isSameOrBefore(sessionEndDay)) return false;
+      if (s.date_mode === 'fixed_dates') {
+        const dayStr = day.format('YYYY-MM-DD');
+        const onThisDay = (s.dates ?? []).some((d) => d.date.slice(0, 10) === dayStr);
+        if (!onThisDay) return false;
+      } else {
+        const sessionStartDay = moment(s.date).startOf('day');
+        const sessionEndDay = moment(s.end_date).startOf('day');
+        if (!day.isSameOrAfter(sessionStartDay) || !day.isSameOrBefore(sessionEndDay)) {
+          return false;
+        }
+      }
       if (s.coachName !== coach) return false;
 
       const [start, end] = s.time.split(' - ');

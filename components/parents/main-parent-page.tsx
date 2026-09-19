@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/auth-context';
 import { useIsMobile } from '@/hooks/use-mobile';
 import axios from '@/lib/axios';
+import { formatDateOnly } from '@/lib/date';
 import { exportToExcel, getYear, joinNames } from '@/lib/functions';
 import { ParentDetailResponse, PaymentItemParent, SquareSavedCard } from '@/lib/types';
 import { Scrollbar } from '@radix-ui/react-scroll-area';
@@ -104,7 +105,7 @@ export default function MainParentPage({
   function handleExport(payments: PaymentItemParent[] | undefined, fileName = 'payments.xlsx') {
     if (!payments || payments.length === 0) return;
 
-    const headers = ['Session Name', 'Status', 'Amount', 'Created At', 'Method', 'Transaction ID'];
+    const headers = ['Session Name', 'Status', 'Amount', 'Session Date', 'Created At', 'Method', 'Transaction ID'];
 
     const rows: string[][] = payments.map((item) => [
       item.session_name || 'N/A',
@@ -112,6 +113,7 @@ export default function MainParentPage({
       item.status === 'refunded'
         ? `-${Number(item.amount || 0).toFixed(2)}`
         : `$${Number(item.amount || 0).toFixed(2)}`,
+      formatPaymentSessionDate(item),
       item.created_at ? moment(item.created_at).format('YYYY-MM-DD') : 'N/A',
       item.method || 'N/A',
       item.transaction_id || 'Nil',
@@ -349,7 +351,7 @@ export default function MainParentPage({
                         <div className="text-white">Next Session:</div>
                         <div className="text-muted-foreground">
                           {item?.next_session &&
-                            `${moment(new Date(item?.next_session?.date)).format('YYYY-MM-DD')} ${item.next_session?.start_time}`}
+                            `${formatDateOnly(item?.next_session?.date)} ${item.next_session?.start_time}`}
                         </div>
                       </div>
 
@@ -379,7 +381,7 @@ export default function MainParentPage({
                       </div>
                       <div className="text-muted-foreground text-xs flex items-center gap-2">
                         <Calendar size={14} />{' '}
-                        {item.date && moment(new Date(item.date)).format('YYYY-MM-DD')}{' '}
+                        {formatBookingDates(item)}{' '}
                         <Clock size={14} /> {item.start_time} - {item.end_time}
                       </div>
                     </div>
@@ -441,7 +443,7 @@ export default function MainParentPage({
                     <div className="flex gap-2">
                       <Calendar size={14} />
                       <p>
-                        {item?.created_at && moment(new Date(item.created_at)).format('YYYY-MM-DD')}
+                        {formatPaymentSessionDate(item)}
                       </p>
                     </div>
                     <div className="flex gap-2">
@@ -490,6 +492,19 @@ const RenderCardDetail = ({ data }: { data: SquareSavedCard | undefined }) => {
     </Card>
   );
 };
+
+function formatBookingDates(session: ParentDetailResponse['sessions'][number]) {
+  if (session.enrolled_dates?.length) {
+    return session.enrolled_dates.map((date) => moment.utc(date).format('YYYY-MM-DD')).join(', ');
+  }
+
+  return session.date ? moment.utc(session.date).format('YYYY-MM-DD') : 'Date to be confirmed';
+}
+
+function formatPaymentSessionDate(payment: PaymentItemParent) {
+  const date = payment.session_date || payment.created_at;
+  return date ? moment.utc(date).format('YYYY-MM-DD') : 'N/A';
+}
 
 const HeaderCard = ({
   title = '',

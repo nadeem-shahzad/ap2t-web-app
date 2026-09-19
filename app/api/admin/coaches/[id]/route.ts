@@ -74,7 +74,17 @@ LEFT JOIN LATERAL (
         COALESCE(
             jsonb_agg(p2) FILTER (WHERE p2.id IS NOT NULL),
             '[]'
-        ) AS payment_detail
+        ) AS payment_detail,
+
+        COALESCE(
+            (
+              SELECT jsonb_agg(jsonb_build_object('date', sd.date))
+              FROM session_dates sd
+              WHERE sd.session_id = s.id
+                AND sd.is_active
+            ),
+            '[]'
+        ) AS dates
 
     FROM sessions s
     LEFT JOIN payments p2

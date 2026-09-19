@@ -21,9 +21,7 @@ export async function GET(req: NextRequest) {
       const [revenueRes, sessionsRes, pendingRes, compedRes] = await Promise.all([
         pool.query(`SELECT COALESCE(SUM(amount),0) AS total FROM payments WHERE status='paid'`),
         pool.query(`SELECT COUNT(*) AS total FROM sessions`),
-        pool.query(`SELECT COUNT(*) AS total FROM payments WHERE status!=ANY($1::text[])`, [
-          ['paid', 'comped'],
-        ]),
+        pool.query(`SELECT COUNT(*) AS total FROM payments WHERE status NOT IN ('paid', 'comped')`),
         pool.query(`SELECT COUNT(*) AS total FROM payments WHERE status='comped'`),
       ]);
 

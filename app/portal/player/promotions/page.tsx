@@ -2,17 +2,22 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
 import { useAuth } from '@/contexts/auth-context';
 import axios from '@/lib/axios';
 import { joinNames } from '@/lib/functions';
+import { formatDateOnly } from '@/lib/date';
+import { isPromotionActive } from '@/lib/promotion';
 import { PrmotionsType } from '@/lib/types';
-import { Calendar, CreditCard, DollarSign, Users } from 'lucide-react';
+import { Calendar, ChevronDown, CreditCard, DollarSign, Users } from 'lucide-react';
 import moment from 'moment';
 import { useEffect, useState } from 'react';
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
+import { toast } from 'sonner';
 
 export default function Page() {
   const { user } = useAuth();
@@ -31,8 +36,8 @@ export default function Page() {
       if (result.data) {
         const mappedSessions = result.data.map((s: any) => ({
           ...s,
-          date: moment(new Date(s.date)).format('YYYY-MM-DD'),
-          end_date: moment(new Date(s.end_date)).format('YYYY-MM-DD'),
+          date: s.date ? moment(new Date(s.date)).format('YYYY-MM-DD') : '',
+          end_date: s.end_date ? moment(new Date(s.end_date)).format('YYYY-MM-DD') : '',
           time: `${s.start_time} - ${s.end_time}`,
           coachName: joinNames([s.coach_first_name, s.coach_last_name]),
           status: s.status,
@@ -74,21 +79,76 @@ const RenderEachItem = ({
   fetchData: () => Promise<void>;
 }) => {
   const [loading, setLoading] = useState(false);
+  const [datesPopoverOpen, setDatesPopoverOpen] = useState(false);
   const { user } = useAuth();
-  const [selectedDate, setSelectedDate] = useState(item.date);
+  const isFixedDates = item.date_mode === 'fixed_dates';
+  const nearestFixedDate = isFixedDates
+    ? [...(item.dates ?? [])]
+        .filter((d) => d.is_active && d.is_signup_open)
+        .sort((a, b) => a.date.localeCompare(b.date))[0]
+    : null;
+  const [selectedDate, setSelectedDate] = useState(
+    nearestFixedDate ? formatDateOnly(nearestFixedDate.date) : item.date
+  );
+  const enrolledDateKeys = new Set(item.enrolled_dates ?? []);
+  const [selectedDates, setSelectedDates] = useState<string[]>([]);
+  const usesSessionDate = item.is_daily_payment || isFixedDates;
+  const promotionActive = isPromotionActive(
+    item.apply_promotion,
+    item.promotion_start,
+    item.promotion_end
+  );
   const isEnrolledForSelectedDate = item.is_daily_payment
     ? (item.enrolled_dates?.includes(selectedDate) ?? false)
     : item.enrolled;
+
+  const selectableFixedDates = isFixedDates
+    ? (item.dates ?? []).filter((d) => d.is_active)
+    : [];
+  const availableFixedDates = selectableFixedDates.filter(
+    (d) => !enrolledDateKeys.has(formatDateOnly(d.date))
+  );
+
+  const selectedFixedDateRows = selectableFixedDates.filter((d) =>
+    selectedDates.includes(formatDateOnly(d.date))
+  );
+  const fixedDatesTotal = selectedFixedDateRows.reduce(
+    (sum, d) => sum + Number(promotionActive ? (d.promotion_price ?? d.price) : d.price),
+    0
+  );
+
+  const displayPrice = isFixedDates
+    ? selectedFixedDateRows.length
+      ? fixedDatesTotal
+      : `From $${Math.min(...selectableFixedDates.map((d) => Number(promotionActive ? (d.promotion_price ?? d.price) : d.price)))}`
+    : promotionActive
+      ? item.promotion_price
+      : item.price;
+  const displayOriginalPrice = isFixedDates ? undefined : item.price;
+
+  function toggleDate(dateKey: string) {
+    setSelectedDates((prev) =>
+      prev.includes(dateKey) ? prev.filter((d) => d !== dateKey) : [...prev, dateKey]
+    );
+  }
 
   async function handleEnroll(item: PrmotionsType) {
     if (!user?.id || !item?.id) return;
 
     setLoading(true);
     try {
-      await axios.post(`/admin/sessions/${item.id}/participants`, {
-        player_id: user?.id,
-        ...(item.is_daily_payment ? { session_date: selectedDate } : {}),
-      });
+      if (isFixedDates) {
+        await axios.post(`/admin/sessions/${item.id}/participants`, {
+          player_id: user?.id,
+          session_dates: selectedDates,
+        });
+        setSelectedDates([]);
+      } else {
+        await axios.post(`/admin/sessions/${item.id}/participants`, {
+          player_id: user?.id,
+          ...(usesSessionDate ? { session_date: selectedDate } : {}),
+        });
+      }
       await fetchData();
     } finally {
       setLoading(false);
@@ -121,28 +181,51 @@ const RenderEachItem = ({
 
         <div className="flex items-center gap-2">
           <DollarSign size={16} className="text-success-text" />
-          <span className="text-xl font-semibold">{item.promotion_price}</span>
-          <span className="text-sm line-through text-muted-foreground">{item.price}</span>
-          <Badge className="bg-active-bg text-active-text rounded-md">Save ${item.save}</Badge>
+          <span className="text-xl font-semibold">
+            {typeof displayPrice === 'number' ? `$${displayPrice}` : displayPrice}
+          </span>
+          {displayOriginalPrice !== undefined && (
+            <span className="text-sm line-through text-muted-foreground">
+              {displayOriginalPrice}
+            </span>
+          )}
+          {!isFixedDates && (
+            <Badge className="bg-active-bg text-active-text rounded-md">Save ${item.save}</Badge>
+          )}
+          {isFixedDates && selectedFixedDateRows.length > 0 && (
+            <Badge className="bg-active-bg text-active-text rounded-md">
+              {selectedFixedDateRows.length} date{selectedFixedDateRows.length > 1 ? 's' : ''}
+            </Badge>
+          )}
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
+        {isFixedDates ? (
           <div className="space-y-1 bg-[#1A1A1A] border border-border rounded-xl p-3">
             <div className="flex gap-2 items-center">
               <Calendar size={12} className="text-muted-foreground" />
-              <div className="text-xs text-muted-foreground">Start Date</div>
+              <div className="text-xs text-muted-foreground">Dates Available</div>
             </div>
-            <div className="text-sm text-white">{item.date}</div>
+            <div className="text-sm text-white">{item.dates?.length ?? 0} dates</div>
           </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1 bg-[#1A1A1A] border border-border rounded-xl p-3">
+              <div className="flex gap-2 items-center">
+                <Calendar size={12} className="text-muted-foreground" />
+                <div className="text-xs text-muted-foreground">Start Date</div>
+              </div>
+              <div className="text-sm text-white">{item.date}</div>
+            </div>
 
-          <div className="space-y-1 bg-[#1A1A1A] border border-border rounded-xl p-3">
-            <div className="flex gap-2 items-center">
-              <Calendar size={12} className="text-muted-foreground" />
-              <div className="text-xs text-muted-foreground">End Date</div>
+            <div className="space-y-1 bg-[#1A1A1A] border border-border rounded-xl p-3">
+              <div className="flex gap-2 items-center">
+                <Calendar size={12} className="text-muted-foreground" />
+                <div className="text-xs text-muted-foreground">End Date</div>
+              </div>
+              <div className="text-sm text-white">{item.end_date}</div>
             </div>
-            <div className="text-sm text-white">{item.end_date}</div>
           </div>
-        </div>
+        )}
 
         <Separator />
 
@@ -167,8 +250,80 @@ const RenderEachItem = ({
           </div>
         )}
 
+        {isFixedDates && (
+          <div className="space-y-2">
+            <div className="text-xs text-muted-foreground">Choose Date(s)</div>
+            <Popover open={datesPopoverOpen} onOpenChange={setDatesPopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full h-9 justify-between font-normal"
+                >
+                  <span>
+                    {selectedDates.length > 0
+                      ? `${selectedDates.length} date${selectedDates.length > 1 ? 's' : ''} selected`
+                      : 'Select date(s)'}
+                  </span>
+                  <ChevronDown className="h-4 w-4 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[300px] p-2 space-y-1" align="start">
+                {selectableFixedDates.map((d) => {
+                  const dateKey = formatDateOnly(d.date);
+                  const alreadyEnrolled = enrolledDateKeys.has(dateKey);
+                  const soldOut = !alreadyEnrolled && (d.left <= 0 || !d.is_signup_open);
+                  const effectivePrice = promotionActive ? (d.promotion_price ?? d.price) : d.price;
+                  return (
+                    <label
+                      key={d.id}
+                      className={`flex items-center justify-between gap-2 rounded-md px-2 py-1.5 text-sm ${
+                        alreadyEnrolled || soldOut
+                          ? 'text-muted-foreground cursor-not-allowed'
+                          : 'cursor-pointer hover:bg-white/5'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <Checkbox
+                          checked={alreadyEnrolled || selectedDates.includes(dateKey)}
+                          disabled={alreadyEnrolled || soldOut}
+                          onCheckedChange={() => toggleDate(dateKey)}
+                        />
+                        {dateKey}
+                      </span>
+                      <span className="text-xs">
+                        {alreadyEnrolled
+                          ? 'Enrolled'
+                          : soldOut
+                            ? 'Sold out'
+                            : `$${effectivePrice} · ${d.left} left`}
+                      </span>
+                    </label>
+                  );
+                })}
+              </PopoverContent>
+            </Popover>
+          </div>
+        )}
+
         <div className="flex gap-2 mb-4 w-full">
-          {isEnrolledForSelectedDate ? (
+          {isFixedDates ? (
+            availableFixedDates.length === 0 ? (
+              <Badge className="bg-green-500/10 text-green-400 w-full">
+                Enrolled in all dates
+              </Badge>
+            ) : (
+              <Button
+                disabled={loading || selectedDates.length === 0}
+                onClick={() => handleEnroll(item)}
+                variant="outline"
+                className="w-full"
+              >
+                {loading && <Spinner />} <Users /> Participate
+                {selectedDates.length > 0 ? ` (${selectedDates.length})` : ''}
+              </Button>
+            )
+          ) : isEnrolledForSelectedDate ? (
             <Badge className="bg-green-500/10 text-green-400 w-full">Enrolled</Badge>
           ) : (
             <Button

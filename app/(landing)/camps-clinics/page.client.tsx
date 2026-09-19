@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { formatSessionDateRange } from '@/lib/date';
+import { isPromotionActive } from '@/lib/promotion';
 import { CampClinicCard, CampClinicSession } from '@/lib/types';
 import { ArrowRight, Search } from 'lucide-react';
 import Link from 'next/link';
@@ -91,43 +92,52 @@ export default function CampsAndClinics({ data = [] }: { data?: CampClinicSessio
               })
               .filter((item) => item.title.toLowerCase().includes(search?.toLowerCase()))
               .map((item) => (
-                <Card key={item.id} className="bg-[#131313] rounded border border-white/5">
-                  <CardContent className="p-4 space-y-4">
-                    {/* Badges */}
-                    <div className="flex items-center justify-between">
-                      <div
-                        className={`text-xs font-semibold px-2.5 py-1 rounded-md ${
-                          item.badge === 'CLINIC'
-                            ? 'bg-blue-500/15 text-blue-400'
-                            : 'bg-primary/15 text-primary'
-                        }`}
-                      >
-                        {item.badge}
-                      </div>
-
-                      {item.requires_upfront_payment && item.left && (
-                        <div className="text-xs font-semibold px-2 py-1 rounded-md bg-red-500/15 text-red-400">
-                          {item.left} Left
-                        </div>
-                      )}
-                    </div>
-
+                <Card
+                  key={item.id}
+                  className="bg-[#131313] rounded border border-white/5 py-0 overflow-hidden gap-0"
+                >
+                  <div className="relative">
                     <Zoom>
                       <img
                         src={item.image || '/footballkick.jpg'}
                         alt={`${item.title} program`}
-                        className="h-[350px] w-full rounded-md object-contain"
+                        className="aspect-[4/3] w-full object-cover"
                         onError={(event) => {
                           event.currentTarget.src = '/footballkick.jpg';
                         }}
                       />
                     </Zoom>
 
+                    <div
+                      className={`absolute top-3 left-3 text-xs font-semibold px-2.5 py-1 rounded-md ${
+                        item.badge === 'CLINIC'
+                          ? 'bg-blue-500/15 text-blue-400'
+                          : 'bg-primary/15 text-primary'
+                      }`}
+                    >
+                      {item.badge}
+                    </div>
+
+                    {item.date_mode === 'fixed_dates' ? (
+                      <div className="absolute top-3 right-3 text-xs font-semibold px-2 py-1 rounded-md bg-red-500/15 text-red-400">
+                        {item.left > 0 ? `${item.left} Left` : 'Sold out'}
+                      </div>
+                    ) : (
+                      item.requires_upfront_payment &&
+                      item.left && (
+                        <div className="absolute top-3 right-3 text-xs font-semibold px-2 py-1 rounded-md bg-red-500/15 text-red-400">
+                          {item.left} Left
+                        </div>
+                      )
+                    )}
+                  </div>
+
+                  <CardContent className="p-4 space-y-4">
                     {/* Title */}
                     <div className="text-base font-semibold text-white">{item.title}</div>
 
                     {/* Description */}
-                    <div className="text-sm text-muted-foreground leading-relaxed">
+                    <div className="text-sm text-muted-foreground leading-relaxed line-clamp-2">
                       {item.description}
                     </div>
 
@@ -164,20 +174,57 @@ export default function CampsAndClinics({ data = [] }: { data?: CampClinicSessio
 }
 
 export const transformCampClinics = (sessions: CampClinicSession[]): CampClinicCard[] => {
-  return sessions.map((s) => ({
-    id: s.id,
-    badge: s.session_type.toUpperCase() as 'CAMP' | 'CLINIC',
-    image: s.image,
-    title: s.name,
-    description: s.description,
-    price: Number(s.apply_promotion ? s.promotion_price : s.price),
-    left: s.total_left,
-    requires_upfront_payment: s.requires_upfront_payment,
-    details: [
-      formatSessionDateRange(s.date, s.end_date),
-      `${s.start_time} - ${s.end_time}`,
-      `Ages ${s.age_limit ?? 'All'}`,
-      s?.location || '',
-    ],
-  }));
+  return sessions.map((s) => {
+    const isFixedDates = s.date_mode === 'fixed_dates' && (s.dates?.length ?? 0) > 0;
+    const promotionActive = isPromotionActive(
+      s.apply_promotion,
+      s.promotion_start,
+      s.promotion_end
+    );
+
+    if (isFixedDates) {
+      const dates = s.dates!;
+      const lowestPrice = Math.min(
+        ...dates.map((d) => Number(promotionActive ? (d.promotion_price ?? d.price) : d.price))
+      );
+      const nearest = [...dates].sort((a, b) => a.date.localeCompare(b.date))[0];
+
+      return {
+        id: s.id,
+        badge: s.session_type.toUpperCase() as 'CAMP' | 'CLINIC',
+        image: s.image,
+        title: s.name,
+        description: s.description,
+        price: lowestPrice,
+        left: nearest.left,
+        requires_upfront_payment: s.requires_upfront_payment,
+        date_mode: s.date_mode,
+        dates: s.dates,
+        details: [
+          `${dates.length} ${dates.length === 1 ? 'date' : 'dates'} available`,
+          `${s.start_time} - ${s.end_time}`,
+          `Ages ${s.age_limit ?? 'All'}`,
+          s?.location || '',
+        ] as [string, string, string, string],
+      };
+    }
+
+    return {
+      id: s.id,
+      badge: s.session_type.toUpperCase() as 'CAMP' | 'CLINIC',
+      image: s.image,
+      title: s.name,
+      description: s.description,
+      price: Number(promotionActive ? s.promotion_price : s.price),
+      left: s.total_left,
+      requires_upfront_payment: s.requires_upfront_payment,
+      date_mode: s.date_mode,
+      details: [
+        formatSessionDateRange(s.date, s.end_date),
+        `${s.start_time} - ${s.end_time}`,
+        `Ages ${s.age_limit ?? 'All'}`,
+        s?.location || '',
+      ] as [string, string, string, string],
+    };
+  });
 };

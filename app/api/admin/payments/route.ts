@@ -59,6 +59,7 @@ export async function GET() {
 }
 
 export async function PUT(req: NextRequest) {
+  const client = await pool.connect();
   try {
     const data = await req.json();
     const { id, ...updates } = data;
@@ -82,23 +83,51 @@ export async function PUT(req: NextRequest) {
     }
 
     values.push(id);
+    await client.query('BEGIN');
     const query = `
           UPDATE payments 
           SET ${fields.join(', ')}
           WHERE id = $${values.length}
+          RETURNING session_id, user_id, status
       `;
 
-    await pool.query(query, values);
+    const paymentResult = await client.query(query, values);
+    const payment = paymentResult.rows[0];
+
+    if (updates.status === 'refunded' && payment?.status === 'refunded') {
+      // A player can hold one session_players link for several daily/fixed-date
+      // bookings. Remove it only when the refund leaves no other enrollment
+      // payment for that same session. Failed payments intentionally keep the
+      // link; only a refund removes an enrollment.
+      await client.query(
+        `DELETE FROM session_players sp
+         WHERE sp.session_id = $1
+           AND sp.user_id = $2
+           AND NOT EXISTS (
+             SELECT 1
+             FROM payments remaining
+             WHERE remaining.session_id = $1
+               AND remaining.user_id = $2
+               AND remaining.status <> 'refunded'
+           )`,
+        [payment.session_id, payment.user_id]
+      );
+    }
+
+    await client.query('COMMIT');
 
     await sendPaymentReciept(data);
 
     return NextResponse.json({ message: 'Updated successfully' }, { status: 200 });
   } catch (error: any) {
+    await client.query('ROLLBACK');
     console.log('Error updating data:', error?.message);
     return NextResponse.json(
       { message: error?.message || 'Internal Server Error' },
       { status: 500 }
     );
+  } finally {
+    client.release();
   }
 }
 export const revalidate = 0;

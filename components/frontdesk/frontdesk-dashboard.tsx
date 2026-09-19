@@ -83,8 +83,9 @@ export default function FrontdeskDashboard() {
         return (
           <div className="leading-tight">
             <div className="text-[#D1D5DC]">
-              {moment(new Date(row.original.date)).format('YYYY-MM-DD')} -{' '}
-              {moment(new Date(row.original.end_date)).format('YYYY-MM-DD')}
+              {row.original.date_mode === 'fixed_dates'
+                ? 'Multiple dates'
+                : `${moment(new Date(row.original.date)).format('YYYY-MM-DD')} - ${moment(new Date(row.original.end_date)).format('YYYY-MM-DD')}`}
             </div>
             <div className="text-xs text-[#9CA3AF]">
               {row.original.start_time} - {row.original.end_time}

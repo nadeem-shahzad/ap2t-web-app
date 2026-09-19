@@ -27,7 +27,31 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       WHERE sv.session_id = s.id
     ),
     '[]'::jsonb
-  ) AS variants
+  ) AS variants,
+  COALESCE(
+    (
+      SELECT jsonb_agg(
+        jsonb_build_object(
+          'id', sd.id,
+          'date', sd.date,
+          'price', sd.price,
+          'promotion_price', sd.promotion_price,
+          'max_players', sd.max_players,
+          'is_active', sd.is_active,
+          'is_signup_open', sd.is_signup_open,
+          'left', sd.max_players - COALESCE((
+            SELECT COUNT(DISTINCT dp.user_id) FROM payments dp
+            WHERE dp.session_id = s.id
+              AND dp.session_date::date = sd.date
+              AND dp.status NOT IN ('failed', 'refunded')
+          ), 0)
+        ) ORDER BY sd.date
+      )
+      FROM session_dates sd
+      WHERE sd.session_id = s.id
+    ),
+    '[]'::jsonb
+  ) AS dates
 FROM sessions s
 LEFT JOIN users u ON u.id = s.coach_id
 LEFT JOIN coaches c ON c.user_id = s.coach_id

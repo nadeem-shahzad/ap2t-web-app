@@ -23,6 +23,8 @@ export type CalendarEvent = {
   requires_upfront_payment?: boolean;
   enrolled_dates?: string[];
   enrolled_dates_by_player?: Record<string, string[]>;
+  date_mode?: DateMode;
+  dates?: SessionDate[];
 };
 
 export type CustomCalendarProps = {
@@ -338,6 +340,9 @@ export type SessionProps = {
   status: string;
   original: any;
   promotion?: boolean;
+  apply_promotion?: boolean;
+  promotion_start?: string | Date | null;
+  promotion_end?: string | Date | null;
   original_price?: string;
   enrolled: boolean;
   is_daily_payment?: boolean;
@@ -347,6 +352,8 @@ export type SessionProps = {
   children: { user_id: number; last_name: string; first_name: string }[];
   location?: string;
   variants?: { id: number; hour: number; price: string | number }[];
+  date_mode?: DateMode;
+  dates?: SessionDate[];
 };
 
 export type SquareMode = 'test' | 'live';
@@ -396,6 +403,7 @@ export type FrontDeskActionData = {
   price: number;
   action: 'cash' | 'approval';
   status: 'waiting' | 'accepted' | 'rejected';
+  date_mode?: DateMode;
 };
 
 export interface ParentDetailResponse {
@@ -417,6 +425,7 @@ export type PaymentItemParent = {
   status: 'paid' | 'pending' | 'failed' | 'comped' | 'refunded';
   paid_at: string; // ISO date string
   created_at: string; // ISO date string
+  session_date?: string | null;
   comped_category: string | null;
   comped_reason: string | null;
 };
@@ -480,7 +489,10 @@ export interface ParentSession {
   coach_last_name: string;
   price: string;
   apply_promotion: boolean;
+  promotion_start?: string | Date | null;
+  promotion_end?: string | Date | null;
   promotion_price: string;
+  enrolled_dates?: string[];
   players: SessionPlayer[];
 }
 export interface SessionPlayer {
@@ -538,6 +550,8 @@ export type SessionCoach = {
   age_limit: string;
   coach_first_name: string;
   coach_last_name: string;
+  date_mode?: DateMode;
+  dates?: Pick<SessionDate, 'date'>[];
 };
 
 export type SessionType = {
@@ -564,6 +578,8 @@ export type SessionType = {
   promotion_end: null | Date;
   show_storefront: boolean;
   coach_schedule_preference?: any;
+  date_mode?: DateMode;
+  dates?: SessionDate[];
 };
 export type BookedSession = {
   name: string;
@@ -619,6 +635,19 @@ export type SessionRecord = {
   coach_name: string;
 };
 
+export type DateMode = 'single' | 'daily_range' | 'fixed_dates';
+
+export type SessionDate = {
+  id: number;
+  date: string;
+  price: number;
+  promotion_price: number | null;
+  max_players: number;
+  left: number;
+  is_active: boolean;
+  is_signup_open: boolean;
+};
+
 export type CampClinicSession = {
   id: number;
   session_type: string;
@@ -631,15 +660,19 @@ export type CampClinicSession = {
   end_time: string;
   age_limit: string;
   apply_promotion: boolean;
+  promotion_start?: string | Date | null;
+  promotion_end?: string | Date | null;
   promotion_price: string;
   price: string;
   max_players: number;
   is_daily_payment?: boolean;
+  date_mode?: DateMode;
   requires_upfront_payment?: boolean;
   total_enrolled_players: number;
   total_left: number;
   location: string;
   image?: string;
+  dates?: SessionDate[];
 };
 
 export type CampClinicCard = {
@@ -652,6 +685,8 @@ export type CampClinicCard = {
   left: number;
   requires_upfront_payment?: boolean;
   details: [string, string, string, string];
+  date_mode?: DateMode;
+  dates?: SessionDate[];
 };
 
 export type ParentData = {
@@ -791,6 +826,8 @@ export interface SessionData {
 
   payment_detail: Payment | null;
 
+  enrolled_dates?: string[];
+
   note_detail: SessionNote[];
   session_rating: number;
   attendance_detail: Attendance[];
@@ -804,6 +841,18 @@ export type Payment = {
   amount?: string | number;
   created_at?: string;
   original_price?: string | number;
+  session_date?: string | null;
+  method?: string | null;
+  paid_at?: string | null;
+  transaction_id?: string | null;
+  session_name?: string | null;
+  session_start_date?: string | null;
+  session_end_date?: string | null;
+  start_time?: string | null;
+  end_time?: string | null;
+  session_type?: string | null;
+  coach_first_name?: string | null;
+  coach_last_name?: string | null;
 };
 
 export type SessionNote = {
@@ -852,8 +901,8 @@ export type PrmotionsType = {
   end_date: string | null;
   price: string;
   promotion_price: string | null;
-  promotion_start : string | null
-  promotion_end : string | null
+  promotion_start: string | null;
+  promotion_end: string | null;
   save: number;
   max_players: number;
   apply_promotion: boolean;
@@ -875,6 +924,8 @@ export type PrmotionsType = {
   is_daily_payment?: boolean;
   requires_upfront_payment?: boolean;
   enrolled_dates?: string[];
+  date_mode?: DateMode;
+  dates?: SessionDate[];
 };
 
 export type ConfirmationProps = {

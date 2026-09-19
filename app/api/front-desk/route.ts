@@ -20,6 +20,7 @@ export async function GET() {
     s.end_date,
     s.start_time,
     s.end_time,
+    s.date_mode,
     fda.price,
     fda.session_date,
     fda.referal_code,
@@ -83,7 +84,7 @@ export async function PUT(req: NextRequest) {
           /* ---------------- SESSION ---------------- */
 
           const sessionResult = await client.query(
-            `SELECT id, comped, max_players, is_daily_payment,
+            `SELECT id, comped, max_players, is_daily_payment, date_mode,
               CASE WHEN is_daily_payment THEN $2::date BETWEEN date::date AND COALESCE(end_date, date)::date ELSE true END AS is_valid_date
        FROM sessions
        WHERE id = $1
@@ -96,6 +97,26 @@ export async function PUT(req: NextRequest) {
           if (!session) {
             await client.query('ROLLBACK');
             return NextResponse.json({ message: 'Session not found' }, { status: 404 });
+          }
+
+          const isFixedDates = session.date_mode === 'fixed_dates';
+          let fixedDateRow: any = null;
+          if (isFixedDates) {
+            const fixedDateResult = await client.query(
+              `SELECT id, max_players, is_active
+               FROM session_dates
+               WHERE session_id = $1 AND date = $2::date
+               FOR UPDATE`,
+              [session_id, updatingRow?.session_date ?? moment().format('YYYY-MM-DD')]
+            );
+            fixedDateRow = fixedDateResult.rows?.[0];
+            if (!fixedDateRow || !fixedDateRow.is_active) {
+              await client.query('ROLLBACK');
+              return NextResponse.json(
+                { message: 'Selected date is not available for signup' },
+                { status: 400 }
+              );
+            }
           }
 
           /* ---------------- PLAYER ---------------- */
@@ -124,11 +145,13 @@ export async function PUT(req: NextRequest) {
 
           // Existing actions created before session_date was introduced remain today-only.
           const dailySessionDate = updatingRow?.session_date ?? moment().format('YYYY-MM-DD');
-          if (session.is_daily_payment && playerCheck.rows.length > 0) {
+          const usesSessionDate = session.is_daily_payment || isFixedDates;
+          if (usesSessionDate && playerCheck.rows.length > 0) {
             const existingDailyPayment = await client.query(
               `SELECT 1 FROM payments
                WHERE session_id = $1 AND user_id = $2
                  AND session_date::date = $3::date
+                 AND status <> 'refunded'
                LIMIT 1`,
               [session_id, user_id, dailySessionDate]
             );
@@ -143,10 +166,14 @@ export async function PUT(req: NextRequest) {
             const dailyCapacity = await client.query(
               `SELECT COUNT(DISTINCT user_id) FROM payments
                WHERE session_id = $1
-                 AND session_date::date = $2::date`,
+                 AND session_date::date = $2::date
+                 AND status NOT IN ('failed', 'refunded')`,
               [session_id, dailySessionDate]
             );
-            if (Number(dailyCapacity.rows[0].count) >= Number(session.max_players)) {
+            const dailyMaxPlayers = isFixedDates
+              ? Number(fixedDateRow.max_players)
+              : Number(session.max_players);
+            if (Number(dailyCapacity.rows[0].count) >= dailyMaxPlayers) {
               await client.query('ROLLBACK');
               return NextResponse.json(
                 { message: 'Session is full for this date' },
@@ -177,11 +204,12 @@ export async function PUT(req: NextRequest) {
           }
 
           if (playerCheck.rows.length === 0) {
-            const countResult = session.is_daily_payment
+            const countResult = usesSessionDate
               ? await client.query(
                   `SELECT COUNT(DISTINCT user_id) FROM payments
                  WHERE session_id = $1
-                   AND session_date::date = $2::date`,
+                   AND session_date::date = $2::date
+                   AND status NOT IN ('failed', 'refunded')`,
                   [session_id, dailySessionDate]
                 )
               : await client.query(`SELECT COUNT(*) FROM session_players WHERE session_id = $1`, [
@@ -189,7 +217,9 @@ export async function PUT(req: NextRequest) {
                 ]);
 
             const currentPlayers = Number(countResult.rows[0].count);
-            const maxPlayers = Number(session.max_players);
+            const maxPlayers = isFixedDates
+              ? Number(fixedDateRow.max_players)
+              : Number(session.max_players);
 
             if (currentPlayers >= maxPlayers) {
               await client.query('ROLLBACK');
@@ -225,7 +255,7 @@ export async function PUT(req: NextRequest) {
 
               const siblingCount = parseInt(siblings_data.rows[0].count, 10);
 
-              if (siblingCount >= 1) {
+              if (siblingCount >= 1 && !updatingRow.price_is_final) {
                 hasSiblingDiscount = true;
                 amount = amount * 0.9;
                 // await client.query(
@@ -266,7 +296,7 @@ export async function PUT(req: NextRequest) {
                   new Date(),
                   'Nil',
                   hasSiblingDiscount,
-                  session.is_daily_payment ? dailySessionDate : null,
+                  usesSessionDate ? dailySessionDate : null,
                 ]
               );
             } else {
@@ -280,7 +310,7 @@ export async function PUT(req: NextRequest) {
                   amount,
                   'pending',
                   hasSiblingDiscount,
-                  session.is_daily_payment ? dailySessionDate : null,
+                  usesSessionDate ? dailySessionDate : null,
                 ]
               );
             }
@@ -440,7 +470,7 @@ WHERE se.session_id = $1
             WHERE p.user_id = $4
               AND p.session_id = $5
               AND (
-                s.is_daily_payment = false
+                (s.is_daily_payment = false AND s.date_mode != 'fixed_dates')
                 OR p.session_date::date = $6::date
               )
             ORDER BY p.created_at DESC

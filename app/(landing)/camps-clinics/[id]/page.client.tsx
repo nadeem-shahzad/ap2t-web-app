@@ -4,25 +4,88 @@ import AppCalendar from '@/components/app-calendar';
 import { detailIcons } from '@/components/landing/constants';
 import { CurvedImage } from '@/components/landing/curved-image';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import axios from '@/lib/axios';
-import { formatSessionDateRange } from '@/lib/date';
-import { CampClinicSession } from '@/lib/types';
+import { formatDateOnly, formatSessionDateRange, parseDateOnly } from '@/lib/date';
+import { isPromotionActive } from '@/lib/promotion';
+import { CampClinicSession, SessionDate } from '@/lib/types';
+import { cn } from '@/lib/utils';
 import { CircleAlert, CircleCheckBig, CreditCard, DollarSign } from 'lucide-react';
 import moment from 'moment';
 import NextLink from 'next/link';
-import { useState } from 'react';
+import { ComponentProps, useState } from 'react';
+import type { DayButton } from 'react-day-picker';
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import { toast } from 'sonner';
 
+function FixedDateDayButton({
+  className,
+  day,
+  modifiers,
+  fixedDatesMap,
+  promotionActive,
+  ...props
+}: ComponentProps<typeof DayButton> & {
+  fixedDatesMap: Map<string, SessionDate>;
+  promotionActive: boolean;
+}) {
+  const dateKey = moment(day.date).format('YYYY-MM-DD');
+  const info = fixedDatesMap.get(dateKey);
+  const soldOut = info ? info.left <= 0 || !info.is_signup_open : false;
+
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      data-selected-single={modifiers.selected}
+      className={cn(
+        'flex h-auto min-h-(--cell-size) w-full flex-col items-center justify-center gap-0.5 aspect-square font-normal leading-none',
+        'data-[selected-single=true]:bg-primary data-[selected-single=true]:text-primary-foreground',
+        info && !soldOut && !modifiers.selected && 'ring-1 ring-inset ring-primary/50',
+        className
+      )}
+      {...props}
+    >
+      <span className="text-sm">{day.date.getDate()}</span>
+      {info && (
+        <span
+          className={cn(
+            'text-[9px] leading-none',
+            soldOut ? 'text-red-400 line-through' : 'opacity-80'
+          )}
+        >
+          ${promotionActive ? (info.promotion_price ?? info.price) : info.price}
+        </span>
+      )}
+    </Button>
+  );
+}
+
 export default function CampsAndClinicsDetail({ data = null }: { data: CampClinicSession | null }) {
   const mobile = useIsMobile();
   const [loading, setLoading] = useState(false);
+  const isFixedDates = data?.date_mode === 'fixed_dates';
+  const promotionActive = isPromotionActive(
+    data?.apply_promotion,
+    data?.promotion_start,
+    data?.promotion_end
+  );
+  const nearestFixedDate = isFixedDates
+    ? [...(data?.dates ?? [])]
+        .filter((d) => d.is_active && d.is_signup_open)
+        .sort((a, b) => a.date.localeCompare(b.date))[0]
+    : null;
   const [formData, setFormData] = useState({
-    session_date: data?.is_daily_payment && data.date ? moment(data.date).format('YYYY-MM-DD') : '',
+    session_date:
+      data?.is_daily_payment && data.date
+        ? moment(data.date).format('YYYY-MM-DD')
+        : nearestFixedDate
+          ? formatDateOnly(nearestFixedDate.date)
+          : '',
     player: {
       first_name: '',
       last_name: '',
@@ -43,6 +106,20 @@ export default function CampsAndClinicsDetail({ data = null }: { data: CampClini
   });
   const isUnderAged =
     !!formData.player.birth_date && moment().diff(moment(formData.player.birth_date), 'years') < 18;
+  const selectedFixedDateRow = isFixedDates
+    ? data?.dates?.find(
+        (d) => formatDateOnly(d.date) === formData.session_date
+      )
+    : null;
+
+  const fixedDatesMap = new Map(
+    (isFixedDates ? (data?.dates ?? []) : [])
+      .filter((d) => d.is_active)
+      .map((d) => [formatDateOnly(d.date), d])
+  );
+
+  const showCalendar = isFixedDates;
+
   const currentCamp = data
     ? {
         id: data.id,
@@ -50,10 +127,18 @@ export default function CampsAndClinicsDetail({ data = null }: { data: CampClini
         title: data.name,
         image: data.image,
         description: data.description,
-        price: Number(data.apply_promotion ? data.promotion_price : data.price),
-        left: data.total_left,
+        price: selectedFixedDateRow
+          ? Number(
+              promotionActive
+                ? (selectedFixedDateRow.promotion_price ?? selectedFixedDateRow.price)
+                : selectedFixedDateRow.price
+            )
+          : Number(promotionActive ? data.promotion_price : data.price),
+        left: selectedFixedDateRow ? selectedFixedDateRow.left : data.total_left,
         details: [
-          formatSessionDateRange(data.date, data.end_date),
+          isFixedDates
+            ? `${data.dates?.length ?? 0} dates available`
+            : formatSessionDateRange(data.date, data.end_date),
           `${moment(data.start_time, 'HH:mm').format('hh:mm A')} - ${moment(data.end_time, 'HH:mm').format('hh:mm A')}`,
           `Ages ${data.age_limit ?? 'All'}`,
           data?.location || '',
@@ -74,7 +159,7 @@ export default function CampsAndClinicsDetail({ data = null }: { data: CampClini
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    if (data?.is_daily_payment && !formData.session_date) {
+    if ((data?.is_daily_payment || isFixedDates) && !formData.session_date) {
       toast.error('Please select a booking date');
       return;
     }
@@ -160,7 +245,7 @@ export default function CampsAndClinicsDetail({ data = null }: { data: CampClini
                 {currentCamp.description}
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 items-stretch">
                 <div className="space-y-4">
                   <Card className="bg-[#131313] rounded border border-white/5">
                     <CardContent className="p-4 space-y-4">
@@ -204,16 +289,89 @@ export default function CampsAndClinicsDetail({ data = null }: { data: CampClini
                     </CardContent>
                   </Card>
                 </div>
-                <div>
-                  <Card className="bg-[#131313] rounded border border-white/5">
-                    <CardContent className="p-4 space-y-6">
+                <div className={showCalendar ? 'h-full' : undefined}>
+                  <Card
+                    className={cn(
+                      'bg-[#131313] rounded border border-white/5',
+                      showCalendar && 'h-full flex flex-col'
+                    )}
+                  >
+                    <CardContent
+                      className={cn(
+                        showCalendar ? 'p-4 space-y-4 flex-1 flex flex-col justify-start' : 'p-4 space-y-6'
+                      )}
+                    >
+                      {showCalendar && (
+                        <div className="space-y-2 rounded-[8px] border border-[#3A3A3A] bg-[#0F0F0F] p-3">
+                          <h4 className="text-center text-sm font-medium text-white/80">
+                            Available Dates
+                          </h4>
+                          <Calendar
+                            mode="single"
+                            required
+                            selected={parseDateOnly(formData.session_date) ?? undefined}
+                            defaultMonth={
+                              parseDateOnly(formData.session_date) ??
+                              parseDateOnly(nearestFixedDate?.date) ??
+                              undefined
+                            }
+                            onSelect={(value) => {
+                              if (!value) return;
+                              const dateKey = moment(value).format('YYYY-MM-DD');
+                              const info = fixedDatesMap.get(dateKey);
+                              if (!info || info.left <= 0 || !info.is_signup_open) return;
+                              setFormData((prev) => ({ ...prev, session_date: dateKey }));
+                            }}
+                            disabled={(date) => {
+                              const info = fixedDatesMap.get(moment(date).format('YYYY-MM-DD'));
+                              return !info || info.left <= 0 || !info.is_signup_open;
+                            }}
+                            components={{
+                              DayButton: (props) => (
+                                <FixedDateDayButton
+                                  {...props}
+                                  fixedDatesMap={fixedDatesMap}
+                                  promotionActive={promotionActive}
+                                />
+                              ),
+                            }}
+                            className="mx-auto w-fit [--cell-size:2.25rem]"
+                          />
+                          <div className="flex items-center justify-center gap-4 text-xs text-white/50 border-t border-[#3A3A3A] pt-2">
+                            <span className="flex items-center gap-1.5">
+                              <span className="h-2 w-2 rounded-full ring-1 ring-primary/50" />
+                              Available
+                            </span>
+                            <span className="flex items-center gap-1.5">
+                              <span className="h-2 w-2 rounded-full bg-primary" />
+                              Selected
+                            </span>
+                          </div>
+                          {selectedFixedDateRow && (
+                            <p className="text-center text-sm text-white/70">
+                              {formatDateOnly(selectedFixedDateRow.date, 'MMM D, YYYY')} —{' '}
+                              <span className="font-semibold text-white">
+                                $
+                                {promotionActive
+                                  ? (selectedFixedDateRow.promotion_price ??
+                                    selectedFixedDateRow.price)
+                                  : selectedFixedDateRow.price}
+                              </span>{' '}
+                              · {selectedFixedDateRow.left} left
+                            </p>
+                          )}
+                        </div>
+                      )}
+
                       {data?.requires_upfront_payment ? (
                         <div className="space-y-5 text-center">
                           <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-primary/15 text-primary">
                             <CreditCard className="size-6" />
                           </div>
                           <div className="space-y-2">
-                            <h3 className="text-2xl font-semibold text-white">Upfront payment required</h3>
+                            <h3 className="text-2xl font-semibold text-white">
+                              Upfront payment required
+                            </h3>
                             <p className="text-sm leading-relaxed text-white/60">
                               This session requires payment during registration. Continue to sign up
                               and complete your payment to reserve your place.
@@ -454,7 +612,7 @@ export default function CampsAndClinicsDetail({ data = null }: { data: CampClini
                           />
                         </div>
 
-                        <Button type="submit" className="w-full rounded-full" disabled={loading}>
+                        <Button type="submit" className="w-full rounded-full mt-2" disabled={loading}>
                           {loading && <Spinner className=" text-black h-5 w-5" />}
                           Complete Registration
                         </Button>

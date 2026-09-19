@@ -2,6 +2,8 @@
 
 import { useIsMobile } from '@/hooks/use-mobile';
 import { SessionProps } from '@/lib/types';
+import { formatDateOnly } from '@/lib/date';
+import { isPromotionActive } from '@/lib/promotion';
 import { Scrollbar } from '@radix-ui/react-scroll-area';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import moment from 'moment';
@@ -49,6 +51,12 @@ export default function ReserveComponent({
       const isPrivateSession = s.type?.trim().toLowerCase() === 'private session';
 
       if (isWeekend && !isPrivateSession) return false;
+
+      if (s.date_mode === 'fixed_dates') {
+        return (s.dates ?? []).some(
+          (d) => d.is_active && formatDateOnly(d.date) === selectedDate
+        );
+      }
 
       const start = moment(s.date).startOf('day');
       const end = s.end_date ? moment(s.end_date).startOf('day') : start;
@@ -145,9 +153,22 @@ const RenderEachSession = ({
   fetchData: () => Promise<void>;
   playerId?: string | null;
 }) => {
-  const isEnrolledForSelectedDate = session.is_daily_payment
+  const usesSessionDate = session.is_daily_payment || session.date_mode === 'fixed_dates';
+  const isEnrolledForSelectedDate = usesSessionDate
     ? (session.enrolled_dates?.includes(selectedDate) ?? false)
     : session.enrolled;
+
+  const selectedFixedDateRow =
+    session.date_mode === 'fixed_dates'
+      ? session.dates?.find((d) => formatDateOnly(d.date) === selectedDate)
+      : null;
+  const displayPrice = selectedFixedDateRow
+    ? isPromotionActive(session.apply_promotion, session.promotion_start, session.promotion_end) &&
+      selectedFixedDateRow.promotion_price !== null
+      ? selectedFixedDateRow.promotion_price
+      : selectedFixedDateRow.price
+    : session.price;
+  const displayOriginalPrice = selectedFixedDateRow ? selectedFixedDateRow.price : session.original_price;
 
   return (
     <div className="flex border-b p-4 transition-all gap-2 flex-wrap">
@@ -183,14 +204,14 @@ const RenderEachSession = ({
 
       <div className="flex flex-col justify-end gap-2">
         <div className="flex flex-col items-start sm:items-end gap-2">
-          {session?.promotion && (
+          {(session?.promotion || selectedFixedDateRow) && (
             <span className="text-sm line-through text-muted-foreground">
-              ${session?.original_price}
+              ${displayOriginalPrice}
             </span>
           )}
           <div className="p-2 bg-active-bg text-active-text border border-active-text/32 rounded-md">
             <p className="text-md font-medium leading-none">
-              ${Number(session?.price || 0).toFixed(0)}
+              ${Number(displayPrice || 0).toFixed(0)}
             </p>
           </div>
         </div>
@@ -200,7 +221,7 @@ const RenderEachSession = ({
           <ParticipateButton
             player_id={playerId}
             session_id={session.id}
-            session_date={session.is_daily_payment ? selectedDate : undefined}
+            session_date={usesSessionDate ? selectedDate : undefined}
             variants={session.variants ?? []}
             label="Participate"
             onSuccess={fetchData}

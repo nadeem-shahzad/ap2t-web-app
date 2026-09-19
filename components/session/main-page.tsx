@@ -15,7 +15,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
+import { Calendar as SessionDateCalendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Select,
@@ -34,7 +35,9 @@ import { useAuth } from '@/contexts/auth-context';
 import { useIsMobile } from '@/hooks/use-mobile';
 import axios from '@/lib/axios';
 import { joinNames } from '@/lib/functions';
+import { formatDateOnly, parseDateOnly } from '@/lib/date';
 import { SessionDataType } from '@/lib/types';
+import { cn } from '@/lib/utils';
 import { Scrollbar } from '@radix-ui/react-scroll-area';
 import {
   Calendar,
@@ -89,6 +92,7 @@ export default function SessionMainPage({
   const [payments, setPayments] = useState<any[]>([]);
   const [selectedSessionDate, setSelectedSessionDate] = useState('');
   const [dailyDataLoading, setDailyDataLoading] = useState(false);
+  const [isSessionDateCalendarOpen, setIsSessionDateCalendarOpen] = useState(false);
   const [notes, setNotes] = useState([]);
   const [paymentStats, setPaymentStats] = useState({
     total_revenue: 0,
@@ -100,16 +104,23 @@ export default function SessionMainPage({
     if (id) {
       fetchData();
       fetchAllSessions();
-      fetchParticipants();
       fetchNotes();
-      fetchPayments();
     }
   }, [id]);
 
   const allowed = isAdmin ? true : user?.id === data?.coach_id ? true : false;
-  const canMarkDailySessionCompleted =
-    !rawSessionData?.is_daily_payment ||
-    !moment(rawSessionData.end_date || rawSessionData.date).isAfter(moment(), 'day');
+  const lastFixedSessionDate =
+    rawSessionData?.date_mode === 'fixed_dates' && Array.isArray(rawSessionData.dates)
+      ? rawSessionData.dates.reduce<string | null>((lastDate: string | null, date: any) => {
+          const dateKey = formatDateOnly(date.date);
+          return !lastDate || dateKey > lastDate ? dateKey : lastDate;
+        }, null)
+      : null;
+  const canMarkSessionCompleted =
+    rawSessionData?.date_mode === 'fixed_dates'
+      ? Boolean(lastFixedSessionDate) && !moment(lastFixedSessionDate).isAfter(moment(), 'day')
+      : !rawSessionData?.is_daily_payment ||
+        !moment(rawSessionData.end_date || rawSessionData.date).isAfter(moment(), 'day');
 
   const fetchData = async () => {
     try {
@@ -120,13 +131,19 @@ export default function SessionMainPage({
         const d = result.data;
         setRawSessionData(d);
         if (d.is_daily_payment) {
-          setSelectedSessionDate(moment(new Date(d.date)).format('YYYY-MM-DD'));
+          setSelectedSessionDate(formatDateOnly(d.date));
+        } else if (d.date_mode === 'fixed_dates' && Array.isArray(d.dates) && d.dates.length) {
+          const today = moment().format('YYYY-MM-DD');
+          const nearest =
+            d.dates.find((dt: any) => formatDateOnly(dt.date) >= today) ??
+            d.dates[0];
+          setSelectedSessionDate(formatDateOnly(nearest.date));
         }
         setData({
           id: d.id,
           sessionName: d.name,
-          date: moment(new Date(d.date)).format('YYYY-MM-DD'),
-          end_date: moment(new Date(d.end_date)).format('YYYY-MM-DD'),
+          date: formatDateOnly(d.date),
+          end_date: formatDateOnly(d.end_date),
           time: `${d.start_time} - ${d.end_time}`,
           coachName: joinNames([d.coach_first_name, d.coach_last_name]),
           scehedule_preferences: d.coach?.coach_schedule_preference,
@@ -166,11 +183,14 @@ export default function SessionMainPage({
     }
   };
 
+  const usesSessionDateFilter =
+    rawSessionData?.is_daily_payment || rawSessionData?.date_mode === 'fixed_dates';
+
   const fetchParticipants = async () => {
     try {
       const response = await axios.get(`/admin/sessions/${id}/participants`, {
         params:
-          rawSessionData?.is_daily_payment && selectedSessionDate
+          usesSessionDateFilter && selectedSessionDate
             ? { session_date: selectedSessionDate }
             : undefined,
       });
@@ -184,7 +204,7 @@ export default function SessionMainPage({
     try {
       const response = await axios.get(`/admin/sessions/${id}/payments`, {
         params:
-          rawSessionData?.is_daily_payment && selectedSessionDate
+          usesSessionDateFilter && selectedSessionDate
             ? { session_date: selectedSessionDate }
             : undefined,
       });
@@ -222,11 +242,27 @@ export default function SessionMainPage({
   }, [participants, payments, data]);
 
   useEffect(() => {
-    if (rawSessionData?.is_daily_payment && selectedSessionDate) {
+    if (!rawSessionData) return;
+
+    // Date-based sessions must always load from payment rows for the selected
+    // occurrence. Waiting for session data here avoids an unfiltered request
+    // racing the selected-date request on the initial page load.
+    if (usesSessionDateFilter) {
+      if (!selectedSessionDate) return;
       setDailyDataLoading(true);
       Promise.all([fetchParticipants(), fetchPayments()]).finally(() => setDailyDataLoading(false));
+      return;
     }
-  }, [selectedSessionDate, rawSessionData?.is_daily_payment]);
+
+    void Promise.all([fetchParticipants(), fetchPayments()]);
+  }, [rawSessionData, selectedSessionDate, usesSessionDateFilter]);
+
+  const selectedFixedDateRow =
+    rawSessionData?.date_mode === 'fixed_dates'
+      ? rawSessionData?.dates?.find(
+          (dt: any) => formatDateOnly(dt.date) === selectedSessionDate
+        )
+      : null;
 
   function calculatePaymentStats(participants: any[], payments: any[]) {
     let totalAmount = 0;
@@ -257,10 +293,15 @@ export default function SessionMainPage({
 
   const stats = [
     {
-      h: `${participants.length}/${data?.max_players || '-'}`,
-      p: rawSessionData?.is_daily_payment
-        ? `Booked for ${selectedSessionDate}`
-        : 'Overall Enrolled',
+      h: `${participants.length}/${
+        rawSessionData?.date_mode === 'fixed_dates'
+          ? (selectedFixedDateRow?.max_players ?? '-')
+          : data?.max_players || '-'
+      }`,
+      p:
+        rawSessionData?.is_daily_payment || rawSessionData?.date_mode === 'fixed_dates'
+          ? `Booked for ${selectedSessionDate}`
+          : 'Overall Enrolled',
       icon: <Users />,
       type: 'info',
     },
@@ -292,15 +333,40 @@ export default function SessionMainPage({
           <Label className="flex items-center gap-2">
             Session Date {dailyDataLoading && <Spinner className="h-4 w-4" />}
           </Label>
-          <Input
-            type="date"
-            value={selectedSessionDate}
-            min={moment(new Date(rawSessionData.date)).format('YYYY-MM-DD')}
-            max={moment(new Date(rawSessionData.end_date || rawSessionData.date)).format(
-              'YYYY-MM-DD'
-            )}
-            onChange={(event) => setSelectedSessionDate(event.target.value)}
-          />
+          <Popover
+            open={isSessionDateCalendarOpen}
+            onOpenChange={setIsSessionDateCalendarOpen}
+          >
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="justify-start bg-[#1A1A1A] font-normal">
+                <Calendar className="mr-2 h-4 w-4" />
+                {selectedSessionDate
+                  ? formatDateOnly(selectedSessionDate, 'DD MMMM YYYY')
+                  : 'Select a session date'}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <SessionDateCalendar
+                mode="single"
+                required
+                selected={parseDateOnly(selectedSessionDate) ?? undefined}
+                defaultMonth={
+                  parseDateOnly(selectedSessionDate) ?? parseDateOnly(rawSessionData.date) ?? undefined
+                }
+                disabled={(date) => {
+                  const start = parseDateOnly(rawSessionData.date);
+                  const end = parseDateOnly(rawSessionData.end_date || rawSessionData.date);
+                  return Boolean((start && date < start) || (end && date > end));
+                }}
+                onSelect={(date) => {
+                  if (!date) return;
+                  setSelectedSessionDate(formatDateOnly(date));
+                  setIsSessionDateCalendarOpen(false);
+                }}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
         </div>
       )}
 
@@ -399,7 +465,7 @@ export default function SessionMainPage({
             {data && data.status !== 'completed' && data.status !== 'cancelled' && allowed && (
               <Markbuttons
                 id={id}
-                canMarkCompleted={canMarkDailySessionCompleted}
+                canMarkCompleted={canMarkSessionCompleted}
                 onRefresh={async () => {
                   await fetchData();
                   await fetchParticipants();
@@ -411,6 +477,62 @@ export default function SessionMainPage({
           </div>
         </CardContent>
       </Card>
+
+      {rawSessionData?.date_mode === 'fixed_dates' && (
+        <Card className="rounded-2xl bg-[#252525]">
+          <CardContent className="space-y-3">
+            <h3 className="flex items-center gap-2 text-sm font-medium text-[#F3F4F6]">
+              Occurrence Dates {dailyDataLoading && <Spinner className="h-4 w-4" />}
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Click a date to view its sign-ups and payments below. Dates are fixed at creation
+              and can&apos;t be changed here.
+            </p>
+            <ScrollArea className="w-full">
+              <div className="flex gap-3 pb-2">
+                {(rawSessionData.dates ?? []).map((dt: any) => {
+                  const dateKey = formatDateOnly(dt.date);
+                  const isToday = dateKey === moment().format('YYYY-MM-DD');
+                  const selected = selectedSessionDate === dateKey;
+                  const soldOut = dt.left <= 0 || !dt.is_signup_open;
+
+                  return (
+                    <button
+                      type="button"
+                      key={dt.id}
+                      onClick={() => setSelectedSessionDate(dateKey)}
+                      className={cn(
+                        'flex shrink-0 flex-col items-center gap-1.5 rounded-2xl border px-4 py-3 min-w-[84px] transition-colors',
+                        selected
+                          ? 'border-primary bg-primary/10 text-primary'
+                          : 'border-[#3A3A3A] text-[#D1D5DC] hover:border-white/30'
+                      )}
+                    >
+                      <span className="text-xs font-medium">
+                        {isToday ? 'Today' : formatDateOnly(dt.date, 'ddd')}
+                      </span>
+                      <span className="text-sm font-semibold">
+                        {formatDateOnly(dt.date, 'DD MMM')}
+                      </span>
+                      <span
+                        className={cn(
+                          'rounded-full px-2 py-0.5 text-[10px] font-medium',
+                          soldOut
+                            ? 'bg-red-500/15 text-red-400'
+                            : 'bg-active-bg text-active-text'
+                        )}
+                      >
+                        {soldOut ? 'Sold out' : `$${dt.promotion_price ?? dt.price}`}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              <Scrollbar orientation="horizontal" />
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="w-full rounded-2xl bg-[#252525] py-2">
         <Tabs
@@ -457,9 +579,9 @@ export default function SessionMainPage({
               <AddParticipantDialog
                 sessionId={Number(id)}
                 variants={rawSessionData?.variants ?? []}
-                session_date={rawSessionData?.is_daily_payment ? selectedSessionDate : undefined}
+                session_date={usesSessionDateFilter ? selectedSessionDate : undefined}
                 enrolled_player_ids={
-                  rawSessionData?.is_daily_payment
+                  usesSessionDateFilter
                     ? participants.map((participant) => participant.player_id)
                     : []
                 }

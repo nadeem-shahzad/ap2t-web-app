@@ -10,7 +10,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
    SELECT
   s.*,
   u.first_name AS coach_first_name,
-  u.last_name  AS coach_last_name
+  u.last_name  AS coach_last_name,
+  COALESCE(
+    (
+      SELECT jsonb_agg(jsonb_build_object('date', sd.date))
+      FROM session_dates sd
+      WHERE sd.session_id = s.id
+        AND sd.is_active
+    ),
+    '[]'
+  ) AS dates
 FROM sessions s
 LEFT JOIN users u ON u.id = s.coach_id
 WHERE s.coach_id = $1

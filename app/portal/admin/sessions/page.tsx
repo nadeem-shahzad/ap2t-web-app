@@ -37,12 +37,14 @@ export default function Page() {
           id: s.id,
           sessionName: s.name,
           type: s.session_type,
-          date: moment(new Date(s.date)).format('YYYY-MM-DD'),
+          date: s.date ? moment(new Date(s.date)).format('YYYY-MM-DD') : '',
           time: `${s.start_time} - ${s.end_time}`,
           coachName: joinNames([s.coach_first_name, s.coach_last_name]),
           price: s.price,
           status: s?.status || 'upcoming',
           end_date: s?.end_date ? moment(new Date(s.end_date)).format('YYYY-MM-DD') : null,
+          date_mode: s?.date_mode ?? 'single',
+          dates: s?.dates ?? [],
           original: s,
         }));
         setSessions(mappedSessions);

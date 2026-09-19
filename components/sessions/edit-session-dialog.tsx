@@ -1,6 +1,7 @@
 'use client';
 import { useAuth } from '@/contexts/auth-context';
 import axios from '@/lib/axios';
+import { formatDateOnly, parseDateOnly } from '@/lib/date';
 import { BookedSession, SessionCoach, SessionType } from '@/lib/types';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Calendar, Eye, MapPin, SquarePen, Tag, Trash2, Users } from 'lucide-react';
@@ -144,6 +145,71 @@ export function EditSessionDialog({
     setBooked(conflicts.length > 0);
     return conflicts;
   }
+
+  // Fixed-dates sessions have no single date/end_date range to compare —
+  // check each curated occurrence date individually against the coach's
+  // other bookings (both continuous-range sessions and other fixed-dates
+  // sessions) instead.
+  function getFixedDatesConflicts(
+    occurrenceDates: string[],
+    start_time: string,
+    end_time: string
+  ): BookedSession[] {
+    const coachId = form.getValues('coach_id');
+    if (!coachId || occurrenceDates.length === 0 || !start_time || !end_time) return [];
+
+    const newStart = to24Hour(start_time);
+    const newEnd = to24Hour(end_time);
+    const newDates = new Set(occurrenceDates);
+
+    const coachSessions = (all_sessions || []).filter(
+      (session) =>
+        (session.status === 'upcoming' || session.status === 'ongoing') &&
+        Number(coachId) === Number(session.coach_id) &&
+        Number(session.id) !== Number(sessionId)
+    );
+
+    const conflicts: BookedSession[] = [];
+    for (const session of coachSessions) {
+      const sessionStart24 = to24Hour(session.start_time);
+      const sessionEnd24 = to24Hour(session.end_time);
+      const timeOverlap = sessionStart24 < newEnd && sessionEnd24 > newStart;
+      if (!timeOverlap) continue;
+
+      if (session.date_mode === 'fixed_dates') {
+        const matched = (session.dates ?? [])
+          .map((d) => d.date?.slice(0, 10))
+          .find((d): d is string => Boolean(d) && newDates.has(d as string));
+        if (matched) {
+          conflicts.push({
+            name: session.name,
+            date: matched,
+            end_date: matched,
+            start_time: session.start_time,
+            end_time: session.end_time,
+          });
+        }
+      } else {
+        const sessionStartStr = moment(session.date).format('YYYY-MM-DD');
+        const sessionEndStr = moment(session.end_date || session.date).format('YYYY-MM-DD');
+        const matched = occurrenceDates.find((d) => d >= sessionStartStr && d <= sessionEndStr);
+        if (matched) {
+          conflicts.push({
+            name: session.name,
+            date: session.date,
+            end_date: session.end_date,
+            start_time: session.start_time,
+            end_time: session.end_time,
+          });
+        }
+      }
+    }
+
+    setNotAvailableSessions(conflicts);
+    setBooked(conflicts.length > 0);
+    return conflicts;
+  }
+
   function getBlockedConflict(values: SessionSchemaValues) {
     const conflicts = Object.entries(coachSchedule || {}).filter(([blockedDateTime, status]) => {
       if (status !== 'blocked') return false;
@@ -158,6 +224,34 @@ export function EditSessionDialog({
       const blockedTime24 = to24Hour(blockedTimePart);
       const newStart = to24Hour(values.start_time);
       const newEnd = to24Hour(values.end_time);
+
+      return blockedTime24 >= newStart && blockedTime24 < newEnd;
+    });
+
+    setBlocked(conflicts.length > 0);
+    setBlockedHours(conflicts);
+    return conflicts;
+  }
+
+  // Same as getBlockedConflict, but against a curated list of occurrence
+  // dates instead of a date/end_date range.
+  function getFixedDatesBlockedConflict(
+    occurrenceDates: string[],
+    start_time: string,
+    end_time: string
+  ) {
+    if (occurrenceDates.length === 0) return [];
+    const dateSet = new Set(occurrenceDates);
+
+    const conflicts = Object.entries(coachSchedule || {}).filter(([blockedDateTime, status]) => {
+      if (status !== 'blocked') return false;
+
+      const [blockedDateStr, blockedTimePart] = blockedDateTime.split('_');
+      if (!dateSet.has(blockedDateStr)) return false;
+
+      const blockedTime24 = to24Hour(blockedTimePart);
+      const newStart = to24Hour(start_time);
+      const newEnd = to24Hour(end_time);
 
       return blockedTime24 >= newStart && blockedTime24 < newEnd;
     });
@@ -183,6 +277,8 @@ export function EditSessionDialog({
       is_daily_payment: false,
       pricing_mode: 'single',
       variants: [],
+      date_mode: 'single',
+      dates: [],
       max_players: 0,
       apply_promotion: promotion,
       show_storefront: false,
@@ -198,6 +294,7 @@ export function EditSessionDialog({
   const selectedCoachId = form.watch('coach_id');
   const applyPromotion = form.watch('apply_promotion');
   const promotionImage = form.watch('image');
+  const dateMode = form.watch('date_mode');
   const isExistingPromotion = Boolean(sessionData?.apply_promotion);
 
   useEffect(() => {
@@ -221,6 +318,18 @@ export function EditSessionDialog({
           sessionData.variants?.map((variant) => ({
             hour: Number(variant.hour),
             price: Number(variant.price),
+          })) ?? [],
+        date_mode: sessionData.date_mode === 'fixed_dates' ? 'fixed_dates' : 'single',
+        dates:
+          sessionData.dates?.map((entry) => ({
+            date: parseDateOnly(entry.date),
+            price: Number(entry.price),
+            promotion_price:
+              entry.promotion_price !== null && entry.promotion_price !== undefined
+                ? Number(entry.promotion_price)
+                : undefined,
+            max_players: Number(entry.max_players),
+            is_signup_open: Boolean(entry.is_signup_open),
           })) ?? [],
         max_players: Number(sessionData.max_players),
         apply_promotion: sessionData.apply_promotion,
@@ -249,16 +358,27 @@ export function EditSessionDialog({
     }
 
     try {
-      const sessionConflicts = getSessionsConflicts({
-        date: values.date,
-        end_date: values.end_date,
-        start_time: values.start_time,
-        end_time: values.end_time,
-      });
+      const isFixedDatesSession = values.date_mode === 'fixed_dates';
+      const occurrenceDates = isFixedDatesSession
+        ? values.dates
+            .map((d) => (d.date ? formatDateOnly(d.date) : null))
+            .filter((d): d is string => Boolean(d))
+        : [];
+
+      const sessionConflicts = isFixedDatesSession
+        ? getFixedDatesConflicts(occurrenceDates, values.start_time, values.end_time)
+        : getSessionsConflicts({
+            date: values.date,
+            end_date: values.end_date,
+            start_time: values.start_time,
+            end_time: values.end_time,
+          });
 
       const hasSessionConflict = sessionConflicts.length > 0;
       setLoading(true);
-      const blockedConflict = getBlockedConflict(values);
+      const blockedConflict = isFixedDatesSession
+        ? getFixedDatesBlockedConflict(occurrenceDates, values.start_time, values.end_time)
+        : getBlockedConflict(values);
       const hasBlockedConflict = blockedConflict.length > 0;
       if (hasSessionConflict) {
         toast.error("Can't update session because coach is already booked at this time and date");
@@ -271,7 +391,19 @@ export function EditSessionDialog({
         return;
       }
 
-      const lockedFields = new Set(['price', 'is_daily_payment', 'pricing_mode', 'variants']);
+      const lockedFields = new Set([
+        'price',
+        'is_daily_payment',
+        'pricing_mode',
+        'variants',
+        'date_mode',
+        'dates',
+      ]);
+      if (sessionData?.date_mode === 'fixed_dates') {
+        // Fixed-dates capacity/pricing lives per-date; the admin dashboard's
+        // per-date controls own it, not this general edit form.
+        lockedFields.add('max_players');
+      }
       if (isExistingPromotion) {
         lockedFields.add('apply_promotion');
         lockedFields.add('promotion_price');
@@ -517,49 +649,75 @@ export function EditSessionDialog({
                   <h1 className="text-[#F3F4F6]">Schedule</h1>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <div className="space-y-2">
-                    <Controller
-                      name="date"
-                      control={form.control}
-                      render={({ field, fieldState }) => (
-                        <Field data-invalid={fieldState.invalid}>
-                          <Label className="text-sm text-[#99A1AF]">
-                            Start Date <RequiredStar />
-                          </Label>
-                          <AppCalendar
-                            className="h-9"
-                            date={field.value ? new Date(field.value) : undefined}
-                            onChange={field.onChange}
-                            required
-                          />
-                          {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                        </Field>
-                      )}
-                    />
+                {dateMode === 'fixed_dates' ? (
+                  <div className="space-y-2 rounded-md border border-[#3A3A3A] bg-[#1A1A1A] p-3">
+                    <p className="text-sm font-medium text-[#F3F4F6]">Occurrence dates (locked)</p>
+                    <p className="text-xs text-muted-foreground">
+                      Manage per-date price, capacity and signup status from the promotion&apos;s
+                      detail page.
+                    </p>
+                    <div className="space-y-1">
+                      {form.getValues('dates').map((entry, index) => (
+                        <div
+                          key={index}
+                          className="flex flex-wrap justify-between gap-2 text-sm text-[#D1D5DC] border-b border-[#3A3A3A] py-1 last:border-b-0"
+                        >
+                          <span>{entry.date ? moment(entry.date).format('YYYY-MM-DD') : '—'}</span>
+                          <span>
+                            ${entry.price}
+                            {entry.promotion_price ? ` → $${entry.promotion_price}` : ''}
+                          </span>
+                          <span>{entry.max_players} max</span>
+                          <span>{entry.is_signup_open ? 'Signup open' : 'Signup closed'}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div className="space-y-2">
+                      <Controller
+                        name="date"
+                        control={form.control}
+                        render={({ field, fieldState }) => (
+                          <Field data-invalid={fieldState.invalid}>
+                            <Label className="text-sm text-[#99A1AF]">
+                              Start Date <RequiredStar />
+                            </Label>
+                            <AppCalendar
+                              className="h-9"
+                              date={field.value ? new Date(field.value) : undefined}
+                              onChange={field.onChange}
+                              required
+                            />
+                            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                          </Field>
+                        )}
+                      />
+                    </div>
 
-                  <div className="space-y-2">
-                    <Controller
-                      name="end_date"
-                      control={form.control}
-                      render={({ field, fieldState }) => (
-                        <Field data-invalid={fieldState.invalid}>
-                          <Label className="text-sm text-[#99A1AF]">
-                            End Date <RequiredStar />
-                          </Label>
-                          <AppCalendar
-                            className="h-9"
-                            date={field.value ? new Date(field.value) : undefined}
-                            onChange={field.onChange}
-                            required
-                          />
-                          {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                        </Field>
-                      )}
-                    />
+                    <div className="space-y-2">
+                      <Controller
+                        name="end_date"
+                        control={form.control}
+                        render={({ field, fieldState }) => (
+                          <Field data-invalid={fieldState.invalid}>
+                            <Label className="text-sm text-[#99A1AF]">
+                              End Date <RequiredStar />
+                            </Label>
+                            <AppCalendar
+                              className="h-9"
+                              date={field.value ? new Date(field.value) : undefined}
+                              onChange={field.onChange}
+                              required
+                            />
+                            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                          </Field>
+                        )}
+                      />
+                    </div>
                   </div>
-                </div>
+                )}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div className="space-y-2">
                     <Controller
@@ -650,34 +808,38 @@ export function EditSessionDialog({
                   </div>
                 </div>
 
-                <div className="flex gap-2 text-md ">
-                  <Users className="text-primary w-4 w-4" />
-                  <h1 className="text-[#F3F4F6]">Capacity</h1>
-                </div>
+                {dateMode !== 'fixed_dates' && (
+                  <>
+                    <div className="flex gap-2 text-md ">
+                      <Users className="text-primary w-4 w-4" />
+                      <h1 className="text-[#F3F4F6]">Capacity</h1>
+                    </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <div className="space-y-2">
-                    <Controller
-                      name="max_players"
-                      control={form.control}
-                      render={({ field, fieldState }) => (
-                        <Field data-invalid={fieldState.invalid}>
-                          <Label className="text-sm text-[#99A1AF]">
-                            Max Players <RequiredStar />
-                          </Label>
-                          <Input
-                            {...field}
-                            id={field.name}
-                            aria-invalid={fieldState.invalid}
-                            placeholder=""
-                            autoComplete="off"
-                          />
-                          {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                        </Field>
-                      )}
-                    />
-                  </div>
-                </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <div className="space-y-2">
+                        <Controller
+                          name="max_players"
+                          control={form.control}
+                          render={({ field, fieldState }) => (
+                            <Field data-invalid={fieldState.invalid}>
+                              <Label className="text-sm text-[#99A1AF]">
+                                Max Players <RequiredStar />
+                              </Label>
+                              <Input
+                                {...field}
+                                id={field.name}
+                                aria-invalid={fieldState.invalid}
+                                placeholder=""
+                                autoComplete="off"
+                              />
+                              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                            </Field>
+                          )}
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
 
                 <div className="flex gap-2 text-md">
                   <Tag className="text-primary w-4 h-4" />
