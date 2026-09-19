@@ -1,6 +1,5 @@
--- Fixed-dates promotions: one session definition, many curated occurrence dates.
--- Additive-only: new table + new column with a safe default. Existing
--- single/daily_range sessions and queries are unaffected.
+-- Session pricing and kiosk support.
+-- Safe to run on databases where any portion has already been applied.
 
 CREATE TABLE IF NOT EXISTS session_dates (
   id SERIAL PRIMARY KEY,
@@ -28,3 +27,19 @@ BEGIN
       CHECK (date_mode IN ('single', 'daily_range', 'fixed_dates'));
   END IF;
 END $$;
+
+-- session_dates must be a timezone-free calendar date.
+ALTER TABLE session_dates
+  ALTER COLUMN date TYPE DATE USING (date AT TIME ZONE 'UTC')::date;
+
+ALTER TABLE payments
+  ADD COLUMN IF NOT EXISTS variant_id INTEGER
+  REFERENCES session_variants(id) ON DELETE SET NULL;
+
+CREATE INDEX IF NOT EXISTS payments_session_user_date_variant_idx
+  ON payments (session_id, user_id, session_date, variant_id);
+
+-- Kiosk actions persist a server-resolved final amount. This avoids applying
+-- a sibling discount twice when the web front desk accepts the action.
+ALTER TABLE front_desk_actions
+  ADD COLUMN IF NOT EXISTS price_is_final BOOLEAN NOT NULL DEFAULT false;

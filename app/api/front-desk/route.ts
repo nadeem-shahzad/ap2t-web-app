@@ -103,14 +103,14 @@ export async function PUT(req: NextRequest) {
           let fixedDateRow: any = null;
           if (isFixedDates) {
             const fixedDateResult = await client.query(
-              `SELECT id, max_players, is_active, is_signup_open
+              `SELECT id, max_players, is_active
                FROM session_dates
                WHERE session_id = $1 AND date = $2::date
                FOR UPDATE`,
               [session_id, updatingRow?.session_date ?? moment().format('YYYY-MM-DD')]
             );
             fixedDateRow = fixedDateResult.rows?.[0];
-            if (!fixedDateRow || !fixedDateRow.is_active || !fixedDateRow.is_signup_open) {
+            if (!fixedDateRow || !fixedDateRow.is_active) {
               await client.query('ROLLBACK');
               return NextResponse.json(
                 { message: 'Selected date is not available for signup' },
@@ -255,7 +255,7 @@ export async function PUT(req: NextRequest) {
 
               const siblingCount = parseInt(siblings_data.rows[0].count, 10);
 
-              if (siblingCount >= 1) {
+              if (siblingCount >= 1 && !updatingRow.price_is_final) {
                 hasSiblingDiscount = true;
                 amount = amount * 0.9;
                 // await client.query(
